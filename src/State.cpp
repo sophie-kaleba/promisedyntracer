@@ -153,14 +153,17 @@ void tracer_state_t::create_promise_environment_action(prom_id_t promise_id) {
     promise_environment_action[promise_id] = {0, 0, 0, 0, 0, 0, 0, 0};
 }
 
-void tracer_state_t::update_promise_environment_action(prom_id_t promise_id,
-                                                       std::string action,
-                                                       bool transitive) {
-    if (promise_environment_action.find(promise_id) ==
+void tracer_state_t::update_promise_environment_action(
+    prom_id_t promise_id, fn_id_t function_id, int formal_parameter_position,
+    std::string action) {
+
+    prom_env_action_info_t info;
+
+    auto& it = 
+    if (promise_environment_action.end()
         promise_environment_action.end())
         promise_environment_action[promise_id] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-    int index = transitive ? 4 : 0;
     if (action == OPCODE_ENVIRONMENT_DEFINE)
         index += 0;
     else if (action == OPCODE_ENVIRONMENT_ASSIGN)

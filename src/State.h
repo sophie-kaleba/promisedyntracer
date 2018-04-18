@@ -349,8 +349,12 @@ struct tracer_state_t {
     vector<stack_event_t> full_stack; // Should be reset on each tracer pass
 
     // Map from promise IDs to call IDs
-    unordered_map<prom_id_t, call_id_t>
-        promise_origin; // Should be reset on each tracer pass
+    unordered_map<prom_id_t, call_id_t> promise_origin;
+    // Map from promise IDs to function IDs
+    unordered_map<prom_id_t, fn_id_t> promise_function;
+    // Map from promise IDs to formal parameter position
+    unordered_map<prom_id_t, int>
+        promise_position; // Should be reset on each tracer pass
     unordered_set<prom_id_t> fresh_promises;
     // Map from promise address to promise ID;
     unordered_map<prom_key_t, prom_id_t, prom_id_triple_hash> promise_ids;
@@ -430,7 +434,9 @@ struct tracer_state_t {
     void create_promise_environment_action(prom_id_t promise_id);
 
     void update_promise_environment_action(prom_id_t promise_id,
-                                           std::string action, bool transitive);
+                                           fn_id_t function_id,
+                                           int formal_parameter_position,
+                                           std::string action);
 
     std::vector<int> remove_promise_environment_action(prom_id_t promise_id);
 

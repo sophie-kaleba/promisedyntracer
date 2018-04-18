@@ -111,7 +111,7 @@ void SqlSerializer::finalize_statements() {
     sqlite3_finalize(insert_variable_statement);
     sqlite3_finalize(insert_variable_action_statement);
     sqlite3_finalize(insert_jump_statement);
-    sqlite3_finalize(insert_function_environment_action_statement);
+    sqlite3_finalize(insert_call_environment_action_statement);
     sqlite3_finalize(insert_promise_environment_action_statement);
     sqlite3_finalize(insert_aggregated_environment_action_statement);
 }
@@ -167,11 +167,11 @@ void SqlSerializer::prepare_statements() {
 
     insert_jump_statement = compile("insert into jumps values (?,?,?,?);");
 
-    insert_function_environment_action_statement = compile(
-        "insert into function_environment_actions values (?,?,?,?,?,?,?,?,?);");
+    insert_call_environment_action_statement =
+        compile("insert into call_environment_actions values (?,?,?,?,?,?);");
 
     insert_promise_environment_action_statement = compile(
-        "insert into promise_environment_actions values (?,?,?,?,?,?,?,?,?);");
+        "insert into promise_environment_actions values (?,?,?,?,?,?,?);");
 
     insert_aggregated_environment_action_statement =
         compile("insert into aggregated_environment_actions values "
@@ -458,29 +458,35 @@ void SqlSerializer::serialize_variable_action(prom_id_t promise_id,
     execute(insert_variable_action_statement);
 }
 
-void SqlSerializer::serialize_function_environment_action(
-    fn_id_t function_id, const std::vector<int> &actions) {
-
-    sqlite3_bind_text(insert_function_environment_action_statement, 1,
+void SqlSerializer::serialize_call_environment_action(call_id_t call_id,
+                                                      fn_id_t function_id,
+                                                      int end, int ena, int enr,
+                                                      int enl) {
+    sqlite3_bind_int(insert_call_environment_action_statement, 1, call_id);
+    sqlite3_bind_text(insert_call_environment_action_statement, 2,
                       function_id.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(insert_call_environment_action_statement, 3, end);
+    sqlite3_bind_int(insert_call_environment_action_statement, 4, ena);
+    sqlite3_bind_int(insert_call_environment_action_statement, 5, enr);
+    sqlite3_bind_int(insert_call_environment_action_statement, 6, enl);
 
-    for (int i = 0; i < 8; ++i)
-        sqlite3_bind_int(insert_function_environment_action_statement, i + 2,
-                         actions[i]);
-
-    execute(insert_function_environment_action_statement);
+    execute(insert_call_environment_action_statement);
 }
 
 void SqlSerializer::serialize_promise_environment_action(
-    prom_id_t promise_id, const std::vector<int> &actions) {
+    prom_id_t promise_id, fn_id_t function_id, int formal_parameter_position,
+    int end, int ena, int enr, int enl) {
 
     sqlite3_bind_int(insert_promise_environment_action_statement, 1,
                      promise_id);
-
-    for (int i = 0; i < 8; ++i)
-        sqlite3_bind_int(insert_promise_environment_action_statement, i + 2,
-                         actions[i]);
-
+    sqlite3_bind_text(insert_promise_environment_action_statement, 2,
+                      function_id.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(insert_promise_environment_action_statement, 3,
+                     formal_parameter_position);
+    sqlite3_bind_int(insert_promise_environment_action_statement, 4, end);
+    sqlite3_bind_int(insert_promise_environment_action_statement, 5, ena);
+    sqlite3_bind_int(insert_promise_environment_action_statement, 6, enr);
+    sqlite3_bind_int(insert_promise_environment_action_statement, 7, enl);
     execute(insert_promise_environment_action_statement);
 }
 

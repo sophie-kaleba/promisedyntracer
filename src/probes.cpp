@@ -136,7 +136,7 @@ void end(dyntrace_context_t *context) {
         tracer_state(context).promise_ena, tracer_state(context).promise_enr,
         tracer_state(context).promise_enl);
     tracer_serializer(context).serialize_aggregated_environment_actions(
-        "FUNCTION", tracer_state(context).function_end,
+        "CALL", tracer_state(context).function_end,
         tracer_state(context).function_ena, tracer_state(context).function_enr,
         tracer_state(context).function_enl);
     debug_serializer(context).serialize_finish_trace();
@@ -187,6 +187,7 @@ void function_entry(dyntrace_context_t *context, const SEXP call, const SEXP op,
         const arg_t &argument = arg_ref.get();
         auto &promise = get<2>(argument);
         auto it = fresh_promises.find(promise);
+        int formal_parameter_position = get<4>(argument);
         // if promise environment is same as the caller's environment, then
         // serialize this promise as it is a default argument.
 
@@ -197,6 +198,9 @@ void function_entry(dyntrace_context_t *context, const SEXP call, const SEXP op,
 
         if (it != fresh_promises.end()) {
             tracer_state(context).promise_origin[promise] = info.call_id;
+            tracer_state(context).promise_position[promise] =
+                formal_parameter_position;
+            tracer_state(context).promise_function[promise] = info.fn_id;
             fresh_promises.erase(it);
         }
     }
@@ -330,7 +334,8 @@ void promise_created(dyntrace_context_t *context, const SEXP prom,
             tracer_state(context).get_special_counter(),
             tracer_state(context).get_closure_counter()};
         debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, -1);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, -1);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               -1);
     }
 
     std::string cre_id = std::string("cre ") + std::to_string(info.prom_id);
@@ -372,7 +377,8 @@ void promise_force_entry(dyntrace_context_t *context, const SEXP promise) {
             tracer_state(context).get_special_counter(),
             tracer_state(context).get_closure_counter()};
         debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, -1);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, -1);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               -1);
     }
 }
 
@@ -403,7 +409,8 @@ void promise_force_exit(dyntrace_context_t *context, const SEXP promise) {
         tracer_state(context).remove_promise_environment_action(info.prom_id));
 }
 
-void promise_value_lookup(dyntrace_context_t *context, const SEXP promise, int in_force) {
+void promise_value_lookup(dyntrace_context_t *context, const SEXP promise,
+                          int in_force) {
     prom_info_t info = promise_lookup_get_info(context, promise);
     std::string val_id = std::string("val ") + std::to_string(info.prom_id);
     debug_serializer(context).serialize_interference_information(val_id);
@@ -416,12 +423,15 @@ void promise_value_lookup(dyntrace_context_t *context, const SEXP promise, int i
         tracer_state(context).clock_id++;
         prom_lifecycle_info_t prom_gc_info{
             info.prom_id, 5, tracer_state(context).gc_trigger_counter};
-        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
+        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                              in_force);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               in_force);
     }
 }
 
-void promise_expression_lookup(dyntrace_context_t *context, const SEXP prom, int in_force) {
+void promise_expression_lookup(dyntrace_context_t *context, const SEXP prom,
+                               int in_force) {
     prom_info_t info = promise_expression_lookup_get_info(context, prom);
     if (info.prom_id >= 0) {
         tracer_serializer(context).serialize_trace(OPCODE_PROMISE_EXPRESSION,
@@ -436,32 +446,38 @@ void promise_expression_lookup(dyntrace_context_t *context, const SEXP prom, int
             tracer_state(context).get_builtin_counter(),
             tracer_state(context).get_special_counter(),
             tracer_state(context).get_closure_counter()};
-        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
+        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                              in_force);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               in_force);
     }
 }
 
-void promise_environment_lookup(dyntrace_context_t *context, const SEXP prom, int in_force) {
+void promise_environment_lookup(dyntrace_context_t *context, const SEXP prom,
+                                int in_force) {
     prom_info_t info = promise_expression_lookup_get_info(context, prom);
     if (info.prom_id >= 0) {
         tracer_serializer(context).serialize_trace(OPCODE_PROMISE_ENVIRONMENT,
                                                    info.prom_id);
-        //tracer_serializer(context).serialize_promise_environment_lookup(
+        // tracer_serializer(context).serialize_promise_environment_lookup(
         //         info, tracer_state(context).clock_id); // FIXME
         tracer_state(context).clock_id++;
         prom_lifecycle_info_t prom_gc_info = {
-                info.prom_id,
-                4,
-                tracer_state(context).get_gc_trigger_counter(),
-                tracer_state(context).get_builtin_counter(),
-                tracer_state(context).get_special_counter(),
-                tracer_state(context).get_closure_counter()};
-        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
+            info.prom_id,
+            4,
+            tracer_state(context).get_gc_trigger_counter(),
+            tracer_state(context).get_builtin_counter(),
+            tracer_state(context).get_special_counter(),
+            tracer_state(context).get_closure_counter()};
+        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                              in_force);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               in_force);
     }
 }
 
-//void promise_value_lookup(dyntrace_context_t *context, const SEXP prom, int in_force) {
+// void promise_value_lookup(dyntrace_context_t *context, const SEXP prom, int
+// in_force) {
 //    prom_info_t info = promise_expression_lookup_get_info(context, prom);
 //    if (info.prom_id >= 0) {
 //        tracer_serializer(context).serialize_trace(OPCODE_PROMISE_ENVIRONMENT,
@@ -476,69 +492,79 @@ void promise_environment_lookup(dyntrace_context_t *context, const SEXP prom, in
 //                tracer_state(context).get_builtin_counter(),
 //                tracer_state(context).get_special_counter(),
 //                tracer_state(context).get_closure_counter()};
-//        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
-//        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
+//        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+//        in_force);
+//        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+//        in_force);
 //    }
 //}
 
-
-void promise_expression_set(dyntrace_context_t *context, const SEXP prom, int in_force) {
+void promise_expression_set(dyntrace_context_t *context, const SEXP prom,
+                            int in_force) {
     prom_info_t info = promise_expression_lookup_get_info(context, prom);
     if (info.prom_id >= 0) {
         tracer_serializer(context).serialize_trace(OPCODE_PROMISE_ENVIRONMENT,
                                                    info.prom_id);
-        //tracer_serializer(context).serialize_promise_environment_lookup(
+        // tracer_serializer(context).serialize_promise_environment_lookup(
         //         info, tracer_state(context).clock_id); // FIXME
         tracer_state(context).clock_id++;
         prom_lifecycle_info_t prom_gc_info = {
-                info.prom_id,
-                6,
-                tracer_state(context).get_gc_trigger_counter(),
-                tracer_state(context).get_builtin_counter(),
-                tracer_state(context).get_special_counter(),
-                tracer_state(context).get_closure_counter()};
-        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
+            info.prom_id,
+            6,
+            tracer_state(context).get_gc_trigger_counter(),
+            tracer_state(context).get_builtin_counter(),
+            tracer_state(context).get_special_counter(),
+            tracer_state(context).get_closure_counter()};
+        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                              in_force);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               in_force);
     }
 }
 
-void promise_value_set(dyntrace_context_t *context, const SEXP prom, int in_force) {
+void promise_value_set(dyntrace_context_t *context, const SEXP prom,
+                       int in_force) {
     prom_info_t info = promise_expression_lookup_get_info(context, prom);
     if (info.prom_id >= 0) {
         tracer_serializer(context).serialize_trace(OPCODE_PROMISE_ENVIRONMENT,
                                                    info.prom_id);
-        //tracer_serializer(context).serialize_promise_environment_lookup(
+        // tracer_serializer(context).serialize_promise_environment_lookup(
         //         info, tracer_state(context).clock_id); // FIXME
         tracer_state(context).clock_id++;
         prom_lifecycle_info_t prom_gc_info = {
-                info.prom_id,
-                8,
-                tracer_state(context).get_gc_trigger_counter(),
-                tracer_state(context).get_builtin_counter(),
-                tracer_state(context).get_special_counter(),
-                tracer_state(context).get_closure_counter()};
-        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
+            info.prom_id,
+            8,
+            tracer_state(context).get_gc_trigger_counter(),
+            tracer_state(context).get_builtin_counter(),
+            tracer_state(context).get_special_counter(),
+            tracer_state(context).get_closure_counter()};
+        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                              in_force);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               in_force);
     }
 }
 
-void promise_environment_set(dyntrace_context_t *context, const SEXP prom, int in_force) {
+void promise_environment_set(dyntrace_context_t *context, const SEXP prom,
+                             int in_force) {
     prom_info_t info = promise_expression_lookup_get_info(context, prom);
     if (info.prom_id >= 0) {
         tracer_serializer(context).serialize_trace(OPCODE_PROMISE_ENVIRONMENT,
                                                    info.prom_id);
-        //tracer_serializer(context).serialize_promise_environment_lookup(
+        // tracer_serializer(context).serialize_promise_environment_lookup(
         //         info, tracer_state(context).clock_id); // FIXME
         tracer_state(context).clock_id++;
         prom_lifecycle_info_t prom_gc_info = {
-                info.prom_id,
-                7,
-                tracer_state(context).get_gc_trigger_counter(),
-                tracer_state(context).get_builtin_counter(),
-                tracer_state(context).get_special_counter(),
-                tracer_state(context).get_closure_counter()};
-        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, in_force);
+            info.prom_id,
+            7,
+            tracer_state(context).get_gc_trigger_counter(),
+            tracer_state(context).get_builtin_counter(),
+            tracer_state(context).get_special_counter(),
+            tracer_state(context).get_closure_counter()};
+        debug_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                              in_force);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               in_force);
     }
 }
 
@@ -556,7 +582,8 @@ void gc_promise_unmarked(dyntrace_context_t *context, const SEXP promise) {
             tracer_state(context).get_special_counter(),
             tracer_state(context).get_closure_counter()};
         debug_serializer(context).serialize_promise_lifecycle(prom_gc_info, -1);
-        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info, -1);
+        tracer_serializer(context).serialize_promise_lifecycle(prom_gc_info,
+                                                               -1);
     }
 
     auto iter = promise_origin.find(id);
@@ -623,9 +650,10 @@ void begin_ctxt(dyntrace_context_t *context, const RCNTXT *cptr) {
     debug_serializer(context).serialize_begin_ctxt(cptr);
 }
 
-void jump_ctxt(dyntrace_context_t *context, const RCNTXT *cptr, const SEXP return_value, int restart) {
+void jump_ctxt(dyntrace_context_t *context, const RCNTXT *cptr,
+               const SEXP return_value, int restart) {
     unwind_info_t info;
-    info.jump_context = ((rid_t) cptr);
+    info.jump_context = ((rid_t)cptr);
     info.restart = restart;
     adjust_stacks(context, info);
     debug_serializer(context).serialize_unwind(info);
@@ -714,8 +742,13 @@ void environment_action(dyntrace_context_t *context, const SEXP symbol,
     for (int i = stack_size - 1; i > bottom_index; --i) {
         stack_event_t exec_context = tracer_state(context).full_stack[i];
         if (exec_context.type == stack_type::CALL) {
-            tracer_state(context).update_function_environment_action(
-                exec_context.function_info.function_id, action, transitive);
+            SEXP enclosing_address =
+                reinterpret_cast<SEXP>(exec_context.enclosing_environment);
+            // function side effects matter iff they are done in other
+            // environments.
+            if (rho != enclosing_address)
+                tracer_state(context).update_call_environment_action(
+                    exec_context.function_info.function_id, action);
             // tracer_serializer(context)
             // .serialize_function_environment_action(
             //     exec_context.call_id,
@@ -725,13 +758,28 @@ void environment_action(dyntrace_context_t *context, const SEXP symbol,
             transitive = true;
             break;
         } else if (exec_context.type == stack_type::PROMISE) {
-            SEXP enclosing_address =
-                reinterpret_cast<SEXP>(exec_context.enclosing_environment);
-            // function side effects matter iff they are done in other
-            // environments.
-            if (rho != enclosing_address)
+            auto &function_it = tracer_state(context).promise_function.find(
+                exec_context.promise_id);
+            auto &position_it = tracer_state(context).promise_position.find(
+                exec_context.promise_id);
+            bool function_is_valid =
+                function_it != tracer_state(context).promise_function.end();
+            bool position_is_valid =
+                position_it != tracer_state(context).promise_position.end();
+            if (function_is_valid && position_is_valid) {
                 tracer_state(context).update_promise_environment_action(
-                    exec_context.promise_id, action, transitive);
+                    exec_context.promise_id, function_it->second,
+                    position_it->second, action);
+            }
+
+            if (function_is_valid) {
+                tracer_state(context).promise_function.erase(function_it);
+            }
+
+            if (position_is_valid) {
+                tracer_state(context).promise_position.erase(position_it);
+            }
+
             // tracer_serializer(context).serialize_promise_environment_action(
             //     exec_context.promise_id, action, variable_id,
             //     transitive);

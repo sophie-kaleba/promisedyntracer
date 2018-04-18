@@ -41,10 +41,14 @@ class SqlSerializer {
                             env_id_t environment_id);
     void serialize_variable_action(prom_id_t promise_id, var_id_t variable_id,
                                    const std::string &action);
-    void serialize_function_environment_action(fn_id_t function_id,
-                                               const std::vector<int> &actions);
+    void serialize_call_environment_action(call_id_t call_id,
+                                           fn_id_t function_id, int end,
+                                           int ena, int enr, int enl);
     void serialize_promise_environment_action(prom_id_t promise_id,
-                                              const std::vector<int> &actions);
+                                              fn_id_t function_id,
+                                              int formal_parameter_position,
+                                              int end, int ena, int enr,
+                                              int enl);
     void serialize_aggregated_environment_actions(const std::string context,
                                                   int end, int ena, int enr,
                                                   int enl);
@@ -118,7 +122,7 @@ class SqlSerializer {
     sqlite3_stmt *insert_variable_statement = NULL;
     sqlite3_stmt *insert_variable_action_statement = NULL;
     sqlite3_stmt *insert_jump_statement = NULL;
-    sqlite3_stmt *insert_function_environment_action_statement = NULL;
+    sqlite3_stmt *insert_call_environment_action_statement = NULL;
     sqlite3_stmt *insert_promise_environment_action_statement = NULL;
     sqlite3_stmt *insert_aggregated_environment_action_statement = NULL;
 };
