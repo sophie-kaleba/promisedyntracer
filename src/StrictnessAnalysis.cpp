@@ -12,15 +12,17 @@ StrictnessAnalysis::StrictnessAnalysis(const tracer_state_t &tracer_state,
       functions_(std::unordered_map<fn_id_t, FunctionState>(
           FUNCTION_MAPPING_BUCKET_SIZE)) {
 
-    usage_data_table_ = create_data_table(
-        output_dir + "/" + "parameter-usage-count",
-        {"function_id", "call_id", "position", "parameter_mode",
-         "argument_type", "force", "lookup", "metaprogram"},
+    argument_data_table_ = create_data_table(
+        output_dir + "/" + "arguments",
+        {"function_id", "call_id", "parameter_position", "argument_mode",
+         "expression_type", "value_type", "force_count", "lookup_count",
+         "metaprogram_count", "force_index", "use_index"},
         truncate, binary, compression_level);
 
-    order_data_table_ = create_data_table(
-        output_dir + "/" + "parameter-force-order",
-        {"function_id", "order", "count"}, truncate, binary, compression_level);
+    call_data_table_ =
+        create_data_table(output_dir + "/" + "calls",
+                          {"function_id", "force_order", "force_order_count"},
+                          truncate, binary, compression_level);
 }
 
 /* When we enter a function, push information about it on a custom call stack.
@@ -42,8 +44,17 @@ void StrictnessAnalysis::closure_entry(const closure_info_t &closure_info) {
     for (const auto &argument : closure_info.arguments) {
         call_stack_.back().set_parameter_mode(
             argument.formal_parameter_position, argument.parameter_mode);
-        call_stack_.back().set_type(argument.formal_parameter_position,
-                                    argument.value_type);
+
+        /* set expression type for all arguments whether they are promises or
+           not. */
+        call_stack_.back().set_expression_type(
+            argument.expression_type, argument.formal_parameter_position);
+
+        /* if expression type is missing, set value type to missing */
+        if (argument.expression_type == MISSINGSXP) {
+            call_stack_.back().set_value_type(
+                argument.expression_type, argument.formal_parameter_position);
+        }
     }
 }
 
@@ -100,8 +111,8 @@ CallState StrictnessAnalysis::pop_from_call_stack(call_id_t call_id) {
 void StrictnessAnalysis::end(dyntracer_t *dyntracer) { serialize(); }
 
 StrictnessAnalysis::~StrictnessAnalysis() {
-    delete usage_data_table_;
-    delete order_data_table_;
+    delete argument_data_table_;
+    delete call_data_table_;
 }
 
 void StrictnessAnalysis::serialize() { serialize_parameter_usage_order(); }
@@ -116,12 +127,15 @@ void StrictnessAnalysis::serialize_parameter_usage_count(
 
         const auto &parameter{parameter_uses[position]};
 
-        usage_data_table_->write_row(
+        argument_data_table_->write_row(
             call_state.get_function_id(),
             static_cast<double>(call_state.get_call_id()), position,
             parameter_mode_to_string(parameter.get_parameter_mode()),
-            sexptype_to_string(parameter.get_type()), parameter.get_force(),
-            parameter.get_lookup(), parameter.get_metaprogram());
+            sexptype_to_string(parameter.get_expression_type()),
+            sexptype_to_string(parameter.get_value_type()),
+            parameter.get_force(), parameter.get_lookup(),
+            parameter.get_metaprogram(), parameter.get_force_index(),
+            parameter.get_use_index());
     }
 }
 
@@ -131,8 +145,8 @@ void StrictnessAnalysis::serialize_parameter_usage_order() {
         const auto &orders_{pair.second.get_orders()};
         const auto &order_counts_{pair.second.get_order_counts()};
         for (std::size_t i = 0; i < orders_.size(); ++i) {
-            order_data_table_->write_row(fn_id, orders_[i],
-                                         (double)order_counts_[i]);
+            call_data_table_->write_row(fn_id, orders_[i],
+                                        (double)order_counts_[i]);
         }
     }
 }
@@ -154,7 +168,27 @@ void StrictnessAnalysis::promise_force_entry(const prom_info_t &prom_info,
         return;
     }
 
-    call_state->force(promise_state.formal_parameter_position);
+    call_state->force_entry(promise, promise_state.formal_parameter_position);
+}
+
+void StrictnessAnalysis::promise_force_exit(const prom_info_t &prom_info,
+                                            const SEXP promise) {
+    PromiseState &promise_state{promise_mapper_->find(prom_info.prom_id)};
+
+    /* if promise is not an argument, then don't process it. */
+    if (!promise_state.argument) {
+        return;
+    }
+
+    auto *call_state = get_call_state(promise_state.call_id);
+
+    /* this implies an escaped promise, the promise is alive but not
+       the function invocation that got this promise as its argument */
+    if (call_state == nullptr) {
+        return;
+    }
+
+    call_state->force_exit(promise, promise_state.formal_parameter_position);
 }
 
 void StrictnessAnalysis::promise_value_lookup(const prom_info_t &prom_info,

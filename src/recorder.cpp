@@ -5,7 +5,7 @@
 void update_closure_argument(closure_info_t &info, dyntracer_t *dyntracer,
                              call_id_t call_id, const SEXP arg_name,
                              const SEXP arg_value, const SEXP environment,
-                             bool dot_argument, int position) {
+                             bool dot_argument, bool missing, int position) {
 
     arg_t argument;
     SEXPTYPE arg_value_type = TYPEOF(arg_value);
@@ -23,10 +23,14 @@ void update_closure_argument(closure_info_t &info, dyntracer_t *dyntracer,
                                       ? parameter_mode_t::DEFAULT
                                       : parameter_mode_t::CUSTOM;
         argument.promise_environment = PRENV(arg_value);
+        argument.expression_type = static_cast<sexptype_t>(arg_value_type);
     } else {
         argument.promise_id = 0;
-        argument.parameter_mode = parameter_mode_t::UNKNOWN;
+        argument.parameter_mode =
+            missing ? parameter_mode_t::MISSING : parameter_mode_t ::NONPROMISE;
+
         argument.promise_environment = NULL;
+        argument.expression_type = missing ? MISSINGSXP : TYPEOF(arg_value);
     }
 
     if (dot_argument) {
@@ -36,9 +40,8 @@ void update_closure_argument(closure_info_t &info, dyntracer_t *dyntracer,
     }
 
     argument.id = get_argument_id(dyntracer, call_id, argument.name);
-    argument.value_type = static_cast<sexptype_t>(arg_value_type);
-    argument.formal_parameter_position = position;
 
+    argument.formal_parameter_position = position;
     info.arguments.push_back(argument);
 }
 
@@ -61,6 +64,7 @@ void update_closure_arguments(closure_info_t &info, dyntracer_t *dyntracer,
                  dot_args = CDR(dot_args)) {
                 update_closure_argument(info, dyntracer, call_id, TAG(dot_args),
                                         CAR(dot_args), environment, true,
+                                        MISSING(current_formal),
                                         formal_parameter_position);
             }
         } else {
@@ -86,9 +90,9 @@ void update_closure_arguments(closure_info_t &info, dyntracer_t *dyntracer,
                 }
             }
             // The general case: single argument.
-            update_closure_argument(info, dyntracer, call_id, arg_name,
-                                    arg_value, environment, false,
-                                    formal_parameter_position);
+            update_closure_argument(
+                info, dyntracer, call_id, arg_name, arg_value, environment,
+                false, arg_value == R_MissingArg, formal_parameter_position);
         }
     }
 

@@ -39,5 +39,8 @@ read_data_table <- function(filepath) {
 
     compression_level <- if(endsWith(filepath, "zst")) 1 else 0
     binary <- endsWith(filepath, ".bin") | endsWith(filepath, ".bin.zst")
-    .Call(C_read_data_table, filepath, binary, compression_level)
+    if(!binary & compression_level == 0)
+        read.table(filepath, header = TRUE, sep = "\x1f", comment.char = "", stringsAsFactors = FALSE)
+    else
+        .Call(C_read_data_table, filepath, binary, compression_level)
 }

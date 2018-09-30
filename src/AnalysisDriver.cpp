@@ -4,13 +4,15 @@ AnalysisDriver::AnalysisDriver(tracer_state_t &tracer_state,
                                const std::string &output_dir, bool truncate,
                                bool binary, int compression_level,
                                const AnalysisSwitch analysis_switch)
-    : analysis_switch_{analysis_switch},
-      promise_mapper_{tracer_state, output_dir},
+    : analysis_switch_{analysis_switch}, promise_mapper_{tracer_state,
+                                                         output_dir},
       metadata_analysis_{tracer_state, output_dir},
       object_count_size_analysis_{tracer_state, output_dir},
-      function_analysis_{tracer_state, output_dir},
+      function_analysis_{tracer_state, output_dir, truncate, binary,
+                         compression_level},
       promise_evaluation_analysis_{tracer_state, output_dir, &promise_mapper_},
-      promise_type_analysis_{tracer_state, output_dir},
+      promise_type_analysis_{tracer_state, output_dir, truncate, binary,
+                             compression_level},
       strictness_analysis_{tracer_state, &promise_mapper_, output_dir,
                            truncate,     binary,           compression_level},
       side_effect_analysis_{tracer_state, output_dir, truncate, binary,
@@ -143,6 +145,9 @@ void AnalysisDriver::promise_force_exit(const prom_info_t &prom_info,
 
     if (analyze_promise_types())
         promise_type_analysis_.promise_force_exit(prom_info, promise);
+
+    if (analyze_strictness())
+        strictness_analysis_.promise_force_exit(prom_info, promise);
 
     ANALYSIS_TIMER_END_SEGMENT(FORCE_PROMISE_EXIT_ANALYSIS_PROMISE_TYPE);
 }

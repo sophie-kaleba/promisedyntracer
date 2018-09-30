@@ -4,9 +4,15 @@
 const sexptype_t OMEGASXP = 100000;
 const sexptype_t ACTIVESXP = 100001;
 const sexptype_t UNBOUNDSXP = 100002;
+const sexptype_t UNASSIGNEDSXP = 100003;
+const sexptype_t MISSINGSXP = 100004;
 
 std::string sexptype_to_string(sexptype_t sexptype) {
     switch (sexptype) {
+        case MISSINGSXP:
+            return "Missing";
+        case UNASSIGNEDSXP:
+            return "Unassigned";
         case NILSXP:
             return "Null";
         case UNBOUNDSXP:

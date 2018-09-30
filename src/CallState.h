@@ -2,7 +2,9 @@
 #define PROMISE_DYNTRACER_CALL_STATE_H
 
 #include "ParameterUse.h"
+#include "Rdyntrace.h"
 #include "State.h"
+#include "table.h"
 #include "utilities.h"
 
 class CallState {
@@ -27,20 +29,35 @@ class CallState {
         return formal_parameter_count_;
     }
 
-    void set_type(std::size_t position, sexptype_t type) {
-        parameter_uses_[position].set_type(type);
+    void set_expression_type(sexptype_t expression_type, std::size_t position) {
+        parameter_uses_[position].set_expression_type(expression_type);
     }
 
-    void force(std::size_t position) {
+    void set_value_type(sexptype_t value_type, std::size_t position) {
+        parameter_uses_[position].set_value_type(value_type);
+    }
+
+    void force_entry(const SEXP promise, std::size_t position) {
 
         bool previous_forced_state = parameter_uses_[position].get_force();
         parameter_uses_[position].force();
 
+        /* reset the expression type when forcing in case metaprogramming
+           happened after promise creation and before forcing
+        */
+        set_expression_type(TYPEOF(dyntrace_get_promise_expression(promise)),
+                            position);
         /* iff the argument is forced and has not been previously forced
            do we add it to the order. This ensures that there is a single
-           order entry for all elements of ... */
-        if (!previous_forced_state)
+           order entry for all elements of ...
+        */
+        if (!previous_forced_state) {
             order_.append("|").append(std::to_string(position));
+        }
+    }
+
+    void force_exit(const SEXP promise, std::size_t position) {
+        set_value_type(TYPEOF(dyntrace_get_promise_value(promise)), position);
     }
 
     void lookup(std::size_t position) { parameter_uses_[position].lookup(); }
@@ -65,6 +82,8 @@ class CallState {
     std::size_t formal_parameter_count_;
     std::vector<ParameterUse> parameter_uses_;
     std::string order_;
+    int use_counter = 0;
+    int force_counter = 0;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const CallState &call_state) {

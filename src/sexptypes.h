@@ -141,6 +141,8 @@ typedef unsigned int sexptype_t;
 extern const sexptype_t OMEGASXP;
 extern const sexptype_t ACTIVESXP;
 extern const sexptype_t UNBOUNDSXP;
+extern const sexptype_t UNASSIGNEDSXP;
+extern const sexptype_t MISSINGSXP;
 
 typedef std::vector<sexptype_t> full_sexp_type;
 

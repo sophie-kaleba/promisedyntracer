@@ -93,7 +93,8 @@ void closure_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
             fresh_promises.erase(it);
         }
 
-        if (argument.value_type == PROMSXP) {
+        if (argument.parameter_mode == parameter_mode_t::DEFAULT ||
+            argument.parameter_mode == parameter_mode_t::CUSTOM) {
             tracer_serializer(dyntracer).serialize(
                 TraceSerializer::OPCODE_ARGUMENT_PROMISE_ASSOCIATE, info.fn_id,
                 info.call_id, argument.formal_parameter_position,

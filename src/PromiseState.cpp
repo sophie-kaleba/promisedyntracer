@@ -3,7 +3,7 @@
 PromiseState::PromiseState(prom_id_t id, env_id_t env_id, bool local)
     : local(local), argument(false), id(id), env_id(env_id), fn_id(""),
       call_id(0), formal_parameter_position(-1),
-      parameter_mode(parameter_mode_t::UNKNOWN), evaluated(false),
+      parameter_mode(parameter_mode_t::UNASSIGNED), evaluated(false),
       mutations(std::vector<int>(to_underlying_type(SlotMutation::COUNT))) {}
 
 void PromiseState::make_function_argument(fn_id_t fn_id, call_id_t call_id,

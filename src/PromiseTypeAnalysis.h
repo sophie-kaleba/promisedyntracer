@@ -1,13 +1,15 @@
-#ifndef __PROMISE_TYPE_ANALYSIS_H__
-#define __PROMISE_TYPE_ANALYSIS_H__
+#ifndef PROMISEDYNTRACER_TYPE_ANALYSIS_H
+#define PROMISEDYNTRACER_TYPE_ANALYSIS_H
 
 #include "State.h"
+#include "table.h"
 #include "utilities.h"
 
 class PromiseTypeAnalysis {
   public:
     PromiseTypeAnalysis(const tracer_state_t &tracer_state,
-                        const std::string &output_dir);
+                        const std::string &output_dir, bool truncate,
+                        bool binary, int compression_level);
     void promise_created(const prom_basic_info_t &prom_basic_info,
                          const SEXP promise);
     void closure_entry(const closure_info_t &closure_info);
@@ -23,8 +25,24 @@ class PromiseTypeAnalysis {
     inline bool is_custom_argument_promise(prom_id_t prom_id);
     inline bool is_non_argument_promise(prom_id_t prom_id);
     void end(dyntracer_t *dyntracer);
+    ~PromiseTypeAnalysis();
 
   private:
+    using unevaluated_promise_key_t =
+        std::tuple<std::string, std::string, std::string>;
+
+    struct UnevaluatedPromiseKeyHasher {
+        std::size_t operator()(const unevaluated_promise_key_t &key) const {
+            // Compute individual hash values for first, second and third
+            // http://stackoverflow.com/a/1646913/126995
+            std::size_t res = 17;
+            res = res * 31 + std::hash<std::string>()(std::get<0>(key));
+            res = res * 31 + std::hash<std::string>()(std::get<1>(key));
+            res = res * 31 + std::hash<std::string>()(std::get<2>(key));
+            return res;
+        }
+    };
+
     void serialize();
     void serialize_evaluated_promises();
     void serialize_unevaluated_promises();
@@ -38,7 +56,11 @@ class PromiseTypeAnalysis {
     int default_argument_promise_types_[MAX_NUM_SEXPTYPE][MAX_NUM_SEXPTYPE];
     int custom_argument_promise_types_[MAX_NUM_SEXPTYPE][MAX_NUM_SEXPTYPE];
     int non_argument_promise_types_[MAX_NUM_SEXPTYPE][MAX_NUM_SEXPTYPE];
-    std::unordered_map<std::string, int> unevaluated_promises_;
+    std::unordered_map<unevaluated_promise_key_t, int,
+                       UnevaluatedPromiseKeyHasher>
+        unevaluated_promises_;
+    DataTableStream *evaluated_data_table_;
+    DataTableStream *unevaluated_data_table_;
 };
 
-#endif /* __PROMISE_TYPE_ANALYSIS_H__ */
+#endif /* PROMISEDYNTRACER_TYPE_ANALYSIS_H */

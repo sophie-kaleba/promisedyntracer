@@ -24,7 +24,9 @@ void PromiseMapper::promise_created(const prom_basic_info_t &prom_basic_info,
 void PromiseMapper::closure_entry(const closure_info_t &closure_info) {
     int max_position = 0;
     for (const auto &argument : closure_info.arguments) {
-        if (argument.value_type != PROMSXP)
+        // if argument is not a promise then don't proceed further
+        if (argument.parameter_mode != parameter_mode_t::DEFAULT &&
+            argument.parameter_mode != parameter_mode_t::CUSTOM)
             continue;
         prom_id_t promise_id = argument.promise_id;
         int formal_parameter_position = argument.formal_parameter_position;

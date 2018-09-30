@@ -44,12 +44,12 @@ typedef pair<call_id_t, string> arg_key_t;
 
 rid_t get_sexp_address(SEXP e);
 
-enum class parameter_mode_t { UNKNOWN = 0, DEFAULT, CUSTOM };
+enum class parameter_mode_t {UNASSIGNED = 0, MISSING, DEFAULT, CUSTOM, NONPROMISE };
 
 struct arg_t {
     arg_id_t id;
     string name;
-    sexptype_t value_type;
+    sexptype_t expression_type;
     sexptype_t name_type;
     prom_id_t promise_id; // only set if sexptype_t == PROM
     SEXP promise_environment;
@@ -333,12 +333,16 @@ struct tracer_state_t {
 
 inline std::string parameter_mode_to_string(parameter_mode_t parameter_mode) {
     switch (parameter_mode) {
-        case parameter_mode_t::UNKNOWN:
-            return "Unknown";
+        case parameter_mode_t::UNASSIGNED:
+            return "Unassigned";
+        case parameter_mode_t::MISSING:
+            return "Missing";
         case parameter_mode_t::DEFAULT:
             return "Default";
         case parameter_mode_t::CUSTOM:
             return "Custom";
+        case parameter_mode_t::NONPROMISE:
+            return "Nonpromise";
     }
     return "Error";
 }

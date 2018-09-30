@@ -54,7 +54,7 @@ string DebugSerializer::log_line(const arglist_t &arguments) {
         const arg_t &argument = *i;
         line << "{name=" << argument.name << " id=" << argument.id
              << " name_type=" << log_line(argument.name_type)
-             << " value_type=" << log_line(argument.value_type)
+          //<< " value_type=" << log_line(argument.value_type)
              //<< " default=" << argument.default_argument
              << " prom_id=" << argument.promise_id
              << " position=" << argument.formal_parameter_position << "}";

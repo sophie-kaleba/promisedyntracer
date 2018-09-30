@@ -20,6 +20,7 @@ class StrictnessAnalysis {
     void closure_entry(const closure_info_t &closure_info);
     void closure_exit(const closure_info_t &closure_info);
     void promise_force_entry(const prom_info_t &prom_info, const SEXP promise);
+    void promise_force_exit(const prom_info_t &prom_info, const SEXP promise);
     void promise_value_lookup(const prom_info_t &prom_info, const SEXP promise);
     void promise_value_assign(const prom_info_t &info, const SEXP promise);
     void promise_environment_lookup(const prom_info_t &prom_info,
@@ -58,8 +59,8 @@ class StrictnessAnalysis {
     PromiseMapper *const promise_mapper_;
     std::string output_dir_;
     std::vector<CallState> call_stack_;
-    DataTableStream *usage_data_table_;
-    DataTableStream *order_data_table_;
+    DataTableStream *argument_data_table_;
+    DataTableStream *call_data_table_;
 };
 
 #endif /* __STRICTNESS_ANALYSIS_H__ */

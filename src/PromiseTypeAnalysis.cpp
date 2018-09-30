@@ -1,8 +1,20 @@
 #include "PromiseTypeAnalysis.h"
 
 PromiseTypeAnalysis::PromiseTypeAnalysis(const tracer_state_t &tracer_state,
-                                         const std::string &output_dir)
-    : tracer_state_(tracer_state), output_dir_(output_dir) {
+                                         const std::string &output_dir,
+                                         bool truncate, bool binary,
+                                         int compression_level)
+    : tracer_state_(tracer_state),
+      output_dir_(output_dir), evaluated_data_table_{create_data_table(
+                                   output_dir + "/" + "evaluated-promise-type",
+                                   {"promise_type", "promise_expression_type",
+                                    "promise_value_type", "count"},
+                                   truncate, binary, compression_level)},
+      unevaluated_data_table_{
+          create_data_table(output_dir + "/" + "unevaluated-promise-type",
+                            {"promise_type", "promise_expression_type",
+                             "inferred_promise_value_type", "count"},
+                            truncate, binary, compression_level)} {
 
     for (int i = 0; i < MAX_NUM_SEXPTYPE; ++i) {
         for (int j = 0; j < MAX_NUM_SEXPTYPE; ++j) {
@@ -112,10 +124,10 @@ void PromiseTypeAnalysis::end(dyntracer_t *dyntracer) { serialize(); }
 
 void PromiseTypeAnalysis::add_unevaluated_promise(
     const std::string promise_type, SEXP promise) {
-    std::string key = promise_type + " , " +
-                      sexptype_to_string(TYPEOF(PRCODE(promise))) + " , " +
-                      infer_sexptype(promise);
-    auto result = unevaluated_promises_.insert(std::make_pair(key, 1));
+    auto result = unevaluated_promises_.insert(
+        {{promise_type, sexptype_to_string(TYPEOF(PRCODE(promise))),
+          infer_sexptype(promise)},
+         1});
     if (!result.second)
         ++result.first->second;
 }
@@ -125,25 +137,19 @@ void PromiseTypeAnalysis::serialize() {
     serialize_evaluated_promises();
 }
 
+PromiseTypeAnalysis::~PromiseTypeAnalysis() {
+    delete unevaluated_data_table_;
+    delete evaluated_data_table_;
+}
+
 void PromiseTypeAnalysis::serialize_evaluated_promises() {
-    std::ofstream fout(output_dir_ + "/evaluated-promise-type.csv",
-                       std::ios::trunc);
-
-    fout << "promise_type"
-         << " , "
-         << "promise_expression_type"
-         << " , "
-         << "promise_value_type"
-         << " , "
-         << "count" << std::endl;
-
     auto serializer = [&](const auto &matrix, std::string type) {
         for (int i = 0; i < MAX_NUM_SEXPTYPE; ++i) {
             for (int j = 0; j < MAX_NUM_SEXPTYPE; ++j) {
                 if (matrix[i][j] != 0) {
-                    fout << type << " , " << sexptype_to_string(i) << " , "
-                         << sexptype_to_string(j) << " , " << matrix[i][j]
-                         << std::endl;
+                    evaluated_data_table_->write_row(
+                        type, sexptype_to_string(i), sexptype_to_string(j),
+                        matrix[i][j]);
                 }
             }
         }
@@ -152,25 +158,13 @@ void PromiseTypeAnalysis::serialize_evaluated_promises() {
     serializer(default_argument_promise_types_, "da");
     serializer(custom_argument_promise_types_, "ca");
     serializer(non_argument_promise_types_, "na");
-
-    fout.close();
 }
 
 void PromiseTypeAnalysis::serialize_unevaluated_promises() {
-    std::ofstream fout(output_dir_ + "/unevaluated-promise-type.csv",
-                       std::ios::trunc);
-
-    fout << "promise_type"
-         << " , "
-         << "promise_expression_type"
-         << " , "
-         << "inferred_promise_value_type"
-         << " , "
-         << "count" << std::endl;
 
     for (auto &key_value : unevaluated_promises_) {
-        fout << key_value.first << " , " << key_value.second << std::endl;
+        unevaluated_data_table_->write_row(
+            std::get<0>(key_value.first), std::get<1>(key_value.first),
+            std::get<2>(key_value.first), key_value.second);
     }
-
-    fout.close();
 }
