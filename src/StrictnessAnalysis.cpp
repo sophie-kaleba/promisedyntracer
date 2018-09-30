@@ -23,6 +23,10 @@ StrictnessAnalysis::StrictnessAnalysis(const tracer_state_t &tracer_state,
         create_data_table(output_dir + "/" + "calls",
                           {"function_id", "force_order", "force_order_count"},
                           truncate, binary, compression_level);
+
+    call_graph_data_table_ = create_data_table(
+        output_dir + "/" + "call-graph", {"caller_id", "callee_id"}, truncate,
+        binary, compression_level);
 }
 
 /* When we enter a function, push information about it on a custom call stack.
@@ -33,6 +37,8 @@ void StrictnessAnalysis::closure_entry(const closure_info_t &closure_info) {
     // push call_id to call_stack
     call_id_t call_id = closure_info.call_id;
     fn_id_t fn_id = closure_info.fn_id;
+
+    add_call_graph_edge_(closure_info.call_id);
 
     push_on_call_stack(
         CallState(call_id, fn_id, closure_info.formal_parameter_count));
@@ -113,6 +119,7 @@ void StrictnessAnalysis::end(dyntracer_t *dyntracer) { serialize(); }
 StrictnessAnalysis::~StrictnessAnalysis() {
     delete argument_data_table_;
     delete call_data_table_;
+    delete call_graph_data_table_;
 }
 
 void StrictnessAnalysis::serialize() { serialize_parameter_usage_order(); }
@@ -268,4 +275,12 @@ CallState *StrictnessAnalysis::get_call_state(const call_id_t call_id) {
     }
 
     return &(*it);
+}
+
+void StrictnessAnalysis::add_call_graph_edge_(const call_id_t callee_id) {
+    if (call_stack_.empty())
+        return;
+    call_graph_data_table_->write_row(
+        static_cast<double>(call_stack_.back().get_call_id()),
+        static_cast<double>(callee_id));
 }

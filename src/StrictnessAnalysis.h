@@ -49,6 +49,7 @@ class StrictnessAnalysis {
     void serialize_function_call_count();
     void serialize_evaluation_context_counts();
     void serialize_promise_slot_accesses();
+    void add_call_graph_edge_(const call_id_t callee_id);
 
     void metaprogram_(const prom_info_t &prom_info, const SEXP promise);
     CallState *get_call_state(const call_id_t call_id);
@@ -61,6 +62,7 @@ class StrictnessAnalysis {
     std::vector<CallState> call_stack_;
     DataTableStream *argument_data_table_;
     DataTableStream *call_data_table_;
+    DataTableStream *call_graph_data_table_;
 };
 
 #endif /* __STRICTNESS_ANALYSIS_H__ */
