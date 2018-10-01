@@ -10,10 +10,14 @@
 class CallState {
   public:
     explicit CallState(call_id_t call_id, fn_id_t fn_id,
-                       std::size_t formal_parameter_count)
-        : call_id_{call_id}, fn_id_{fn_id},
+                       const std::string &function_type,
+                       const std::string &function_name,
+                       int formal_parameter_count, const std::string &order)
+        : call_id_{call_id}, fn_id_{fn_id}, function_type_(function_type),
+          function_name_(function_name),
           formal_parameter_count_{formal_parameter_count},
-          parameter_uses_{formal_parameter_count}, order_{} {
+          parameter_uses_{std::max(formal_parameter_count, 0)}, order_{order},
+          return_value_type_{UNASSIGNEDSXP} {
 
         /* INFO - Reserve size to 15 bytes to prevent repeated string
          * allocations when forced arguments are added. This increases
@@ -24,6 +28,16 @@ class CallState {
     const call_id_t get_call_id() const { return call_id_; }
 
     const fn_id_t &get_function_id() const { return fn_id_; }
+
+    const std::string &get_function_type() const { return function_type_; }
+
+    const std::string &get_function_name() const { return function_name_; }
+
+    void set_return_value_type(sexptype_t return_value_type) {
+        return_value_type_ = return_value_type;
+    }
+
+    sexptype_t get_return_value_type() const { return return_value_type_; }
 
     const int get_formal_parameter_count() const {
         return formal_parameter_count_;
@@ -79,11 +93,12 @@ class CallState {
   private:
     fn_id_t fn_id_;
     call_id_t call_id_;
-    std::size_t formal_parameter_count_;
+    std::string function_type_;
+    std::string function_name_;
+    int formal_parameter_count_;
+    sexptype_t return_value_type_;
     std::vector<ParameterUse> parameter_uses_;
     std::string order_;
-    int use_counter = 0;
-    int force_counter = 0;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const CallState &call_state) {

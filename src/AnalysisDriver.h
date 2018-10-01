@@ -1,8 +1,7 @@
-#ifndef __ANALYSIS_DRIVER_H__
-#define __ANALYSIS_DRIVER_H__
+#ifndef PROMISEDYNTRACER_ANALYSIS_DRIVER_H
+#define PROMISEDYNTRACER_ANALYSIS_DRIVER_H
 
 #include "AnalysisSwitch.h"
-#include "FunctionAnalysis.h"
 #include "MetadataAnalysis.h"
 #include "ObjectCountSizeAnalysis.h"
 #include "PromiseEvaluationAnalysis.h"
@@ -14,9 +13,9 @@
 class AnalysisDriver {
 
   public:
-    AnalysisDriver(tracer_state_t &tracer_state, const std::string &output_dir,
-                   bool truncate, bool binary, int compression_level,
-                   const AnalysisSwitch analysis_switch);
+    AnalysisDriver(tracer_state_t &tracer_state, bool verbose,
+                   const std::string &output_dir, bool truncate, bool binary,
+                   int compression_level, const AnalysisSwitch analysis_switch);
 
     void begin(dyntracer_t *dyntracer);
     void closure_entry(const closure_info_t &closure_info);
@@ -62,7 +61,6 @@ class AnalysisDriver {
 
   private:
     PromiseMapper promise_mapper_;
-    FunctionAnalysis function_analysis_;
     StrictnessAnalysis strictness_analysis_;
     PromiseTypeAnalysis promise_type_analysis_;
     PromiseEvaluationAnalysis promise_evaluation_analysis_;
@@ -72,4 +70,4 @@ class AnalysisDriver {
     AnalysisSwitch analysis_switch_;
 };
 
-#endif /* __ANALYSIS_DRIVER_H__ */
+#endif /* PROMISEDYNTRACER_ANALYSIS_DRIVER_H */

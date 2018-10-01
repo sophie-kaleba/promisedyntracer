@@ -11,8 +11,7 @@ class ParameterUse {
     explicit ParameterUse()
         : expression_type_(UNASSIGNEDSXP), value_type_(UNASSIGNEDSXP),
           force_(0), lookup_(0), metaprogram_(0),
-          mode_(parameter_mode_t::UNASSIGNED), force_index_(-1),
-          use_index_(-1) {}
+          mode_(parameter_mode_t::UNASSIGNED) {}
 
     std::uint8_t get_metaprogram() const { return metaprogram_; }
 
@@ -42,14 +41,6 @@ class ParameterUse {
 
     void set_parameter_mode(parameter_mode_t mode) { mode_ = mode; }
 
-    int get_force_index() const { return force_index_; }
-
-    void set_force_index(const int force_index) { force_index_ = force_index; }
-
-    int get_use_index() const { return use_index_; }
-
-    void set_use_index(const int use_index) { use_index_ = use_index; }
-
   private:
     sexptype_t expression_type_;
     sexptype_t value_type_;
@@ -57,8 +48,6 @@ class ParameterUse {
     std::uint8_t lookup_;
     std::uint8_t metaprogram_;
     parameter_mode_t mode_;
-    int use_index_;
-    int force_index_;
 };
 
 #endif /* PROMISE_DYNTRACER_PARAMETER_USE_H */

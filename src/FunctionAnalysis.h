@@ -17,8 +17,8 @@ class FunctionAnalysis {
           special_type_{sexptype_to_string(SPECIALSXP)},
           function_data_table_{create_data_table(
               output_dir + "/" + "functions",
-              {"function_id", "function_name", "function_type",
-               "return_type", "parameter_count", "call_count"},
+              {"function_id", "function_name", "function_type", "return_type",
+               "parameter_count", "call_count"},
               truncate, binary, compression_level)} {}
 
     void closure_entry(const closure_info_t &closure_info) {

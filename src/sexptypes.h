@@ -143,6 +143,7 @@ extern const sexptype_t ACTIVESXP;
 extern const sexptype_t UNBOUNDSXP;
 extern const sexptype_t UNASSIGNEDSXP;
 extern const sexptype_t MISSINGSXP;
+extern const sexptype_t JUMPSXP;
 
 typedef std::vector<sexptype_t> full_sexp_type;
 

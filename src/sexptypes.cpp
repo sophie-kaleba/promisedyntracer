@@ -6,9 +6,12 @@ const sexptype_t ACTIVESXP = 100001;
 const sexptype_t UNBOUNDSXP = 100002;
 const sexptype_t UNASSIGNEDSXP = 100003;
 const sexptype_t MISSINGSXP = 100004;
+const sexptype_t JUMPSXP = 100005;
 
 std::string sexptype_to_string(sexptype_t sexptype) {
     switch (sexptype) {
+        case JUMPSXP:
+            return "Unknown (Jumped)";
         case MISSINGSXP:
             return "Missing";
         case UNASSIGNEDSXP:

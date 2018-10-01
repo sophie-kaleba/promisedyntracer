@@ -246,6 +246,7 @@ builtin_info_t builtin_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
     get_stack_parent(info, tracer_state(dyntracer).full_stack);
     info.in_prom_id = get_parent_promise(dyntracer);
     info.formal_parameter_count = PRIMARITY(op);
+    info.eval = (R_FunTab[(op)->u.primsxp.offset].eval)%10;
 
     return info;
 }
@@ -281,6 +282,7 @@ builtin_info_t builtin_exit_get_info(dyntracer_t *dyntracer, const SEXP call,
     info.in_prom_id = get_parent_promise(dyntracer);
     info.return_value_type = static_cast<sexptype_t>(TYPEOF(retval));
     info.formal_parameter_count = PRIMARITY(op);
+    info.eval = (R_FunTab[(op)->u.primsxp.offset].eval)%10;
 
     return info;
 }

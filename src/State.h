@@ -4,15 +4,15 @@
 #include "sexptypes.h"
 #include "stdlibs.h"
 
-using std::string;
-using std::pair;
-using std::tuple;
-using std::map;
-using std::hash;
 using std::get;
-using std::vector;
+using std::hash;
+using std::map;
+using std::pair;
+using std::string;
+using std::tuple;
 using std::unordered_map;
 using std::unordered_set;
+using std::vector;
 
 #define RID_INVALID 0 //(rid_t) - 1
 
@@ -44,7 +44,13 @@ typedef pair<call_id_t, string> arg_key_t;
 
 rid_t get_sexp_address(SEXP e);
 
-enum class parameter_mode_t {UNASSIGNED = 0, MISSING, DEFAULT, CUSTOM, NONPROMISE };
+enum class parameter_mode_t {
+    UNASSIGNED = 0,
+    MISSING,
+    DEFAULT,
+    CUSTOM,
+    NONPROMISE
+};
 
 struct arg_t {
     arg_id_t id;
@@ -134,6 +140,7 @@ struct call_info_t {
     sexptype_t return_value_type;
     string call_expression;
     int formal_parameter_count;
+    int eval;
 };
 
 typedef vector<arg_t> arglist_t;
