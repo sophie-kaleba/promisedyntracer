@@ -13,14 +13,15 @@ class Context {
     Context(std::string trace_filepath, bool truncate, bool enable_trace,
             bool verbose, std::string output_dir, bool binary,
             int compression_level, AnalysisSwitch analysis_switch)
-        : state_(new tracer_state_t()),
+        : state_(new tracer_state_t()), analysis_switch_{analysis_switch},
           serializer_(
               new TraceSerializer(trace_filepath, truncate, enable_trace)),
           driver_(new AnalysisDriver(*state_, verbose, output_dir, truncate,
                                      binary, compression_level,
                                      analysis_switch)),
           debugger_(new DebugSerializer(verbose)), output_dir_{output_dir},
-          binary_{binary}, compression_level_{compression_level} {}
+          binary_{binary}, verbose_{verbose}, truncate_{truncate},
+          compression_level_{compression_level} {}
 
     tracer_state_t &get_state() { return *state_; }
 
@@ -40,6 +41,14 @@ class Context {
 
     bool is_binary() const { return binary_; }
 
+    bool is_verbose() const { return verbose_; }
+
+    bool get_truncate() const { return truncate_; }
+
+    const AnalysisSwitch &get_analysis_switch() const {
+        return analysis_switch_;
+    }
+
     ~Context() {
 
         delete debugger_;
@@ -54,11 +63,18 @@ class Context {
     tracer_state_t *state_;
     TraceSerializer *serializer_;
     DebugSerializer *debugger_;
+    AnalysisSwitch analysis_switch_;
     AnalysisDriver *driver_;
     std::string output_dir_;
     bool binary_;
+    bool verbose_;
+    bool truncate_;
     int compression_level_;
 };
+
+inline Context &tracer_context(dyntracer_t *dyntracer) {
+    return *static_cast<Context *>(dyntracer->state);
+}
 
 inline tracer_state_t &tracer_state(dyntracer_t *dyntracer) {
     return (static_cast<Context *>(dyntracer->state))->get_state();

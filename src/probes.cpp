@@ -5,6 +5,11 @@
 void dyntrace_entry(dyntracer_t *dyntracer, SEXP expression, SEXP environment) {
     MAIN_TIMER_RESET();
 
+    write_environment_variables(tracer_output_dir(dyntracer) + "/ENVVAR");
+
+    write_configuration(tracer_context(dyntracer),
+                        tracer_output_dir(dyntracer) + "/CONFIGURATION");
+
     debug_serializer(dyntracer).serialize_start_trace();
 
     MAIN_TIMER_END_SEGMENT(BEGIN_SETUP);

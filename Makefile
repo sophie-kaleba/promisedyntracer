@@ -12,8 +12,8 @@ all: install
 build: clean document
 	$(R_DYNTRACE) CMD build .
 
-install: build
-	$(R_DYNTRACE) CMD INSTALL --preclean --with-keep.source promisedyntracer*.tar.gz
+install: clean document
+	$(R_DYNTRACE) CMD INSTALL --with-keep.source .
 
 clean:
 	rm -rf promisedyntracer*.tar.gz

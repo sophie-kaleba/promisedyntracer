@@ -35,4 +35,7 @@ gc_info_t gc_exit_get_info(int gc_count);
 // fixes indentation.
 void adjust_stacks(dyntracer_t *dyntracer, unwind_info_t &info);
 
+void write_environment_variables(const std::string &filepath);
+
+void write_configuration(const Context &context, const std::string &filepath);
 #endif /* __RECORDER_H__ */

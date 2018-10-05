@@ -6,7 +6,6 @@ AnalysisDriver::AnalysisDriver(tracer_state_t &tracer_state, bool verbose,
                                const AnalysisSwitch analysis_switch)
     : analysis_switch_{analysis_switch}, promise_mapper_{tracer_state,
                                                          output_dir},
-      metadata_analysis_{tracer_state, output_dir},
       object_count_size_analysis_{tracer_state, output_dir},
       promise_evaluation_analysis_{tracer_state, output_dir, &promise_mapper_},
       promise_type_analysis_{tracer_state, output_dir, truncate, binary,
@@ -317,9 +316,6 @@ void AnalysisDriver::context_jump(const unwind_info_t &info) {
 
 void AnalysisDriver::end(dyntracer_t *dyntracer) {
     ANALYSIS_TIMER_RESET();
-
-    if (analyze_metadata())
-        metadata_analysis_.end(dyntracer);
 
     ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_METADATA);
 

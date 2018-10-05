@@ -66,7 +66,6 @@ class AnalysisDriver {
     PromiseEvaluationAnalysis promise_evaluation_analysis_;
     SideEffectAnalysis side_effect_analysis_;
     ObjectCountSizeAnalysis object_count_size_analysis_;
-    MetadataAnalysis metadata_analysis_;
     AnalysisSwitch analysis_switch_;
 };
 
