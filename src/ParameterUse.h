@@ -11,7 +11,7 @@ class ParameterUse {
     explicit ParameterUse()
         : expression_type_(UNASSIGNEDSXP), value_type_(UNASSIGNEDSXP),
           force_(0), lookup_(0), metaprogram_(0),
-          mode_(parameter_mode_t::UNASSIGNED) {}
+          mode_(parameter_mode_t::UNASSIGNED), escape_(false) {}
 
     std::uint8_t get_metaprogram() const { return metaprogram_; }
 
@@ -41,6 +41,10 @@ class ParameterUse {
 
     void set_parameter_mode(parameter_mode_t mode) { mode_ = mode; }
 
+    bool get_escape() const { return escape_; }
+
+    void set_escape() { escape_ = true; }
+
   private:
     sexptype_t expression_type_;
     sexptype_t value_type_;
@@ -48,6 +52,7 @@ class ParameterUse {
     std::uint8_t lookup_;
     std::uint8_t metaprogram_;
     parameter_mode_t mode_;
+    bool escape_;
 };
 
 #endif /* PROMISE_DYNTRACER_PARAMETER_USE_H */

@@ -16,22 +16,35 @@ class CallState {
         : call_id_{call_id}, fn_id_{fn_id}, function_type_(function_type),
           function_name_(function_name),
           formal_parameter_count_{formal_parameter_count},
-          parameter_uses_{std::max(formal_parameter_count, 0)}, order_{order},
-          return_value_type_{UNASSIGNEDSXP} {
+          parameter_uses_{
+              static_cast<std::size_t>(std::max(formal_parameter_count, 0))},
+          order_{order}, intrinsic_order_{order},
+          return_value_type_{UNASSIGNEDSXP}, leaf_(true), active_(true) {
 
         /* INFO - Reserve size to 15 bytes to prevent repeated string
          * allocations when forced arguments are added. This increases
          * the memory requirement but should speed up the program. */
         order_.reserve(15);
+        intrinsic_order_.reserve(15);
     }
 
-    const call_id_t get_call_id() const { return call_id_; }
+    call_id_t get_call_id() const { return call_id_; }
 
     const fn_id_t &get_function_id() const { return fn_id_; }
 
     const std::string &get_function_type() const { return function_type_; }
 
     const std::string &get_function_name() const { return function_name_; }
+
+    void set_leaf(bool leaf) { leaf_ = leaf; }
+
+    bool is_leaf() const { return leaf_; }
+
+    void make_active() { active_ = true; }
+
+    bool is_active() const { return active_; }
+
+    void make_inactive() { active_ = false; }
 
     void set_return_value_type(sexptype_t return_value_type) {
         return_value_type_ = return_value_type;
@@ -65,8 +78,14 @@ class CallState {
            do we add it to the order. This ensures that there is a single
            order entry for all elements of ...
         */
-        if (!previous_forced_state) {
-            order_.append("|").append(std::to_string(position));
+
+        if (!is_active()) {
+            parameter_uses_[position].set_escape();
+        } else if (!previous_forced_state) {
+            order_.append(" | ").append(std::to_string(position));
+            if (is_leaf()) {
+                intrinsic_order_.append(" | ").append(std::to_string(position));
+            }
         }
     }
 
@@ -74,9 +93,17 @@ class CallState {
         set_value_type(TYPEOF(dyntrace_get_promise_value(promise)), position);
     }
 
-    void lookup(std::size_t position) { parameter_uses_[position].lookup(); }
+    void lookup(std::size_t position) {
+        if (!is_active()) {
+            parameter_uses_[position].set_escape();
+        }
+        parameter_uses_[position].lookup();
+    }
 
     void metaprogram(std::size_t position) {
+        if (!is_active()) {
+            parameter_uses_[position].set_escape();
+        }
         parameter_uses_[position].metaprogram();
     }
 
@@ -90,6 +117,8 @@ class CallState {
 
     const std::string &get_order() const { return order_; }
 
+    const std::string &get_intrinsic_order() const { return intrinsic_order_; }
+
   private:
     fn_id_t fn_id_;
     call_id_t call_id_;
@@ -99,6 +128,9 @@ class CallState {
     sexptype_t return_value_type_;
     std::vector<ParameterUse> parameter_uses_;
     std::string order_;
+    std::string intrinsic_order_;
+    bool leaf_;
+    bool active_;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const CallState &call_state) {

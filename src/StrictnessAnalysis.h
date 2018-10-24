@@ -63,7 +63,8 @@ class StrictnessAnalysis {
     DataTableStream *argument_data_table_;
     DataTableStream *call_data_table_;
     DataTableStream *call_graph_data_table_;
-    std::vector<CallState> call_stack_;
+    std::vector<CallState *> call_stack_;
+    std::unordered_map<call_id_t, CallState *> call_map_;
     std::unordered_set<fn_id_t> handled_functions_;
 };
 
