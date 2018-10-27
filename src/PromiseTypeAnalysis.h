@@ -48,8 +48,10 @@ class PromiseTypeAnalysis {
     void serialize_unevaluated_promises();
     void add_unevaluated_promise(const std::string promise_type, SEXP promise);
 
-    std::string output_dir_;
     const tracer_state_t &tracer_state_;
+    std::string output_dir_;
+    DataTableStream *evaluated_data_table_;
+    DataTableStream *unevaluated_data_table_;
     std::set<prom_id_t> default_argument_promises_;
     std::set<prom_id_t> custom_argument_promises_;
     std::set<prom_id_t> non_argument_promises_;
@@ -59,8 +61,6 @@ class PromiseTypeAnalysis {
     std::unordered_map<unevaluated_promise_key_t, int,
                        UnevaluatedPromiseKeyHasher>
         unevaluated_promises_;
-    DataTableStream *evaluated_data_table_;
-    DataTableStream *unevaluated_data_table_;
 };
 
 #endif /* PROMISEDYNTRACER_TYPE_ANALYSIS_H */

@@ -40,9 +40,10 @@ class PromiseMapper {
 
   private:
     void insert_if_non_local(const prom_id_t prom_id, const SEXP promise);
-    promises_t promises_;
-    std::string output_dir_;
+
     tracer_state_t &tracer_state_;
+    std::string output_dir_;
+    promises_t promises_;
     static const size_t PROMISE_MAPPING_BUCKET_COUNT;
 };
 

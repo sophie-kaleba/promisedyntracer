@@ -38,10 +38,11 @@ class DebugSerializer {
     bool needsState();
 
   private:
+    bool verbose;
+    int indentation;
     tracer_state_t *state;
     bool has_state;
-    int indentation;
-    bool verbose;
+
     std::string prefix();
     void indent();
     std::string unindent();

@@ -34,11 +34,12 @@ class PromiseEvaluationAnalysis {
     void update_evaluation_distance(std::string key);
     EvaluationContext get_current_evaluation_context();
     void update_evaluation_context_count(EvaluationContext evalution_context);
-    std::unordered_map<std::string, int> evaluation_distances_;
-    std::vector<int> evaluation_context_counts_;
-    std::string output_dir_;
+
     tracer_state_t &tracer_state_;
+    std::string output_dir_;
     PromiseMapper *promise_mapper_;
+    std::vector<int> evaluation_context_counts_;
+    std::unordered_map<std::string, int> evaluation_distances_;
 };
 
 std::string

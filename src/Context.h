@@ -61,10 +61,10 @@ class Context {
 
   private:
     tracer_state_t *state_;
-    TraceSerializer *serializer_;
-    DebugSerializer *debugger_;
     AnalysisSwitch analysis_switch_;
+    TraceSerializer *serializer_;
     AnalysisDriver *driver_;
+    DebugSerializer *debugger_;
     std::string output_dir_;
     bool binary_;
     bool verbose_;

@@ -15,8 +15,8 @@ class MetadataAnalysis {
     void serialize_row(std::ofstream &fout,
                        std::string key,
                        std::string value);
-    std::string output_dir_;
     const tracer_state_t &tracer_state_;
+    std::string output_dir_;
 };
 
 #endif /* __METADATA_ANALYSIS_H__ */

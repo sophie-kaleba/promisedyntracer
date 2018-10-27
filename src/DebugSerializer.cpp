@@ -6,7 +6,7 @@
 using namespace std;
 
 DebugSerializer::DebugSerializer(bool verbose)
-    : indentation(0), verbose(verbose), state(nullptr), has_state(false) {}
+    : verbose(verbose), indentation(0), state(nullptr), has_state(false) {}
 
 string DebugSerializer::log_line(const stack_event_t &event) {
     stringstream line;

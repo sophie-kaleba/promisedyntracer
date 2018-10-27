@@ -71,7 +71,7 @@ class BufferStream : public Stream {
         index_ = 0;
     }
 
-    ~BufferStream() {
+    virtual ~BufferStream() {
         flush();
         std::free(buffer_);
     }

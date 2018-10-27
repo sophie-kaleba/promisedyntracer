@@ -60,13 +60,13 @@ class AnalysisDriver {
     inline bool map_promises() const;
 
   private:
-    PromiseMapper promise_mapper_;
-    StrictnessAnalysis strictness_analysis_;
-    PromiseTypeAnalysis promise_type_analysis_;
-    PromiseEvaluationAnalysis promise_evaluation_analysis_;
-    SideEffectAnalysis side_effect_analysis_;
-    ObjectCountSizeAnalysis object_count_size_analysis_;
     AnalysisSwitch analysis_switch_;
+    PromiseMapper promise_mapper_;
+    ObjectCountSizeAnalysis object_count_size_analysis_;
+    PromiseEvaluationAnalysis promise_evaluation_analysis_;
+    PromiseTypeAnalysis promise_type_analysis_;
+    StrictnessAnalysis strictness_analysis_;
+    SideEffectAnalysis side_effect_analysis_;
 };
 
 #endif /* PROMISEDYNTRACER_ANALYSIS_DRIVER_H */

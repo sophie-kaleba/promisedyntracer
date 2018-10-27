@@ -120,15 +120,15 @@ class CallState {
     const std::string &get_intrinsic_order() const { return intrinsic_order_; }
 
   private:
-    fn_id_t fn_id_;
     call_id_t call_id_;
+    fn_id_t fn_id_;
     std::string function_type_;
     std::string function_name_;
     int formal_parameter_count_;
-    sexptype_t return_value_type_;
     std::vector<ParameterUse> parameter_uses_;
     std::string order_;
     std::string intrinsic_order_;
+    sexptype_t return_value_type_;
     bool leaf_;
     bool active_;
 };

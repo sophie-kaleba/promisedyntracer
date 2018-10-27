@@ -49,17 +49,19 @@ class SideEffectAnalysis {
     timestamp_t get_variable_timestamp_(var_id_t variable_id);
     std::unordered_map<prom_id_t, timestamp_t> promise_timestamps_;
     std::unordered_map<var_id_t, timestamp_t> variable_timestamps_;
+
+
+    tracer_state_t &tracer_state_;
+    std::string output_dir_;
     std::vector<long long int> defines_;
     std::vector<long long int> assigns_;
     std::vector<long long int> removals_;
     std::vector<long long int> lookups_;
-    std::string output_dir_;
     timestamp_t timestamp_;
-    tracer_state_t &tracer_state_;
     const timestamp_t undefined_timestamp;
-    std::unordered_set<prom_id_t> side_effect_observers_;
     DataTableStream *caused_side_effects_data_table_;
     DataTableStream *observed_side_effects_data_table_;
+    std::unordered_set<prom_id_t> side_effect_observers_;
 };
 
 #endif /* __SIDE_EFFECT_ANALYSIS_H__ */

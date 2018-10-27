@@ -97,28 +97,28 @@ int parse_integer(const char *buffer, const char **end, std::size_t bytes = 4) {
     std::memcpy(&value, buffer, bytes);
     *end = buffer + bytes;
     return value;
-};
+}
 
 double parse_real(const char *buffer, const char **end) {
     double value = 0.0;
     std::memcpy(&value, buffer, sizeof(double));
     *end = buffer + sizeof(double);
     return value;
-};
+}
 
 int parse_logical(const char *buffer, const char **end) {
     int value = 0;
     std::memcpy(&value, buffer, sizeof(bool));
     *end = buffer + sizeof(bool);
     return value;
-};
+}
 
 SEXPTYPE parse_sexptype(const char *buffer, const char **end) {
     std::uint32_t value = 0;
     std::memcpy(&value, buffer, sizeof(std::uint32_t));
     *end = buffer + sizeof(std::uint32_t);
     return value;
-};
+}
 
 SEXP parse_character(const char *buffer, const char **end, char **dest,
                      std::size_t *dest_size) {
@@ -136,7 +136,7 @@ SEXP parse_character(const char *buffer, const char **end, char **dest,
     (*dest)[size] = '\0';
 
     return mkChar(*dest);
-};
+}
 
 struct data_frame_t {
     SEXP object;

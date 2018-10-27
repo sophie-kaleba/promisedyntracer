@@ -45,9 +45,9 @@ class FunctionState {
 
   private:
     std::size_t formal_parameter_count_;
-    std::size_t call_count_;
     std::vector<ParameterUse> default_parameter_uses_;
     std::vector<ParameterUse> custom_parameter_uses_;
+    std::size_t call_count_;
     std::vector<std::string> orders_;
     std::vector<std::size_t> order_counts_;
 };

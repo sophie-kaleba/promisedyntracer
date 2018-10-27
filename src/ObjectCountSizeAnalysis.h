@@ -17,10 +17,11 @@ class ObjectCountSizeAnalysis {
 
   private:
     void serialize();
+
+    const tracer_state_t &tracer_state_;
+    std::string output_dir_;
     std::vector<int> object_counts_;
     std::vector<unsigned long long int> object_sizes_;
-    std::string output_dir_;
-    const tracer_state_t &tracer_state_;
 };
 
 #endif /* __STRICTNESS_ANALYSIS_H__ */

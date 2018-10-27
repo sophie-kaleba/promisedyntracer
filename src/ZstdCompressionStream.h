@@ -89,7 +89,7 @@ class ZstdCompressionStream : public Stream {
         flush();
         size_t unflushed;
         ZSTD_outBuffer output = {output_buffer_, output_buffer_size_, 0};
-        while (unflushed = ZSTD_endStream(compression_stream_, &output)) {
+        while ((unflushed = ZSTD_endStream(compression_stream_, &output))) {
             /* close frame */
             if (ZSTD_isError(unflushed)) {
                 fprintf(stderr, "ZSTD_endStream() error : %s \n",
@@ -112,7 +112,7 @@ class ZstdCompressionStream : public Stream {
         output_buffer_size_ = 0;
     }
 
-    ~ZstdCompressionStream() { finalize(); }
+    virtual ~ZstdCompressionStream() { finalize(); }
 
   private:
     int compression_level_;

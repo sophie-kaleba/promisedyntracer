@@ -44,10 +44,10 @@ class PromiseSlotMutationAnalysis {
     void serialize();
     void serialize_promise_slot_accesses();
 
-    std::unordered_map<std::string, int> promise_slot_accesses_;
-    std::string output_dir_;
     const tracer_state_t &tracer_state_;
+    std::string output_dir_;
     PromiseMapper *promise_mapper_;
+    std::unordered_map<std::string, int> promise_slot_accesses_;
 };
 
 #endif /* __PROMISE_SLOT_MUTATION_ANALYSIS_H__ */

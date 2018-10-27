@@ -147,8 +147,8 @@ class DataTableStream : public Stream {
     std::vector<std::string> column_names_;
     std::size_t column_count_;
 
-    std::size_t current_column_index_;
     std::size_t current_row_index_;
+    std::size_t current_column_index_;
 
     FileStream *file_stream_;
     BufferStream *buffer_stream_;

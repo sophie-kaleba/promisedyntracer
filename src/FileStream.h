@@ -66,7 +66,7 @@ class FileStream : public Stream {
 
     void flush() {}
 
-    ~FileStream() { close_file(descriptor_, get_filepath()); }
+    virtual ~FileStream() { close_file(descriptor_, get_filepath()); }
 
   private:
     std::string filepath_;
