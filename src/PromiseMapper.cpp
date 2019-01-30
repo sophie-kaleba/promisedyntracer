@@ -13,7 +13,8 @@ void PromiseMapper::promise_created(const prom_basic_info_t &prom_basic_info,
     auto result = promises_.insert(
         {prom_basic_info.prom_id,
          PromiseState(prom_basic_info.prom_id,
-                      tracer_state_.to_environment_id(PRENV(promise)), true)});
+                      tracer_state_.lookup_environment(PRENV(promise)).get_id(),
+                      true)});
     // if result.second is false, this means that a promise with this id
     // already exists in map. This means that the promise with the same id
     // has either not been removed in the gc_promise_unmarked stage or the
@@ -31,11 +32,13 @@ void PromiseMapper::closure_entry(const closure_info_t &closure_info) {
         prom_id_t promise_id = argument.promise_id;
         int formal_parameter_position = argument.formal_parameter_position;
         if (argument.promise_id < 0) {
-            promises_.insert({argument.promise_id,
-                              PromiseState(argument.promise_id,
-                                           tracer_state_.to_environment_id(
-                                               argument.promise_environment),
-                                           false)});
+            promises_.insert(
+                {argument.promise_id,
+                 PromiseState(
+                     argument.promise_id,
+                     tracer_state_.lookup_environment(argument.promise_environment)
+                         .get_id(),
+                     false)});
         }
         PromiseState &promise_state = promises_.at(promise_id);
         // if this assert fails, it means that the promise with this id
@@ -101,7 +104,9 @@ PromiseState &PromiseMapper::find(const prom_id_t prom_id) {
     // If this happens, possibly, the mapper methods are not the first to
     // be called in the analysis driver methods. Hence, they are not able
     // to update the mapping.
-    assert(iter != promises_.end());
+    if(iter == promises_.end()) {
+        dyntrace_log_error("Unable to find promise with id %d\n", prom_id);
+    }
     return iter->second;
 }
 
@@ -113,7 +118,7 @@ void PromiseMapper::insert_if_non_local(const prom_id_t prom_id,
     // seen its creation which means it is non local.
     promises_.insert(
         {prom_id,
-         PromiseState(prom_id, tracer_state_.to_environment_id(PRENV(promise)),
+         PromiseState(prom_id, tracer_state_.lookup_environment(PRENV(promise)).get_id(),
                       false)});
 }
 

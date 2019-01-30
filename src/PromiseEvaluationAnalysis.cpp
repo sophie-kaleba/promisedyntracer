@@ -37,9 +37,9 @@ void PromiseEvaluationAnalysis::compute_evaluation_distance(
         stack_event_t exec_context = tracer_state_.full_stack[i];
         if (exec_context.type == stack_type::CALL) {
             SEXP enclosing_address =
-                reinterpret_cast<SEXP>(exec_context.enclosing_environment);
+                reinterpret_cast<SEXP>(exec_context.environment);
             if (promise_state.env_id ==
-                tracer_state_.to_environment_id(enclosing_address)) {
+                tracer_state_.lookup_environment(enclosing_address).get_id()) {
                 std::string key = argument_type + " , " +
                                   std::to_string(closure_count) + " , " +
                                   std::to_string(special_count) + " , " +

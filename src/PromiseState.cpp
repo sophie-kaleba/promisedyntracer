@@ -1,22 +1,5 @@
 #include "PromiseState.h"
 
-PromiseState::PromiseState(prom_id_t id, env_id_t env_id, bool local)
-    : local(local), argument(false), id(id), env_id(env_id), fn_id(""),
-      call_id(0), formal_parameter_position(-1),
-      parameter_mode(parameter_mode_t::UNASSIGNED), evaluated(false),
-      mutations(std::vector<int>(to_underlying_type(SlotMutation::COUNT))) {}
-
-void PromiseState::make_function_argument(fn_id_t fn_id, call_id_t call_id,
-                                          int formal_parameter_position,
-                                          parameter_mode_t parameter_mode) {
-    this->argument = true;
-    this->local = true;
-    this->fn_id = fn_id;
-    this->call_id = call_id;
-    this->formal_parameter_position = formal_parameter_position;
-    this->parameter_mode = parameter_mode;
-}
-
 std::string to_string(PromiseState::SlotMutation slot_mutation) {
     switch (slot_mutation) {
         case PromiseState::SlotMutation::ENVIRONMENT_LOOKUP:

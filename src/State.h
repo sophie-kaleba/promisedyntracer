@@ -3,6 +3,8 @@
 
 #include "sexptypes.h"
 #include "stdlibs.h"
+#include "Environment.h"
+#include "Variable.h"
 
 using std::get;
 using std::hash;
@@ -16,23 +18,15 @@ using std::vector;
 
 #define RID_INVALID 0 //(rid_t) - 1
 
-const int RDT_SQL_LOOKUP_PROMISE = 0x0;
-const int RDT_SQL_LOOKUP_PROMISE_EXPRESSION = 0x1;
-const int RDT_SQL_FORCE_PROMISE = 0xF;
-
 // Typical human-readable representation
 typedef uintptr_t rid_t; // hexadecimal
 typedef intptr_t rsid_t; // hexadecimal
 
-typedef rid_t prom_addr_t; // hexadecimal
-typedef rid_t env_addr_t;  // hexadecimal
 // typedef rsid_t prom_id_t;  // hexadecimal
 typedef rsid_t prom_id_t;
-typedef rid_t
-    call_id_t; // integer TODO this is pedantic, but shouldn't this be int?
+typedef rid_t call_id_t; // integer TODO this is pedantic, but shouldn't this be int?
 
 typedef string fn_id_t;  // integer
-typedef rid_t fn_addr_t; // hexadecimal
 typedef string fn_key_t; // pun
 typedef int env_id_t;
 typedef int var_id_t;
@@ -42,7 +36,6 @@ typedef int event_t;
 
 typedef pair<call_id_t, string> arg_key_t;
 
-rid_t get_sexp_address(SEXP e);
 
 enum class parameter_mode_t {
     UNASSIGNED = 0,
@@ -70,37 +63,25 @@ enum class function_type {
     TRUE_BUILTIN = 3
 };
 
-enum class recursion_type {
-    UNKNOWN = 0,
-    RECURSIVE = 1,
-    NOT_RECURSIVE = 2,
-    MUTUALLY_RECURSIVE = 3
-};
-
-enum class lifestyle_type {
-    VIRGIN = 0,
-    LOCAL = 1,
-    BRANCH_LOCAL = 2,
-    ESCAPED = 3,
-    IMMEDIATE_LOCAL = 4,
-    IMMEDIATE_BRANCH_LOCAL = 5
-};
 
 enum class stack_type { PROMISE = 1, CALL = 2, CONTEXT = 3, NONE = 0 };
 
 struct stack_event_t {
+    stack_event_t() : execution_time(0) {}
+
     stack_type type;
     union {
         prom_id_t promise_id;
         call_id_t call_id;
         rid_t context_id;
     };
-    env_addr_t enclosing_environment;
+    SEXP environment;
     // Only initialized for type == CALL
     struct {
         fn_id_t function_id;
         function_type type;
     } function_info;
+    std::uint64_t execution_time;
 };
 
 typedef map<std::string, std::string> metadata_t;
@@ -109,16 +90,13 @@ struct call_stack_elem_t {
     call_id_t call_id;
     fn_id_t function_id;
     function_type type;
-    env_addr_t enclosing_environment;
+    SEXP environment;
 };
 
 struct context_t {
     rid_t context;
-    env_addr_t environment;
+    SEXP environment;
 };
-
-// typedef pair<prom_id_t, call_id_t> prom_stack_elem_t;
-typedef prom_addr_t prom_key_t;
 
 struct call_info_t {
     function_type fn_type;
@@ -131,7 +109,7 @@ struct call_info_t {
 
     string name; // fully qualified function name, if available
     call_id_t call_id;
-    env_addr_t call_ptr;
+    SEXP call_ptr;
     call_id_t
         parent_call_id; // the id of the parent call that executed this call
     prom_id_t in_prom_id;
@@ -195,7 +173,6 @@ string get_function_definition(dyntracer_t *dyntracer, const SEXP function);
 void remove_function_definition(dyntracer_t *dyntracer, const SEXP function);
 fn_id_t get_function_id(dyntracer_t *dyntracer, const string &def,
                         bool builtin = false);
-fn_addr_t get_function_addr(SEXP func);
 
 // Returns false if function already existed, true if it was registered now
 bool register_inserted_function(dyntracer_t *dyntracer, fn_id_t id);
@@ -276,7 +253,6 @@ size_t get_no_of_ancestor_promises_on_stack(dyntracer_t *dyntracer);
 size_t get_no_of_ancestors_on_stack();
 size_t get_no_of_ancestor_calls_on_stack();
 
-string recursive_type_to_string(recursion_type);
 
 struct tracer_state_t {
     vector<stack_event_t> full_stack; // Should be reset on each tracer pass
@@ -286,10 +262,8 @@ struct tracer_state_t {
         promise_origin; // Should be reset on each tracer pass
     unordered_set<prom_id_t> fresh_promises;
     // Map from promise address to promise ID;
-    unordered_map<prom_addr_t, prom_id_t> promise_ids;
+    unordered_map<SEXP, prom_id_t> promise_ids;
     unordered_map<prom_id_t, int> promise_lookup_gc_trigger_counter;
-    env_id_t environment_id_counter;
-    var_id_t variable_id_counter;
     call_id_t call_id_counter; // IDs assigned should be globally unique but we
                                // can reset it after each pass if overwrite is
                                // true)
@@ -321,21 +295,114 @@ struct tracer_state_t {
                                            // (unless overwrite is true)
     int gc_trigger_counter; // Incremented each time there is a gc_entry
 
-    std::unordered_map<
-        SEXP, std::pair<env_id_t, std::unordered_map<std::string, var_id_t>>>
-        environments;
-
     void finish_pass();
-    env_id_t to_environment_id(SEXP rho);
-    var_id_t to_variable_id(SEXP symbol, SEXP rho, bool &exists);
-    var_id_t to_variable_id(const std::string &symbol, SEXP rho, bool &exists);
+
+    Environment& create_environment(const SEXP rho) {
+        auto iter = environment_mapping_.find(rho);
+        if(iter != environment_mapping_.end()) {
+            return iter -> second;
+        }
+        return environment_mapping_.insert({rho, Environment(rho,
+                                                             create_next_environment_id_())}).first -> second;
+    }
+
+    void remove_environment(const SEXP rho) {
+        environment_mapping_.erase(rho);
+    }
+
+    Environment& lookup_environment(const SEXP rho, bool create = true) {
+        auto iter = environment_mapping_.find(rho);
+        if(iter == environment_mapping_.end()) {
+            return create_environment(rho);
+        }
+        return iter->second;
+    }
+
+    Variable& lookup_variable(const SEXP rho,
+                              const SEXP symbol,
+                              bool create_environment = true,
+                              bool create_variable = true) {
+        return lookup_variable(rho, symbol_to_string(symbol),
+                               create_environment,
+                               create_variable);
+    }
+
+    Variable& lookup_variable(const SEXP rho,
+                              const std::string& symbol,
+                              bool create_environment = true,
+                              bool create_variable = true) {
+        Environment& env = lookup_environment(rho, create_environment);
+        if(create_variable && !env.exists(symbol)) {
+            return env.define(symbol,
+                              create_next_variable_id_(),
+                              get_current_timestamp());
+        }
+        return env.lookup(symbol);
+    }
+
+    void define_variable(const SEXP rho, const SEXP symbol) {
+        lookup_environment(rho).define(symbol_to_string(symbol),
+                                       create_next_variable_id_(),
+                                       get_current_timestamp());
+    }
+
+    void update_variable(const SEXP rho, const SEXP symbol) {
+        lookup_variable(rho, symbol).set_modification_timestamp(get_current_timestamp());
+    }
+
+    void remove_variable(const SEXP rho, const SEXP symbol) {
+        lookup_environment(rho).remove(symbol_to_string(symbol));
+    }
+
+    // env_id_t to_environment_id(SEXP rho);
+    // var_id_t to_variable_id(SEXP symbol, SEXP rho, bool &exists);
+    // var_id_t to_variable_id(const std::string &symbol, SEXP rho, bool &exists);
     prom_id_t enclosing_promise_id();
-    void remove_environment(const SEXP rho);
+
     void increment_gc_trigger_counter();
 
     int get_gc_trigger_counter() const;
 
     tracer_state_t();
+
+    void resume_execution_timer() {
+       execution_resume_time_ = std::chrono::high_resolution_clock::now();
+    }
+
+    void pause_execution_timer() {
+       auto execution_pause_time = std::chrono::high_resolution_clock::now();
+       std::uint64_t execution_time =
+           std::chrono::duration_cast<std::chrono::nanoseconds>(execution_pause_time -
+                                                                execution_resume_time_).count();
+       for (auto &element : full_stack) {
+           element.execution_time += execution_time;
+       }
+    }
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> execution_resume_time_;
+
+    std::unordered_map<SEXP, Environment> environment_mapping_;
+
+    timestamp_t get_current_timestamp() const {
+        return timestamp_;
+    }
+
+    timestamp_t create_next_timestamp() {
+        return timestamp_++;
+    }
+
+private:
+    env_id_t create_next_environment_id_() {
+        return environment_id_++;
+    }
+
+    var_id_t create_next_variable_id_() {
+        return variable_id_++;
+    }
+
+    env_id_t environment_id_;
+    var_id_t variable_id_;
+    timestamp_t timestamp_;
 };
 
 inline std::string parameter_mode_to_string(parameter_mode_t parameter_mode) {

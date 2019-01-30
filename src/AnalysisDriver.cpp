@@ -11,9 +11,7 @@ AnalysisDriver::AnalysisDriver(tracer_state_t &tracer_state, bool verbose,
       promise_type_analysis_{tracer_state, output_dir, truncate, binary,
                              compression_level},
       strictness_analysis_{tracer_state, &promise_mapper_, output_dir,
-                           truncate,     binary,           compression_level},
-      side_effect_analysis_{tracer_state, output_dir, truncate, binary,
-                            compression_level} {
+                           truncate,     binary,           compression_level} {
     if (verbose) {
         std::cout << analysis_switch;
     }
@@ -35,8 +33,7 @@ void AnalysisDriver::promise_created(const prom_basic_info_t &prom_basic_info,
     if (analyze_promise_types())
         promise_type_analysis_.promise_created(prom_basic_info, promise);
 
-    if (analyze_side_effects())
-        side_effect_analysis_.promise_created(prom_basic_info, promise);
+    strictness_analysis_.promise_created(prom_basic_info, promise);
 
     ANALYSIS_TIMER_END_SEGMENT(CREATE_PROMISE_ANALYSIS_PROMISE_TYPE);
 }
@@ -147,8 +144,8 @@ void AnalysisDriver::gc_promise_unmarked(const prom_id_t prom_id,
                                          const SEXP promise) {
     ANALYSIS_TIMER_RESET();
 
-    // if (analyze_strictness())
-    //     strictness_analysis_.gc_promise_unmarked(prom_id, promise);
+    if (analyze_strictness())
+        strictness_analysis_.gc_promise_unmarked(prom_id, promise);
 
     ANALYSIS_TIMER_END_SEGMENT(GC_PROMISE_UNMARKED_ANALYSIS_STRICTNESS);
 
@@ -270,8 +267,7 @@ void AnalysisDriver::environment_define_var(const SEXP symbol, const SEXP value,
                                             const SEXP rho) {
     ANALYSIS_TIMER_RESET();
 
-    if (analyze_side_effects())
-        side_effect_analysis_.environment_define_var(symbol, value, rho);
+    strictness_analysis_.environment_define_var(symbol, value, rho);
 
     ANALYSIS_TIMER_END_SEGMENT(ENVIRONMENT_ACTION_ANALYSIS_SIDE_EFFECT);
 }
@@ -280,8 +276,7 @@ void AnalysisDriver::environment_assign_var(const SEXP symbol, const SEXP value,
                                             const SEXP rho) {
     ANALYSIS_TIMER_RESET();
 
-    if (analyze_side_effects())
-        side_effect_analysis_.environment_assign_var(symbol, value, rho);
+    strictness_analysis_.environment_assign_var(symbol, value, rho);
 
     ANALYSIS_TIMER_END_SEGMENT(ENVIRONMENT_ACTION_ANALYSIS_SIDE_EFFECT);
 }
@@ -290,8 +285,7 @@ void AnalysisDriver::environment_lookup_var(const SEXP symbol, const SEXP value,
                                             const SEXP rho) {
     ANALYSIS_TIMER_RESET();
 
-    if (analyze_side_effects())
-        side_effect_analysis_.environment_lookup_var(symbol, value, rho);
+    strictness_analysis_.environment_lookup_var(symbol, value, rho);
 
     ANALYSIS_TIMER_END_SEGMENT(ENVIRONMENT_ACTION_ANALYSIS_SIDE_EFFECT);
 }
@@ -299,8 +293,7 @@ void AnalysisDriver::environment_lookup_var(const SEXP symbol, const SEXP value,
 void AnalysisDriver::environment_remove_var(const SEXP symbol, const SEXP rho) {
     ANALYSIS_TIMER_RESET();
 
-    if (analyze_side_effects())
-        side_effect_analysis_.environment_remove_var(symbol, rho);
+    strictness_analysis_.environment_remove_var(symbol, rho);
 
     ANALYSIS_TIMER_END_SEGMENT(ENVIRONMENT_ACTION_ANALYSIS_SIDE_EFFECT);
 }
@@ -338,11 +331,6 @@ void AnalysisDriver::end(dyntracer_t *dyntracer) {
         strictness_analysis_.end(dyntracer);
 
     ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_STRICTNESS);
-
-    if (analyze_side_effects())
-        side_effect_analysis_.end(dyntracer);
-
-    ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_SIDE_EFFECT);
 
     // WARNING: This has to be at the end. This removes promises from
     // the mapping. These promises are used by the analysis above.

@@ -11,8 +11,6 @@ tracer_state_t::tracer_state_t() {
     prom_neg_id_counter = 0;
     argument_id_sequence = 0;
     gc_trigger_counter = 0;
-    environment_id_counter = 0;
-    variable_id_counter = 0;
 }
 
 void tracer_state_t::increment_gc_trigger_counter() { gc_trigger_counter++; }
@@ -21,44 +19,27 @@ int tracer_state_t::get_gc_trigger_counter() const {
     return gc_trigger_counter;
 }
 
-void tracer_state_t::remove_environment(const SEXP rho) {
-    environments.erase(rho);
-}
+// var_id_t tracer_state_t::to_variable_id(SEXP symbol, SEXP rho, bool &exists) {
+//     return to_variable_id(CHAR(PRINTNAME(symbol)), rho, exists);
+// }
 
-env_id_t tracer_state_t::to_environment_id(SEXP rho) {
-    const auto &iter = environments.find(rho);
-    if (iter == environments.end()) {
-        env_id_t environment_id = environment_id_counter++;
-        environments[rho] =
-            std::pair<env_id_t, unordered_map<string, var_id_t>>(environment_id,
-                                                                 {});
-        return environment_id;
-    } else {
-        return (iter->second).first;
-    }
-}
-
-var_id_t tracer_state_t::to_variable_id(SEXP symbol, SEXP rho, bool &exists) {
-    return to_variable_id(CHAR(PRINTNAME(symbol)), rho, exists);
-}
-
-var_id_t tracer_state_t::to_variable_id(const std::string &symbol, SEXP rho,
-                                        bool &exists) {
-    to_environment_id(rho);
-    var_id_t variable_id;
-    const auto &iter{environments.find(rho)};
-    auto &variables = (iter->second).second;
-    const auto &iter2 = variables.find(symbol);
-    if (iter2 == variables.end()) {
-        exists = false;
-        variable_id = variable_id_counter++;
-        variables[symbol] = variable_id;
-    } else {
-        exists = true;
-        variable_id = iter2->second;
-    }
-    return variable_id;
-}
+// var_id_t tracer_state_t::to_variable_id(const std::string &symbol, SEXP rho,
+//                                         bool &exists) {
+//     to_environment_id(rho);
+//     var_id_t variable_id;
+//     const auto &iter{environments.find(rho)};
+//     auto &variables = (iter->second).second;
+//     const auto &iter2 = variables.find(symbol);
+//     if (iter2 == variables.end()) {
+//         exists = false;
+//         variable_id = variable_id_counter++;
+//         variables[symbol] = variable_id;
+//     } else {
+//         exists = true;
+//         variable_id = iter2->second;
+//     }
+//     return variable_id;
+// }
 
 // This function returns -1 if we are not in an enclosing promise scope.
 // -1 is also used for foreign promises, so the client should appropriately
@@ -78,7 +59,7 @@ prom_id_t tracer_state_t::enclosing_promise_id() {
 static stack_event_t make_dummy_stack_event() {
     stack_event_t dummy_event;
     dummy_event.type = stack_type::NONE;
-    dummy_event.enclosing_environment = 0;
+    dummy_event.environment = 0;
     dummy_event.context_id = 0;
     return dummy_event;
 }

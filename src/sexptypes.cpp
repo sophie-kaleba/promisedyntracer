@@ -39,11 +39,15 @@ std::string sexptype_to_string(sexptype_t sexptype) {
     }
 }
 
-std::string value_type_to_string(SEXP value) {
+sexptype_t type_of_sexp(SEXP value) {
     if (value == R_UnboundValue) {
-        return sexptype_to_string(UNBOUNDSXP);
+        return UNBOUNDSXP;
     }
-    return sexptype_to_string(static_cast<sexptype_t>(TYPEOF(value)));
+    return static_cast<sexptype_t>(TYPEOF(value));
+}
+
+std::string value_type_to_string(SEXP value) {
+    return sexptype_to_string(type_of_sexp(value));
 }
 
 void get_full_type_inner(SEXP sexp, SEXP rho, full_sexp_type &result,

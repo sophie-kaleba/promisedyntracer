@@ -6,7 +6,6 @@
 #include "ObjectCountSizeAnalysis.h"
 #include "PromiseEvaluationAnalysis.h"
 #include "PromiseTypeAnalysis.h"
-#include "SideEffectAnalysis.h"
 #include "State.h"
 #include "StrictnessAnalysis.h"
 
@@ -66,7 +65,6 @@ class AnalysisDriver {
     PromiseEvaluationAnalysis promise_evaluation_analysis_;
     PromiseTypeAnalysis promise_type_analysis_;
     StrictnessAnalysis strictness_analysis_;
-    SideEffectAnalysis side_effect_analysis_;
 };
 
 #endif /* PROMISEDYNTRACER_ANALYSIS_DRIVER_H */

@@ -150,7 +150,12 @@ typedef std::vector<sexptype_t> full_sexp_type;
 void get_full_type(SEXP promise, full_sexp_type &result);
 std::string full_sexp_type_to_string(full_sexp_type);
 std::string full_sexp_type_to_number_string(full_sexp_type);
+sexptype_t type_of_sexp(SEXP value);
 std::string sexptype_to_string(sexptype_t);
 std::string infer_sexptype(SEXP promise);
 std::string value_type_to_string(SEXP value);
+
+inline std::string symbol_to_string(const SEXP symbol) {
+    return CHAR(PRINTNAME(symbol));
+}
 #endif /* __SEXPTYPES_H__ */

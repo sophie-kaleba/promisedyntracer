@@ -10,6 +10,7 @@ size_t SQLITE3_EXPANDED_SQL_BUFFER_SIZE = 2000;
  */
 const char RECORD_SEPARATOR = 0x1e;
 const char UNIT_SEPARATOR = 0x1f;
+std::size_t tracer_timestamp = 0;
 
 int get_file_size(std::ifstream &file) {
     int position = file.tellg();
@@ -301,3 +302,4 @@ AnalysisSwitch to_analysis_switch(SEXP env) {
 std::string to_string(const char *str) {
     return str ? std::string(str) : std::string("");
 }
+

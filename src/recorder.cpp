@@ -119,7 +119,7 @@ closure_info_t function_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
     RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_FUNCTION_ID);
 
     info.fn_addr = op;
-    info.call_ptr = get_sexp_address(rho);
+    info.call_ptr = rho;
     RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_OTHER);
 
     info.call_id = make_funcall_id(dyntracer, op);
@@ -240,7 +240,7 @@ builtin_info_t builtin_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
     info.parent_call_id = elem.type == stack_type::NONE ? 0 : elem.call_id;
     info.definition_location = get_definition_location_cpp(op);
     info.callsite_location = get_callsite_cpp(0);
-    info.call_ptr = get_sexp_address(rho);
+    info.call_ptr = rho;
     info.call_id = make_funcall_id(dyntracer, op);
 
     get_stack_parent(info, tracer_state(dyntracer).full_stack);

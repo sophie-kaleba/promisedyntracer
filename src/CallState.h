@@ -19,7 +19,8 @@ class CallState {
           parameter_uses_{
               static_cast<std::size_t>(std::max(formal_parameter_count, 0))},
           order_{order}, intrinsic_order_{order},
-          return_value_type_{UNASSIGNEDSXP}, leaf_(true), active_(true) {
+          return_value_type_{UNASSIGNEDSXP}, leaf_(true), active_(true),
+          execution_time_(0.0) {
 
         /* INFO - Reserve size to 15 bytes to prevent repeated string
          * allocations when forced arguments are added. This increases
@@ -56,6 +57,12 @@ class CallState {
         return formal_parameter_count_;
     }
 
+    double get_execution_time() const { return execution_time_; }
+
+    void set_execution_time(double execution_time) {
+        execution_time_ = execution_time;
+    }
+
     void set_expression_type(sexptype_t expression_type, std::size_t position) {
         parameter_uses_[position].set_expression_type(expression_type);
     }
@@ -89,8 +96,10 @@ class CallState {
         }
     }
 
-    void force_exit(const SEXP promise, std::size_t position) {
+    void force_exit(const SEXP promise, std::size_t position,
+                    double execution_time) {
         set_value_type(TYPEOF(dyntrace_get_promise_value(promise)), position);
+        set_argument_execution_time_(position, execution_time);
     }
 
     void lookup(std::size_t position) {
@@ -119,7 +128,11 @@ class CallState {
 
     const std::string &get_intrinsic_order() const { return intrinsic_order_; }
 
-  private:
+    void set_argument_execution_time_(std::size_t position, double execution_time) {
+        parameter_uses_[position].set_execution_time(execution_time);
+    }
+
+private:
     call_id_t call_id_;
     fn_id_t fn_id_;
     std::string function_type_;
@@ -131,6 +144,7 @@ class CallState {
     sexptype_t return_value_type_;
     bool leaf_;
     bool active_;
+    double execution_time_;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const CallState &call_state) {

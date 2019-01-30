@@ -5,8 +5,6 @@
 #include <cassert>
 #include <sstream>
 
-rid_t get_sexp_address(SEXP e) { return (rid_t)e; }
-
 prom_id_t get_promise_id(dyntracer_t *dyntracer, SEXP promise) {
 
     if (promise == R_NilValue)
@@ -18,9 +16,8 @@ prom_id_t get_promise_id(dyntracer_t *dyntracer, SEXP promise) {
     // A new promise is always created for each argument.
     // Even if the argument is already a promise passed from the caller, it gets
     // re-wrapped.
-    prom_addr_t prom_addr = get_sexp_address(promise);
     auto &promise_ids = tracer_state(dyntracer).promise_ids;
-    auto it = promise_ids.find(prom_addr);
+    auto it = promise_ids.find(promise);
     if (it != promise_ids.end()) {
         return it->second;
     } else {
@@ -32,7 +29,6 @@ prom_id_t make_promise_id(dyntracer_t *dyntracer, SEXP promise, bool negative) {
     if (promise == R_NilValue)
         return RID_INVALID;
 
-    prom_addr_t prom_addr = get_sexp_address(promise);
     prom_id_t prom_id;
 
     if (negative) {
@@ -41,7 +37,7 @@ prom_id_t make_promise_id(dyntracer_t *dyntracer, SEXP promise, bool negative) {
         prom_id = tracer_state(dyntracer).prom_id_counter++;
     }
 
-    tracer_state(dyntracer).promise_ids[prom_addr] = prom_id;
+    tracer_state(dyntracer).promise_ids[promise] = prom_id;
 
     // auto &already_inserted_negative_promises =
     //     tracer_state(dyntracer).already_inserted_negative_promises;
@@ -113,8 +109,6 @@ bool function_already_inserted(dyntracer_t *dyntracer, fn_id_t id) {
     return already_inserted_functions.count(id) > 0;
 }
 
-fn_addr_t get_function_addr(SEXP func) { return get_sexp_address(func); }
-
 call_id_t make_funcall_id(dyntracer_t *dyntracer, SEXP function) {
     if (function == R_NilValue)
         return RID_INVALID;
@@ -147,19 +141,4 @@ arg_id_t get_argument_id(dyntracer_t *dyntracer, call_id_t call_id,
                          const string &argument) {
     arg_id_t argument_id = ++tracer_state(dyntracer).argument_id_sequence;
     return argument_id;
-}
-
-string recursive_type_to_string(recursion_type type) {
-    switch (type) {
-        case recursion_type::MUTUALLY_RECURSIVE:
-            return "mutually_recursive";
-        case recursion_type::RECURSIVE:
-            return "recursive";
-        case recursion_type::NOT_RECURSIVE:
-            return "not_recursive";
-        case recursion_type::UNKNOWN:
-            return "unknown";
-        default:
-            return "???????";
-    }
 }

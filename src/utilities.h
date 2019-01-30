@@ -5,6 +5,8 @@
 #include "stdlibs.h"
 #include <openssl/evp.h>
 
+typedef std::size_t timestamp_t;
+extern std::size_t tracer_timestamp;
 extern const char UNIT_SEPARATOR;
 extern const char RECORD_SEPARATOR;
 

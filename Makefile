@@ -9,10 +9,10 @@ export R_KEEP_PKG_SOURCE=1
 
 all: install
 
-build: clean document
+build: clean
 	$(R_DYNTRACE) CMD build .
 
-install: clean document
+install: clean
 	$(R_DYNTRACE) CMD INSTALL --with-keep.source .
 
 clean:
