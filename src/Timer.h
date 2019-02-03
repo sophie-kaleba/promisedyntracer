@@ -28,7 +28,6 @@
     XX(FUNCTION_ENTRY_ANALYSIS, )                                              \
     XX(FUNCTION_ENTRY_ANALYSIS_PROMISE_MAPPER, )                               \
     XX(FUNCTION_ENTRY_ANALYSIS_FUNCTION, )                                     \
-    XX(FUNCTION_ENTRY_ANALYSIS_PROMISE_TYPE, )                                 \
     XX(FUNCTION_ENTRY_ANALYSIS_STRICTNESS, )                                   \
     XX(FUNCTION_ENTRY_WRITE_TRACE, )                                           \
                                                                                \
@@ -66,7 +65,6 @@
     XX(CREATE_PROMISE_ANALYSIS, )                                              \
     XX(CREATE_PROMISE_ANALYSIS_PROMISE_MAPPER, )                               \
     XX(CREATE_PROMISE_ANALYSIS_FUNCTION, )                                     \
-    XX(CREATE_PROMISE_ANALYSIS_PROMISE_TYPE, )                                 \
     XX(CREATE_PROMISE_WRITE_TRACE, )                                           \
                                                                                \
     XX(FORCE_PROMISE_ENTRY_RECORDER, )                                         \
@@ -79,7 +77,6 @@
     XX(FORCE_PROMISE_EXIT_RECORDER, )                                          \
     XX(FORCE_PROMISE_EXIT_STACK, )                                             \
     XX(FORCE_PROMISE_EXIT_ANALYSIS, )                                          \
-    XX(FORCE_PROMISE_EXIT_ANALYSIS_PROMISE_TYPE, )                             \
     XX(FORCE_PROMISE_EXIT_WRITE_TRACE, )                                       \
                                                                                \
     XX(LOOKUP_PROMISE_VALUE_RECORDER, )                                        \
@@ -122,7 +119,6 @@
     XX(GC_PROMISE_UNMARKED_ANALYSIS, )                                         \
     XX(GC_PROMISE_UNMARKED_ANALYSIS_PROMISE_MAPPER, )                          \
     XX(GC_PROMISE_UNMARKED_ANALYSIS_STRICTNESS, )                              \
-    XX(GC_PROMISE_UNMARKED_ANALYSIS_PROMISE_TYPE, )                            \
     XX(GC_PROMISE_UNMARKED_RECORD_KEEPING, )                                   \
                                                                                \
     XX(GC_FUNCTION_UNMARKED_RECORD_KEEPING, )                                  \
@@ -154,7 +150,6 @@
     XX(END_CHECK, )                                                            \
     XX(END_ANALYSIS, )                                                         \
     XX(END_ANALYSIS_PROMISE_MAPPER, )                                          \
-    XX(END_ANALYSIS_PROMISE_TYPE, )                                            \
     XX(END_ANALYSIS_METADATA, )                                                \
     XX(END_ANALYSIS_OBJECT_COUNT_SIZE, )                                       \
     XX(END_ANALYSIS_FUNCTION, )                                                \

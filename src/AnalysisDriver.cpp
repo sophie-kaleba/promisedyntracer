@@ -7,8 +7,6 @@ AnalysisDriver::AnalysisDriver(tracer_state_t &tracer_state, bool verbose,
     : analysis_switch_{analysis_switch}, promise_mapper_{tracer_state,
                                                          output_dir},
       object_count_size_analysis_{tracer_state, output_dir},
-      promise_type_analysis_{tracer_state, output_dir, truncate, binary,
-                             compression_level},
       strictness_analysis_{tracer_state, &promise_mapper_, output_dir,
                            truncate,     binary,           compression_level} {
     if (verbose) {
@@ -29,12 +27,8 @@ void AnalysisDriver::promise_created(const prom_basic_info_t &prom_basic_info,
 
     ANALYSIS_TIMER_END_SEGMENT(CREATE_PROMISE_ANALYSIS_PROMISE_MAPPER);
 
-    if (analyze_promise_types())
-        promise_type_analysis_.promise_created(prom_basic_info, promise);
-
     strictness_analysis_.promise_created(prom_basic_info, promise);
 
-    ANALYSIS_TIMER_END_SEGMENT(CREATE_PROMISE_ANALYSIS_PROMISE_TYPE);
 }
 
 void AnalysisDriver::closure_entry(const closure_info_t &closure_info) {
@@ -46,11 +40,6 @@ void AnalysisDriver::closure_entry(const closure_info_t &closure_info) {
         promise_mapper_.closure_entry(closure_info);
 
     ANALYSIS_TIMER_END_SEGMENT(FUNCTION_ENTRY_ANALYSIS_PROMISE_MAPPER);
-
-    if (analyze_promise_types())
-        promise_type_analysis_.closure_entry(closure_info);
-
-    ANALYSIS_TIMER_END_SEGMENT(FUNCTION_ENTRY_ANALYSIS_PROMISE_TYPE);
 
     if (analyze_strictness())
         strictness_analysis_.closure_entry(closure_info);
@@ -124,13 +113,9 @@ void AnalysisDriver::promise_force_exit(const prom_info_t &prom_info,
                                         const SEXP promise) {
     ANALYSIS_TIMER_RESET();
 
-    if (analyze_promise_types())
-        promise_type_analysis_.promise_force_exit(prom_info, promise);
-
     if (analyze_strictness())
         strictness_analysis_.promise_force_exit(prom_info, promise);
 
-    ANALYSIS_TIMER_END_SEGMENT(FORCE_PROMISE_EXIT_ANALYSIS_PROMISE_TYPE);
 }
 
 void AnalysisDriver::gc_promise_unmarked(const prom_id_t prom_id,
@@ -141,11 +126,6 @@ void AnalysisDriver::gc_promise_unmarked(const prom_id_t prom_id,
         strictness_analysis_.gc_promise_unmarked(prom_id, promise);
 
     ANALYSIS_TIMER_END_SEGMENT(GC_PROMISE_UNMARKED_ANALYSIS_STRICTNESS);
-
-    if (analyze_promise_types())
-        promise_type_analysis_.gc_promise_unmarked(prom_id, promise);
-
-    ANALYSIS_TIMER_END_SEGMENT(GC_PROMISE_UNMARKED_ANALYSIS_PROMISE_TYPE);
 
     // WARNING: This has to be at the end. This removes promises from the
     // mapping. These promises are used by the analysis above.
@@ -310,11 +290,6 @@ void AnalysisDriver::end(dyntracer_t *dyntracer) {
 
     ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_OBJECT_COUNT_SIZE);
 
-    if (analyze_promise_types())
-        promise_type_analysis_.end(dyntracer);
-
-    ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_PROMISE_TYPE);
-
     if (analyze_strictness())
         strictness_analysis_.end(dyntracer);
 
@@ -334,10 +309,6 @@ inline bool AnalysisDriver::analyze_metadata() const {
 
 inline bool AnalysisDriver::analyze_object_count_size() const {
     return analysis_switch_.object_count_size;
-}
-
-inline bool AnalysisDriver::analyze_promise_types() const {
-    return analysis_switch_.promise_type;
 }
 
 inline bool AnalysisDriver::analyze_functions() const {
