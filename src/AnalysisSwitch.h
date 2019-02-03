@@ -9,7 +9,6 @@ class AnalysisSwitch {
     bool object_count_size;
     bool function;
     bool promise_type;
-    bool promise_slot_mutation;
     bool strictness;
     bool side_effect;
 

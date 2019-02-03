@@ -50,7 +50,6 @@ class AnalysisDriver {
     inline bool analyze_metadata() const;
     inline bool analyze_object_count_size() const;
     inline bool analyze_promise_types() const;
-    inline bool analyze_promise_slot_mutations() const;
     inline bool analyze_functions() const;
     inline bool analyze_strictness() const;
     inline bool analyze_side_effects() const;

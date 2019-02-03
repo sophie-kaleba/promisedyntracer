@@ -340,10 +340,6 @@ inline bool AnalysisDriver::analyze_promise_types() const {
     return analysis_switch_.promise_type;
 }
 
-inline bool AnalysisDriver::analyze_promise_slot_mutations() const {
-    return analysis_switch_.promise_slot_mutation;
-}
-
 inline bool AnalysisDriver::analyze_functions() const {
     return analysis_switch_.function;
 }
@@ -357,5 +353,5 @@ inline bool AnalysisDriver::analyze_side_effects() const {
 }
 
 inline bool AnalysisDriver::map_promises() const {
-    return analysis_switch_.strictness || analysis_switch_.promise_slot_mutation;
+    return analysis_switch_.strictness;
 }

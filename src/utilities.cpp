@@ -294,7 +294,6 @@ AnalysisSwitch to_analysis_switch(SEXP env) {
     analysis_switch.object_count_size = get_switch("object_count_size");
     analysis_switch.function = get_switch("function");
     analysis_switch.promise_type = get_switch("promise_type");
-    analysis_switch.promise_slot_mutation = get_switch("promise_slot_mutation");
     analysis_switch.strictness = get_switch("strictness");
     analysis_switch.side_effect = get_switch("side_effect");
 
