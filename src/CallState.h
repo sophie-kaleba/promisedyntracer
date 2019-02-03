@@ -89,7 +89,7 @@ class CallState {
         */
 
         if (!is_active()) {
-            parameter_uses_[position].set_escape();
+            parameter_uses_[position].set_escape("F");
         } else if (!previous_forced_state) {
             order_.append(" | ").append(std::to_string(position));
             if (is_leaf()) {
@@ -108,14 +108,14 @@ class CallState {
 
     void lookup(std::size_t position) {
         if (!is_active()) {
-            parameter_uses_[position].set_escape();
+            parameter_uses_[position].set_escape("L");
         }
         parameter_uses_[position].lookup();
     }
 
     void metaprogram(std::size_t position) {
         if (!is_active()) {
-            parameter_uses_[position].set_escape();
+            parameter_uses_[position].set_escape("M");
         }
         parameter_uses_[position].metaprogram();
     }

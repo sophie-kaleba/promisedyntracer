@@ -12,7 +12,7 @@ class ParameterUse {
     explicit ParameterUse()
         : expression_type_(UNASSIGNEDSXP), value_type_(UNASSIGNEDSXP),
           force_(0), lookup_(0), metaprogram_(0),
-          mode_(parameter_mode_t::UNASSIGNED), escape_(false),
+          mode_(parameter_mode_t::UNASSIGNED), escape_mode_("X"),
           execution_time_(0.0), eval_depth_{UNASSIGNED_PROMISE_EVAL_DEPTH} {
     }
 
@@ -44,9 +44,9 @@ class ParameterUse {
 
     void set_parameter_mode(parameter_mode_t mode) { mode_ = mode; }
 
-    bool get_escape() const { return escape_; }
+    const std::string& get_escape() const { return escape_mode_; }
 
-    void set_escape() { escape_ = true; }
+    void set_escape(const std::string& escape_mode) { escape_mode_ = escape_mode; }
 
     double get_execution_time() const { return execution_time_; }
 
@@ -69,7 +69,7 @@ class ParameterUse {
     std::uint8_t lookup_;
     std::uint8_t metaprogram_;
     parameter_mode_t mode_;
-    bool escape_;
+    std::string escape_mode_;
     double execution_time_;
     eval_depth_t eval_depth_;
 };
