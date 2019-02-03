@@ -210,8 +210,45 @@ class StrictnessAnalysis {
         return timestamp == undefined_timestamp_;
     }
 
+    eval_depth_t get_evaluation_depth_(call_id_t call_id) {
+        eval_depth_t eval_depth = {0, 0, 0};
+        bool nesting = true;
+        size_t stack_size = tracer_state_.full_stack.size();
+        int i;
+        /* we start from last - 1 element because the promise context
+           in question will itself be the last element. It does not make
+           sense to count the promise itself in the computation of its own
+           evaluation depth */
+        for (i = stack_size - 2; i >= 0; --i) {
+
+            stack_event_t exec_context = tracer_state_.full_stack[i];
+
+            if (exec_context.type == stack_type::CALL &&
+                exec_context.function_info.type == function_type::CLOSURE) {
+                nesting = false;
+                if(exec_context.call_id == call_id) break;
+                ++eval_depth.call_depth;
+            } else if (exec_context.type == stack_type::PROMISE) {
+                ++eval_depth.promise_depth;
+                if(nesting) ++eval_depth.nested_promise_depth;
+            } else {
+                // nesting should be made false for other cases as well.
+                nesting = false;
+            }
+        }
+
+        // if this happens, it means we could not locate the call from which
+        // this promise originated. This means that this is an escaped promise.
+        if(i < 0) {
+            return ESCAPED_PROMISE_EVAL_DEPTH;
+        }
+
+        return eval_depth;
+    }
+
     tracer_state_t &tracer_state_;
     std::string output_dir_;
+
     // bool truncate_;
     // bool binary_;
     // int compression_level_;

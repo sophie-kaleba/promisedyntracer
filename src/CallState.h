@@ -71,7 +71,9 @@ class CallState {
         parameter_uses_[position].set_value_type(value_type);
     }
 
-    void force_entry(const SEXP promise, std::size_t position) {
+    void force_entry(const SEXP promise,
+                     std::size_t position,
+                     const eval_depth_t& eval_depth) {
 
         bool previous_forced_state = parameter_uses_[position].get_force();
         parameter_uses_[position].force();
@@ -94,6 +96,8 @@ class CallState {
                 intrinsic_order_.append(" | ").append(std::to_string(position));
             }
         }
+
+        parameter_uses_[position].set_evaluation_depth(eval_depth);
     }
 
     void force_exit(const SEXP promise, std::size_t position,

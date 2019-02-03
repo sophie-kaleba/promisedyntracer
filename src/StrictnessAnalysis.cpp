@@ -20,7 +20,8 @@ StrictnessAnalysis::StrictnessAnalysis(tracer_state_t &tracer_state,
     argument_data_table_ = create_data_table(
         output_dir + "/" + "arguments",
         {"call_id", "function_id", "parameter_position", "argument_mode",
-         "expression_type", "value_type", "escape", "force_count",
+         "expression_type", "value_type", "escape", "call_depth",
+         "promise_depth", "nested_promise_depth", "force_count",
          "lookup_count", "metaprogram_count", "execution_time"},
         truncate, binary, compression_level);
 
@@ -267,8 +268,10 @@ void StrictnessAnalysis::promise_force_entry(const prom_info_t &prom_info,
     }
 
     auto *call_state = get_call_state(promise_state.call_id);
-
-    call_state->force_entry(promise, promise_state.formal_parameter_position);
+    eval_depth_t eval_depth = get_evaluation_depth_(promise_state.call_id);
+    call_state->force_entry(promise,
+                            promise_state.formal_parameter_position,
+                            eval_depth);
 }
 
 void StrictnessAnalysis::promise_force_exit(const prom_info_t &prom_info,
@@ -390,7 +393,11 @@ void StrictnessAnalysis::serialize_arguments_(const CallState &call_state) {
             parameter_mode_to_string(parameter.get_parameter_mode()),
             sexptype_to_string(parameter.get_expression_type()),
             sexptype_to_string(parameter.get_value_type()),
-            parameter.get_escape(), parameter.get_force(),
+            parameter.get_escape(),
+            parameter.get_evaluation_depth().call_depth,
+            parameter.get_evaluation_depth().promise_depth,
+            parameter.get_evaluation_depth().nested_promise_depth,
+            parameter.get_force(),
             parameter.get_lookup(), parameter.get_metaprogram(),
             parameter.get_execution_time());
     }

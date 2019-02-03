@@ -10,6 +10,15 @@ extern std::size_t tracer_timestamp;
 extern const char UNIT_SEPARATOR;
 extern const char RECORD_SEPARATOR;
 
+struct eval_depth_t {
+    int call_depth;
+    int promise_depth;
+    int nested_promise_depth;
+};
+
+extern const eval_depth_t ESCAPED_PROMISE_EVAL_DEPTH;
+extern const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH;
+
 #define failwith(format, ...)                                                  \
     failwith_impl(__FILE__, __LINE__, format, __VA_ARGS__)
 

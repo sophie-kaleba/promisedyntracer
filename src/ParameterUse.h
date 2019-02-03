@@ -5,13 +5,16 @@
 #include "sexptypes.h"
 #include <cstdint>
 #include <string>
+#include "utilities.h"
 
 class ParameterUse {
   public:
     explicit ParameterUse()
         : expression_type_(UNASSIGNEDSXP), value_type_(UNASSIGNEDSXP),
           force_(0), lookup_(0), metaprogram_(0),
-          mode_(parameter_mode_t::UNASSIGNED), escape_(false), execution_time_(0.0) {}
+          mode_(parameter_mode_t::UNASSIGNED), escape_(false),
+          execution_time_(0.0), eval_depth_{UNASSIGNED_PROMISE_EVAL_DEPTH} {
+    }
 
     std::uint8_t get_metaprogram() const { return metaprogram_; }
 
@@ -51,6 +54,14 @@ class ParameterUse {
         execution_time_ = execution_time;
     }
 
+    void set_evaluation_depth(const eval_depth_t& eval_depth) {
+        eval_depth_ = eval_depth;
+    }
+
+    eval_depth_t get_evaluation_depth() const {
+        return eval_depth_;
+    }
+
   private:
     sexptype_t expression_type_;
     sexptype_t value_type_;
@@ -60,6 +71,7 @@ class ParameterUse {
     parameter_mode_t mode_;
     bool escape_;
     double execution_time_;
+    eval_depth_t eval_depth_;
 };
 
 #endif /* PROMISE_DYNTRACER_PARAMETER_USE_H */

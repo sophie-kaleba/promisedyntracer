@@ -12,6 +12,9 @@ const char RECORD_SEPARATOR = 0x1e;
 const char UNIT_SEPARATOR = 0x1f;
 std::size_t tracer_timestamp = 0;
 
+const eval_depth_t ESCAPED_PROMISE_EVAL_DEPTH = {-2, -2, -2};
+const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH = {-1, -1, -1};
+
 int get_file_size(std::ifstream &file) {
     int position = file.tellg();
     file.seekg(0, std::ios_base::end);
