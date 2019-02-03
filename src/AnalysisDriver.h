@@ -4,7 +4,6 @@
 #include "AnalysisSwitch.h"
 #include "MetadataAnalysis.h"
 #include "ObjectCountSizeAnalysis.h"
-#include "PromiseEvaluationAnalysis.h"
 #include "PromiseTypeAnalysis.h"
 #include "State.h"
 #include "StrictnessAnalysis.h"
@@ -52,7 +51,6 @@ class AnalysisDriver {
     inline bool analyze_object_count_size() const;
     inline bool analyze_promise_types() const;
     inline bool analyze_promise_slot_mutations() const;
-    inline bool analyze_promise_evaluations() const;
     inline bool analyze_functions() const;
     inline bool analyze_strictness() const;
     inline bool analyze_side_effects() const;
@@ -62,7 +60,6 @@ class AnalysisDriver {
     AnalysisSwitch analysis_switch_;
     PromiseMapper promise_mapper_;
     ObjectCountSizeAnalysis object_count_size_analysis_;
-    PromiseEvaluationAnalysis promise_evaluation_analysis_;
     PromiseTypeAnalysis promise_type_analysis_;
     StrictnessAnalysis strictness_analysis_;
 };

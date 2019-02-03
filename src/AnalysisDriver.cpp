@@ -7,7 +7,6 @@ AnalysisDriver::AnalysisDriver(tracer_state_t &tracer_state, bool verbose,
     : analysis_switch_{analysis_switch}, promise_mapper_{tracer_state,
                                                          output_dir},
       object_count_size_analysis_{tracer_state, output_dir},
-      promise_evaluation_analysis_{tracer_state, output_dir, &promise_mapper_},
       promise_type_analysis_{tracer_state, output_dir, truncate, binary,
                              compression_level},
       strictness_analysis_{tracer_state, &promise_mapper_, output_dir,
@@ -114,12 +113,6 @@ void AnalysisDriver::promise_force_entry(const prom_info_t &prom_info,
         promise_mapper_.promise_force_entry(prom_info, promise);
 
     ANALYSIS_TIMER_END_SEGMENT(FORCE_PROMISE_ENTRY_ANALYSIS_PROMISE_MAPPER);
-
-    if (analyze_promise_evaluations())
-        promise_evaluation_analysis_.promise_force_entry(prom_info, promise);
-
-    ANALYSIS_TIMER_END_SEGMENT(
-        FORCE_PROMISE_ENTRY_ANALYSIS_PROMISE_EVALUATION_DISTANCE);
 
     if (analyze_strictness())
         strictness_analysis_.promise_force_entry(prom_info, promise);
@@ -322,11 +315,6 @@ void AnalysisDriver::end(dyntracer_t *dyntracer) {
 
     ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_PROMISE_TYPE);
 
-    if (analyze_promise_evaluations())
-        promise_evaluation_analysis_.end(dyntracer);
-
-    ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_PROMISE_EVALUATION_DISTANCE);
-
     if (analyze_strictness())
         strictness_analysis_.end(dyntracer);
 
@@ -356,10 +344,6 @@ inline bool AnalysisDriver::analyze_promise_slot_mutations() const {
     return analysis_switch_.promise_slot_mutation;
 }
 
-inline bool AnalysisDriver::analyze_promise_evaluations() const {
-    return analysis_switch_.promise_evaluation;
-}
-
 inline bool AnalysisDriver::analyze_functions() const {
     return analysis_switch_.function;
 }
@@ -373,6 +357,5 @@ inline bool AnalysisDriver::analyze_side_effects() const {
 }
 
 inline bool AnalysisDriver::map_promises() const {
-    return analysis_switch_.strictness || analysis_switch_.promise_evaluation ||
-           analysis_switch_.promise_slot_mutation;
+    return analysis_switch_.strictness || analysis_switch_.promise_slot_mutation;
 }

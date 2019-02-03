@@ -9,8 +9,6 @@ std::ostream &operator<<(std::ostream &os,
        << analysis_switch.object_count_size << std::endl
        << "Promise Type Analysis           : " << analysis_switch.promise_type
        << std::endl
-       << "Promise Evaluation Analysis     : "
-       << analysis_switch.promise_evaluation << std::endl
        << "Promise Slot Mutation Analysis  : "
        << analysis_switch.promise_slot_mutation << std::endl
        << "Function Analysis               : " << analysis_switch.function

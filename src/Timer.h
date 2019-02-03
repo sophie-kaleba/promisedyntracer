@@ -73,7 +73,6 @@
     XX(FORCE_PROMISE_ENTRY_STACK, )                                            \
     XX(FORCE_PROMISE_ENTRY_ANALYSIS, )                                         \
     XX(FORCE_PROMISE_ENTRY_ANALYSIS_PROMISE_MAPPER, )                          \
-    XX(FORCE_PROMISE_ENTRY_ANALYSIS_PROMISE_EVALUATION_DISTANCE, )             \
     XX(FORCE_PROMISE_ENTRY_ANALYSIS_STRICTNESS, )                              \
     XX(FORCE_PROMISE_ENTRY_WRITE_TRACE, )                                      \
                                                                                \
@@ -160,7 +159,6 @@
     XX(END_ANALYSIS_OBJECT_COUNT_SIZE, )                                       \
     XX(END_ANALYSIS_FUNCTION, )                                                \
     XX(END_ANALYSIS_PROMISE, )                                                 \
-    XX(END_ANALYSIS_PROMISE_EVALUATION_DISTANCE, )                             \
     XX(END_ANALYSIS_STRICTNESS, )                                              \
     XX(END_ANALYSIS_SIDE_EFFECT, )                                             \
                                                                                \
