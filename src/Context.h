@@ -3,7 +3,6 @@
 
 #include "AnalysisDriver.h"
 #include "AnalysisSwitch.h"
-#include "DebugSerializer.h"
 #include "State.h"
 #include "TraceSerializer.h"
 #include <string>
@@ -19,19 +18,13 @@ class Context {
           driver_(new AnalysisDriver(*state_, verbose, output_dir, truncate,
                                      binary, compression_level,
                                      analysis_switch)),
-          debugger_(new DebugSerializer(verbose)), output_dir_{output_dir},
+          output_dir_(output_dir),
           binary_{binary}, verbose_{verbose}, truncate_{truncate},
           compression_level_{compression_level} {}
 
     tracer_state_t &get_state() { return *state_; }
 
     TraceSerializer &get_serializer() { return *serializer_; }
-
-    DebugSerializer &get_debug_serializer() {
-        if (debugger_->needsState())
-            debugger_->setState(&get_state());
-        return *debugger_;
-    }
 
     AnalysisDriver &get_analysis_driver() { return *driver_; }
 
@@ -51,7 +44,6 @@ class Context {
 
     ~Context() {
 
-        delete debugger_;
         delete driver_;
         delete serializer_;
         /* delete state in the end as everything else
@@ -64,7 +56,6 @@ class Context {
     AnalysisSwitch analysis_switch_;
     TraceSerializer *serializer_;
     AnalysisDriver *driver_;
-    DebugSerializer *debugger_;
     std::string output_dir_;
     bool binary_;
     bool verbose_;
@@ -82,10 +73,6 @@ inline tracer_state_t &tracer_state(dyntracer_t *dyntracer) {
 
 inline TraceSerializer &tracer_serializer(dyntracer_t *dyntracer) {
     return (static_cast<Context *>(dyntracer->state))->get_serializer();
-}
-
-inline DebugSerializer &debug_serializer(dyntracer_t *dyntracer) {
-    return (static_cast<Context *>(dyntracer->state))->get_debug_serializer();
 }
 
 inline AnalysisDriver &analysis_driver(dyntracer_t *dyntracer) {

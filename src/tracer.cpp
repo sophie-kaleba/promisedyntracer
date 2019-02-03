@@ -3,11 +3,6 @@
 
 extern "C" {
 
-// verbose:
-//     0: quiet,
-//     1: debug tracer prints calls and promises,
-//     2: debug tracer prints everything
-//     -1: SQL queries,
 SEXP create_dyntracer(SEXP trace_filepath, SEXP truncate, SEXP enable_trace,
                       SEXP verbose, SEXP output_dir, SEXP binary,
                       SEXP compression_level, SEXP analysis_switch) {

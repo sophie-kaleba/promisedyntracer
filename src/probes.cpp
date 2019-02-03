@@ -18,8 +18,6 @@ void dyntrace_entry(dyntracer_t *dyntracer, SEXP expression, SEXP environment) {
     write_configuration(tracer_context(dyntracer),
                         tracer_output_dir(dyntracer) + "/CONFIGURATION");
 
-    debug_serializer(dyntracer).serialize_start_trace();
-
     MAIN_TIMER_END_SEGMENT(BEGIN_SETUP);
 
     analysis_driver(dyntracer).begin(dyntracer);
@@ -48,8 +46,6 @@ void dyntrace_exit(dyntracer_t *dyntracer, SEXP expression, SEXP environment,
             tracer_state(dyntracer).full_stack.size());
         tracer_state(dyntracer).full_stack.clear();
     }
-
-    debug_serializer(dyntracer).serialize_finish_trace();
 
     MAIN_TIMER_END_SEGMENT(END_CHECK);
 
@@ -93,8 +89,6 @@ void closure_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
     MAIN_TIMER_END_SEGMENT(FUNCTION_ENTRY_ANALYSIS);
 
-    debug_serializer(dyntracer).serialize_function_entry(info);
-
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_FUNCTION_BEGIN, sexptype_to_string(CLOSXP),
         info.fn_id, info.call_id,
@@ -107,8 +101,6 @@ void closure_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
         auto &promise = argument.promise_id;
         // if promise environment is same as the caller's environment, then
         // serialize this promise as it is a default argument.
-
-        debug_serializer(dyntracer).serialize_promise_argument_type(promise);
 
         auto it = fresh_promises.find(promise);
         if (it != fresh_promises.end()) {
@@ -156,8 +148,6 @@ void closure_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     analysis_driver(dyntracer).closure_exit(info);
 
     MAIN_TIMER_END_SEGMENT(FUNCTION_EXIT_ANALYSIS);
-
-    debug_serializer(dyntracer).serialize_function_exit(info);
 
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_FUNCTION_FINISH, info.call_id, false);
@@ -237,9 +227,6 @@ void print_entry_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
     MAIN_TIMER_END_SEGMENT(BUILTIN_ENTRY_STACK);
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
-    debug_serializer(dyntracer).serialize_builtin_entry(info);
-#endif
 
 #ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
     tracer_serializer(dyntracer).serialize(
@@ -287,9 +274,6 @@ void print_exit_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
     MAIN_TIMER_END_SEGMENT(BUILTIN_EXIT_STACK);
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
-    debug_serializer(dyntracer).serialize_builtin_exit(info);
-#endif
 
 #ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
     tracer_serializer(dyntracer).serialize(
@@ -330,14 +314,12 @@ void promise_created(dyntracer_t *dyntracer, const SEXP prom) {
 
     MAIN_TIMER_END_SEGMENT(CREATE_PROMISE_RECORDER);
 
-    debug_serializer(dyntracer).serialize_promise_created(info);
-
     analysis_driver(dyntracer).promise_created(info, prom);
 
     MAIN_TIMER_END_SEGMENT(CREATE_PROMISE_ANALYSIS);
 
     std::string cre_id = std::string("cre ") + std::to_string(info.prom_id);
-    debug_serializer(dyntracer).serialize_interference_information(cre_id);
+
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_PROMISE_CREATE, info.prom_id,
         tracer_state(dyntracer).lookup_environment(PRENV(prom)).get_id(),
@@ -369,13 +351,12 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
     MAIN_TIMER_END_SEGMENT(FORCE_PROMISE_ENTRY_STACK);
 
     std::string ent_id = std::string("ent ") + std::to_string(info.prom_id);
-    debug_serializer(dyntracer).serialize_interference_information(ent_id);
+
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_PROMISE_BEGIN, info.prom_id);
 
     MAIN_TIMER_END_SEGMENT(FORCE_PROMISE_ENTRY_WRITE_TRACE);
 
-    debug_serializer(dyntracer).serialize_force_promise_entry(info);
     resume_execution_timer(tracer_state(dyntracer));
 }
 
@@ -405,13 +386,12 @@ void promise_force_exit(dyntracer_t *dyntracer, const SEXP promise) {
     MAIN_TIMER_END_SEGMENT(FORCE_PROMISE_EXIT_STACK);
 
     std::string ext_id = std::string("ext ") + std::to_string(info.prom_id);
-    debug_serializer(dyntracer).serialize_interference_information(ext_id);
+
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_PROMISE_FINISH, info.prom_id, false);
 
     MAIN_TIMER_END_SEGMENT(FORCE_PROMISE_EXIT_WRITE_TRACE);
 
-    debug_serializer(dyntracer).serialize_force_promise_exit(info);
     resume_execution_timer(tracer_state(dyntracer));
 }
 
@@ -428,8 +408,6 @@ void promise_value_lookup(dyntracer_t *dyntracer, const SEXP promise) {
     std::string val_id = std::string("val ") + std::to_string(info.prom_id);
 
     MAIN_TIMER_END_SEGMENT(LOOKUP_PROMISE_VALUE_RECORDER);
-
-    debug_serializer(dyntracer).serialize_interference_information(val_id);
 
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_PROMISE_VALUE_LOOKUP, info.prom_id,
@@ -615,7 +593,6 @@ void gc_exit(dyntracer_t *dyntracer, int gc_counts) {
 
     MAIN_TIMER_END_SEGMENT(GC_EXIT_RECORDER);
 
-    debug_serializer(dyntracer).serialize_gc_exit(info);
     resume_execution_timer(tracer_state(dyntracer));
 }
 
@@ -627,8 +604,6 @@ void vector_alloc(dyntracer_t *dyntracer, int sexptype, long length, long bytes,
                         sexptype, length, bytes};
 
     MAIN_TIMER_END_SEGMENT(VECTOR_ALLOC_RECORDER);
-
-    debug_serializer(dyntracer).serialize_vector_alloc(info);
 
     analysis_driver(dyntracer).vector_alloc(info);
 
@@ -649,8 +624,6 @@ void new_environment(dyntracer_t *dyntracer, const SEXP rho) {
 
     MAIN_TIMER_END_SEGMENT(NEW_ENVIRONMENT_RECORDER);
 
-    debug_serializer(dyntracer).serialize_new_environment(env_id, fn_id);
-
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_ENVIRONMENT_CREATE, env_id);
 
@@ -665,7 +638,6 @@ void context_entry(dyntracer_t *dyntracer, const RCNTXT *cptr) {
     event.context_id = (rid_t)cptr;
     event.type = stack_type::CONTEXT;
     tracer_state(dyntracer).full_stack.push_back(event);
-    debug_serializer(dyntracer).serialize_begin_ctxt(cptr);
 
     MAIN_TIMER_END_SEGMENT(CONTEXT_ENTRY_STACK);
     resume_execution_timer(tracer_state(dyntracer));
@@ -688,7 +660,6 @@ void context_jump(dyntracer_t *dyntracer, const RCNTXT *cptr,
 
     MAIN_TIMER_END_SEGMENT(CONTEXT_JUMP_ANALYSIS);
 
-    debug_serializer(dyntracer).serialize_unwind(info);
     resume_execution_timer(tracer_state(dyntracer));
 }
 
@@ -703,7 +674,6 @@ void context_exit(dyntracer_t *dyntracer, const RCNTXT *cptr) {
         dyntrace_log_warning("Context trying to remove context %d from full "
                              "stack, but %d is on top of stack.",
                              ((rid_t)cptr), event.context_id);
-    debug_serializer(dyntracer).serialize_end_ctxt(cptr);
 
     MAIN_TIMER_END_SEGMENT(CONTEXT_EXIT_STACK);
     resume_execution_timer(tracer_state(dyntracer));
@@ -753,15 +723,10 @@ void environment_action(dyntracer_t *dyntracer, const SEXP symbol, SEXP value,
     MAIN_TIMER_END_SEGMENT(ENVIRONMENT_ACTION_RECORDER);
 
     if (!exists) {
-        debug_serializer(dyntracer).serialize_variable(
-            variable_id, CHAR(PRINTNAME(symbol)), environment_id);
+        // TODO
     }
 
-    debug_serializer(dyntracer).serialize_variable_action(promise_id,
-                                                          variable_id, action);
-
     std::string action_id = action + " " + std::to_string(variable_id);
-    debug_serializer(dyntracer).serialize_interference_information(action_id);
 
     if (action == TraceSerializer::OPCODE_ENVIRONMENT_REMOVE) {
         tracer_serializer(dyntracer).serialize(action,
