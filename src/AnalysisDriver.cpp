@@ -6,7 +6,6 @@ AnalysisDriver::AnalysisDriver(tracer_state_t &tracer_state, bool verbose,
                                const AnalysisSwitch analysis_switch)
     : analysis_switch_{analysis_switch}, promise_mapper_{tracer_state,
                                                          output_dir},
-      object_count_size_analysis_{tracer_state, output_dir},
       strictness_analysis_{tracer_state, &promise_mapper_, output_dir,
                            truncate,     binary,           compression_level} {
     if (verbose) {
@@ -230,10 +229,6 @@ void AnalysisDriver::promise_value_set(const prom_info_t &info,
 void AnalysisDriver::vector_alloc(const type_gc_info_t &type_gc_info) {
     ANALYSIS_TIMER_RESET();
 
-    if (analyze_object_count_size())
-        object_count_size_analysis_.vector_alloc(type_gc_info);
-
-    ANALYSIS_TIMER_END_SEGMENT(VECTOR_ALLOC_ANALYSIS_OBJECT_COUNT_SIZE);
 }
 
 void AnalysisDriver::environment_define_var(const SEXP symbol, const SEXP value,
@@ -285,11 +280,6 @@ void AnalysisDriver::end(dyntracer_t *dyntracer) {
 
     ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_METADATA);
 
-    if (analyze_object_count_size())
-        object_count_size_analysis_.end(dyntracer);
-
-    ANALYSIS_TIMER_END_SEGMENT(END_ANALYSIS_OBJECT_COUNT_SIZE);
-
     if (analyze_strictness())
         strictness_analysis_.end(dyntracer);
 
@@ -305,10 +295,6 @@ void AnalysisDriver::end(dyntracer_t *dyntracer) {
 
 inline bool AnalysisDriver::analyze_metadata() const {
     return analysis_switch_.metadata;
-}
-
-inline bool AnalysisDriver::analyze_object_count_size() const {
-    return analysis_switch_.object_count_size;
 }
 
 inline bool AnalysisDriver::analyze_functions() const {

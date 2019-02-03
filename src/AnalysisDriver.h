@@ -3,7 +3,6 @@
 
 #include "AnalysisSwitch.h"
 #include "MetadataAnalysis.h"
-#include "ObjectCountSizeAnalysis.h"
 #include "State.h"
 #include "StrictnessAnalysis.h"
 
@@ -47,7 +46,6 @@ class AnalysisDriver {
     void end(dyntracer_t *dyntracer);
 
     inline bool analyze_metadata() const;
-    inline bool analyze_object_count_size() const;
     inline bool analyze_functions() const;
     inline bool analyze_strictness() const;
     inline bool analyze_side_effects() const;
@@ -56,7 +54,6 @@ class AnalysisDriver {
   private:
     AnalysisSwitch analysis_switch_;
     PromiseMapper promise_mapper_;
-    ObjectCountSizeAnalysis object_count_size_analysis_;
     StrictnessAnalysis strictness_analysis_;
 };
 

@@ -6,7 +6,6 @@
 class AnalysisSwitch {
   public:
     bool metadata;
-    bool object_count_size;
     bool function;
     bool strictness;
     bool side_effect;

@@ -5,8 +5,6 @@ std::ostream &operator<<(std::ostream &os,
     os << std::endl
        << "Metadata Analysis               : " << analysis_switch.metadata
        << std::endl
-       << "Object Count Size Analysis      : "
-       << analysis_switch.object_count_size << std::endl
        << "Function Analysis               : " << analysis_switch.function
        << std::endl
        << "Strictness Analysis             : " << analysis_switch.strictness

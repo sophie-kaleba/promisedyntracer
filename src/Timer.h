@@ -129,7 +129,6 @@
                                                                                \
     XX(VECTOR_ALLOC_RECORDER, )                                                \
     XX(VECTOR_ALLOC_ANALYSIS, )                                                \
-    XX(VECTOR_ALLOC_ANALYSIS_OBJECT_COUNT_SIZE, )                              \
                                                                                \
     XX(NEW_ENVIRONMENT_RECORDER, )                                             \
     XX(NEW_ENVIRONMENT_WRITE_TRACE, )                                          \
@@ -151,7 +150,6 @@
     XX(END_ANALYSIS, )                                                         \
     XX(END_ANALYSIS_PROMISE_MAPPER, )                                          \
     XX(END_ANALYSIS_METADATA, )                                                \
-    XX(END_ANALYSIS_OBJECT_COUNT_SIZE, )                                       \
     XX(END_ANALYSIS_FUNCTION, )                                                \
     XX(END_ANALYSIS_PROMISE, )                                                 \
     XX(END_ANALYSIS_STRICTNESS, )                                              \
