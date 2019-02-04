@@ -46,7 +46,7 @@ class PromiseMapper {
         // the insertion only happens if the promise with this id does not
         // already exist. If the promise does not already exist, it means that
         // we have not seen its creation which means it is non local.
-        // the timestamp is automatically set to BEFORE_TIME_BEGAN
+        // the timestamp is automatically set to UNDEFINED_TIMESTAMP
         promises_.insert({prom_id, PromiseState(prom_id, env_id, false)});
     }
 

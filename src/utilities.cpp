@@ -13,7 +13,7 @@ const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH = {-1, -1, -1};
 
 const size_t PROMISE_MAPPING_BUCKET_COUNT = 1000000;
 
-const timestamp_t BEFORE_TIME_BEGAN = -1;
+const timestamp_t UNDEFINED_TIMESTAMP = -1;
 
 int get_file_size(std::ifstream &file) {
     int position = file.tellg();

@@ -35,7 +35,7 @@ enum class parameter_mode_t {
 };
 
 typedef long long int timestamp_t;
-extern const timestamp_t BEFORE_TIME_BEGAN;
+extern const timestamp_t UNDEFINED_TIMESTAMP;
 
 extern const char UNIT_SEPARATOR;
 extern const char RECORD_SEPARATOR;
@@ -116,6 +116,10 @@ inline void *calloc_or_die(std::size_t num, std::size_t size) {
                  size);
     }
     return data;
+}
+
+inline bool timestamp_is_undefined(const timestamp_t timestamp) {
+    return timestamp == UNDEFINED_TIMESTAMP;
 }
 
 #endif /* __UTILITIES_H__ */

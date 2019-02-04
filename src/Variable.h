@@ -10,10 +10,14 @@ class Variable {
 public:
     Variable(const std::string& name,
              const var_id_t id,
-             const timestamp_t modification_timestamp):
+             const timestamp_t modification_timestamp,
+             const SEXP rho,
+             const env_id_t env_id):
         name_(name),
         id_(id),
-        modification_timestamp_(modification_timestamp) { }
+        modification_timestamp_(modification_timestamp),
+        rho_(rho),
+        env_id_(env_id) { }
 
     var_id_t get_id() const { return id_; }
 
@@ -27,10 +31,20 @@ public:
         return modification_timestamp_;
     }
 
+    const SEXP get_rho() const {
+        return rho_;
+    }
+
+    const env_id_t get_environment_id() const {
+        return env_id_;
+    }
+
 private:
     const std::string name_;
     const var_id_t id_;
     timestamp_t modification_timestamp_;
+    const SEXP rho_;
+    const env_id_t env_id_;
 };
 
 #endif /* PROMISEDYNTRACER_VARIABLE_H */

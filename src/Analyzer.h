@@ -50,117 +50,131 @@ class Analyzer {
         //     promise_state.is_transitive_side_effect_observer());
     }
 
-    void environment_define_var(const SEXP symbol, const SEXP value,
-                                const SEXP rho) {
-        inspect_symbol_caller_(symbol);
+    void environment_variable_define(const Variable &var) {
 
-        tracer_state_.define_variable(rho, symbol);
-
-        identify_side_effect_creators_(rho);
+        inspect_symbol_caller_(var);
     }
 
-    void environment_assign_var(const SEXP symbol, const SEXP value,
-                                const SEXP rho) {
-        inspect_symbol_caller_(symbol);
+    void environment_variable_assign(const Variable &var) {
 
-        tracer_state_.update_variable(rho, symbol);
+        inspect_symbol_caller_(var);
 
-        identify_side_effect_creators_(rho);
+        identify_side_effect_creators_(var);
     }
 
-    void environment_remove_var(const SEXP symbol, const SEXP value,
-                                const SEXP rho) {
-        inspect_symbol_caller_(symbol);
+    void environment_variable_remove(const Variable &var) {
 
-        tracer_state_.remove_variable(rho, symbol);
-
-        identify_side_effect_creators_(rho);
+        inspect_symbol_caller_(var);
     }
 
-    void environment_lookup_var(const SEXP symbol, const SEXP value,
-                                const SEXP rho) {
-        inspect_symbol_caller_(symbol);
+    void environment_variable_lookup(const Variable& var) {
 
-        timestamp_t variable_timestamp =
-            tracer_state_.lookup_variable(rho, symbol).get_modification_timestamp();
+        inspect_symbol_caller_(var);
+
+        identify_side_effect_observers_(var);
+    }
+
+    void identify_side_effect_creators_(const Variable& var) {
+
+        const timestamp_t var_timestamp = var.get_modification_timestamp();
 
         /* this implies we have not seen the variable before.
            TODO - see when this case is triggered and ensure
            there is no bug */
-        if (is_undefined(variable_timestamp)) {
+        if (timestamp_is_undefined(var_timestamp)) {
             return;
         }
 
-        identify_side_effect_observers_(variable_timestamp);
-    }
-
-    void identify_side_effect_creators_(const SEXP rho) {
         size_t stack_size = tracer_state_.full_stack.size();
+
+        bool direct = true;
 
         for (int i = stack_size - 1; i >= 0; --i) {
 
             stack_event_t exec_context = tracer_state_.full_stack[i];
-
-            // closure side effects matter iff they are done in external
-            // environments.
-            if (exec_context.type == stack_type::CALL &&
-                exec_context.function_info.type == function_type::CLOSURE) {
-                if(exec_context.environment != rho) {
-                    /* TODO - handle this case */
-                }
-                return;
-            } else if (exec_context.type == stack_type::PROMISE) {
-                if(exec_context.environment != rho) {
-                    tracer_state_
-                        .lookup_promise(exec_context.promise_id)
-                        .set_direct_side_effect_creator();
-                }
-                return;
-            }
-        }
-    }
-
-    void identify_side_effect_observers_(const timestamp_t variable_timestamp) {
-        size_t stack_size = tracer_state_.full_stack.size();
-
-        for (int i = stack_size - 1; i >= 0; --i) {
-            stack_event_t exec_context = tracer_state_.full_stack[i];
-
-            /* If the most recent context that is responsible for this
-               side effect is a closure, then return. Currently, we only
-               care about promises directly responsible for side effects.
-               We don't return in case of specials and builtins because
-               they are more like operators in a programming language and
-               everything ultimately happens in them and returning on
-               encountering them will make it look like no promise has
-               caused a side effect. */
-            if (exec_context.type == stack_type::CALL &&
-                exec_context.function_info.type == function_type::CLOSURE) {
-                return;
-            }
 
             if (exec_context.type == stack_type::PROMISE) {
-                timestamp_t promise_timestamp =
-                    get_promise_timestamp_(exec_context.promise_id);
 
-                /* This happens if the promise was created before the variable
-                   binding was last modified. This means the promise is observing
-                   a side effect. In other words, if this promise is
-                   forced at its point of creation, it will lookup a different
-                   value bound to this variable.*/
-                if (!is_undefined(promise_timestamp) &&
-                    promise_timestamp < variable_timestamp) {
-                    /* Now we need to check if the promise is an argument promise
-                       or a non argument promise. */
-                    tracer_state_.lookup_promise(exec_context.promise_id).set_direct_side_effect_observer();
+                PromiseState &promise_state =
+                    tracer_state_.lookup_promise(exec_context.promise_id);
+
+                /* if promise is created after the variable it is currently
+                   assigning to, then its a side effect creator. */
+                if (promise_state.get_creation_timestamp() > var_timestamp) {
+
+                    if (direct)
+                        promise_state.set_direct_side_effect_creator();
+                    else
+                        promise_state.set_transitive_side_effect_creator();
+
+                    /* after the first promise is encountered, all promises
+                       are
+                       only indirectly responsible for this side effect */
+
+                    direct = false;
                 }
             }
         }
     }
 
-    void environment_remove_var(const SEXP symbol, const SEXP rho) {
-        inspect_symbol_caller_(symbol);
+    void identify_side_effect_observers_(const Variable& var) {
+
+        const timestamp_t var_timestamp = var.get_modification_timestamp();
+
+        /* this implies we have not seen the variable before.
+           TODO - see when this case is triggered and ensure
+           there is no bug */
+        if (timestamp_is_undefined(var_timestamp)) {
+            return;
+        }
+
+        /* if the modification timestamp of the variable is
+           greater than the creation timestamp of the promise,
+           then, that promise has identified a side effect */
+
+        size_t stack_size = tracer_state_.full_stack.size();
+        bool direct = true;
+
+        for (int i = stack_size - 1; i >= 0; --i) {
+            stack_event_t exec_context = tracer_state_.full_stack[i];
+
+            // /* If the most recent context that is responsible for this
+            //    side effect is a closure, then return. Currently, we only
+            //    care about promises directly responsible for side effects.
+            //    We don't return in case of specials and builtins because
+            //    they are more like operators in a programming language and
+            //    everything ultimately happens in them and returning on
+            //    encountering them will make it look like no promise has
+            //    caused a side effect. */
+            // if (exec_context.type == stack_type::CALL &&
+            //     exec_context.function_info.type == function_type::CLOSURE) {
+            //     return;
+            // }
+
+            if (exec_context.type == stack_type::PROMISE) {
+
+                PromiseState &promise_state =
+                    tracer_state_.lookup_promise(exec_context.promise_id);
+
+                /* if promise is created before the variable it is looking at
+                   is modified, then it is a side effect observer. In other
+                   words, if this promise is forced at its point of creation,
+                   it will lookup a different value bound to this variable.*/
+                if (var_timestamp > promise_state.get_creation_timestamp()) {
+                    if (direct)
+                        promise_state.set_direct_side_effect_observer();
+                    else
+                        promise_state.set_transitive_side_effect_observer();
+
+                    /* after the first promise is encountered, all promises are
+                       only indirectly responsible for this side effect */
+
+                    direct = false;
+                }
+            }
+        }
     }
+
 
     void end(dyntracer_t *dyntracer);
     ~Analyzer();
@@ -178,19 +192,23 @@ class Analyzer {
                          int formal_parameter_count, const std::string &order,
                          const std::string &definition);
     CallState function_exit_(call_id_t call_id, sexptype_t return_value_type);
-    fn_id_t infer_caller_(int nth);
     void inspect_function_caller_(const std::string &name);
     timestamp_t get_promise_timestamp_(prom_id_t promise_id);
 
-    void inspect_symbol_caller_(const SEXP symbol) {
-        std::string name = symbol_to_string(symbol);
+    bool is_dot_dot_variable_(const Variable& var) {
+        const std::string& name = var.get_name();
+        if (name.size() < 2) {
+            return false;
+        }
+
         /* first we check that the variable starts with .. */
-        if(name[0] != '.' || name[1] != '.') return;
+        if (name[0] != '.' || name[1] != '.')
+            return false;
         /* now we check that the variable ends with
            a sequence of digits. */
-        for(int i = 2; i < name.size(); ++i) {
-            if(name[i] > '9' || name[i] < '0') {
-                return;
+        for (int i = 2; i < name.size(); ++i) {
+            if (name[i] > '9' || name[i] < '0') {
+                return false;
             }
         }
 
@@ -199,7 +217,26 @@ class Analyzer {
            from 1, ..0 will never occur but the code above will still let
            ..0 pass to this point. This should not be a problem in practice.
         */
-        symbol_user_count_mapping_.insert(name, infer_caller_(3));
+        return true;
+    }
+
+    fn_id_t get_nth_closure_(int nth) {
+        int n = 0;
+        for (auto it = call_stack_.rbegin(); it != call_stack_.rend(); ++it) {
+            if ((*it)->get_function_type() == "Closure") {
+                ++n;
+                if (n == nth) {
+                    return (*it)->get_function_id();
+                }
+            }
+        }
+        return "tracer_failed_to_infer_caller";
+    }
+
+    void inspect_symbol_caller_(const Variable& var) {
+        if(is_dot_dot_variable_(var))
+            symbol_user_count_mapping_.insert(var.get_name(),
+                                              get_nth_closure_(0));
     }
 
     bool is_undefined(const timestamp_t timestamp) const {
@@ -265,6 +302,6 @@ class Analyzer {
     std::unordered_set<fn_id_t> handled_functions_;
     CallerCountMapping function_caller_count_mapping_;
     CallerCountMapping symbol_user_count_mapping_;
-};
+    };
 
 #endif /* PROMISEDYNTRACER_ANALYZER_H */

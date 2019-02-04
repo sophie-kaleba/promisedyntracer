@@ -595,50 +595,21 @@ void adjust_stacks(dyntracer_t *dyntracer, unwind_info_t &info) {
     }
 }
 
-void environment_action(dyntracer_t *dyntracer, const SEXP symbol, SEXP value,
-                        const SEXP rho, const std::string &action) {
-    bool exists = true;
-    prom_id_t promise_id = tracer_state(dyntracer).enclosing_promise_id();
-    env_id_t environment_id = tracer_state(dyntracer).lookup_environment(rho).get_id();
-    // TODO - check if we need to force variable creation at this point
-    var_id_t variable_id = tracer_state(dyntracer).lookup_variable(rho, symbol_to_string(symbol)).get_id();
-
-    // std::string value = serialize_sexp(expression);
-    // std::string exphash = compute_hash(value.c_str());
-    // serialize variable iff it has not been seen before.
-    // if it has been seen before, then it has already been serialized.
-
-    if (!exists) {
-        // TODO
-    }
-
-    std::string action_id = action + " " + std::to_string(variable_id);
-
-    if (action == TraceSerializer::OPCODE_ENVIRONMENT_REMOVE) {
-        tracer_serializer(dyntracer).serialize(action,
-                                               tracer_state(dyntracer).lookup_environment(rho).get_id(),
-                                               variable_id,
-                                               CHAR(PRINTNAME(symbol)));
-    } else {
-        tracer_serializer(dyntracer).serialize(action,
-                                               tracer_state(dyntracer).lookup_environment(rho).get_id(),
-                                               variable_id,
-                                               CHAR(PRINTNAME(symbol)),
-                                               value_type_to_string(value));
-    }
-
-}
 
 void environment_variable_define(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP value, const SEXP rho) {
     pause_execution_timer(tracer_state(dyntracer));
 
-    tracer_state(dyntracer).define_variable(rho, symbol);
+    Variable &var = tracer_state(dyntracer).define_variable(rho, symbol);
 
-    tracer_analyzer(dyntracer).environment_define_var(symbol, value, rho);
+    tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_ENVIRONMENT_DEFINE,
+                                           var.get_environment_id(),
+                                           var.get_id(),
+                                           var.get_name(),
+                                           value_type_to_string(value));
 
-    environment_action(dyntracer, symbol, value, rho,
-                       TraceSerializer::OPCODE_ENVIRONMENT_DEFINE);
+    tracer_analyzer(dyntracer).environment_variable_define(var);
+
     resume_execution_timer(tracer_state(dyntracer));
 }
 
@@ -646,10 +617,16 @@ void environment_variable_assign(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP value, const SEXP rho) {
     pause_execution_timer(tracer_state(dyntracer));
 
-    tracer_analyzer(dyntracer).environment_assign_var(symbol, value, rho);
+    Variable& var = tracer_state(dyntracer).update_variable(rho, symbol);
 
-    environment_action(dyntracer, symbol, value, rho,
-                       TraceSerializer::OPCODE_ENVIRONMENT_ASSIGN);
+    tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_ENVIRONMENT_ASSIGN,
+                                           var.get_environment_id(),
+                                           var.get_id(),
+                                           var.get_name(),
+                                           value_type_to_string(value));
+
+    tracer_analyzer(dyntracer).environment_variable_assign(var);
+
     resume_execution_timer(tracer_state(dyntracer));
 }
 
@@ -657,10 +634,15 @@ void environment_variable_remove(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP rho) {
     pause_execution_timer(tracer_state(dyntracer));
 
-    tracer_analyzer(dyntracer).environment_remove_var(symbol, rho);
+    Variable var = tracer_state(dyntracer).lookup_variable(rho, symbol);
 
-    environment_action(dyntracer, symbol, R_UnboundValue, rho,
-                       TraceSerializer::OPCODE_ENVIRONMENT_REMOVE);
+    tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_ENVIRONMENT_REMOVE,
+                                           var.get_environment_id(),
+                                           var.get_id(),
+                                           var.get_name());
+
+    tracer_analyzer(dyntracer).environment_variable_remove(var);
+
     resume_execution_timer(tracer_state(dyntracer));
 }
 
@@ -668,9 +650,13 @@ void environment_variable_lookup(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP value, const SEXP rho) {
     pause_execution_timer(tracer_state(dyntracer));
 
-    tracer_analyzer(dyntracer).environment_lookup_var(symbol, value, rho);
+    Variable& var = tracer_state(dyntracer).lookup_variable(rho, symbol);
 
-    environment_action(dyntracer, symbol, value, rho,
-                       TraceSerializer::OPCODE_ENVIRONMENT_LOOKUP);
+    tracer_serializer(dyntracer).serialize(
+        TraceSerializer::OPCODE_ENVIRONMENT_LOOKUP, var.get_environment_id(), var.get_id(),
+        var.get_name(), value_type_to_string(value));
+
+    tracer_analyzer(dyntracer).environment_variable_lookup(var);
+
     resume_execution_timer(tracer_state(dyntracer));
 }

@@ -39,7 +39,7 @@ class PromiseState {
           direct_lexical_scope_mutator_(false),
           transitive_non_lexical_scope_mutator_(false),
           direct_non_lexical_scope_mutator_(false),
-          creation_timestamp_(BEFORE_TIME_BEGAN) {}
+          creation_timestamp_(UNDEFINED_TIMESTAMP) {}
 
     void make_function_argument(fn_id_t fn_id, call_id_t call_id,
                                     int formal_parameter_position,

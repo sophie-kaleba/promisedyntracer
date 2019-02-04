@@ -295,26 +295,37 @@ struct tracer_state_t {
                               bool create_environment = true,
                               bool create_variable = true) {
         Environment& env = lookup_environment(rho, create_environment);
-        if(create_variable && !env.exists(symbol)) {
+
+        bool var_exists = env.exists(symbol);
+
+        if (create_variable && !var_exists) {
             return env.define(symbol,
                               create_next_variable_id_(),
                               get_current_timestamp());
         }
+
         return env.lookup(symbol);
     }
 
-    void define_variable(const SEXP rho, const SEXP symbol) {
-        lookup_environment(rho).define(symbol_to_string(symbol),
-                                       create_next_variable_id_(),
-                                       get_current_timestamp());
+    Variable& define_variable(const SEXP rho, const SEXP symbol,
+                              bool create_environment = true) {
+        return lookup_environment(rho, true).define(symbol_to_string(symbol),
+                                                    create_next_variable_id_(),
+                                                    get_current_timestamp());
     }
 
-    void update_variable(const SEXP rho, const SEXP symbol) {
-        lookup_variable(rho, symbol).set_modification_timestamp(get_current_timestamp());
+    Variable& update_variable(const SEXP rho, const SEXP symbol,
+                              bool create_environment = true,
+                              bool create_variable = true) {
+        Variable& var = lookup_variable(rho, symbol);
+        var.set_modification_timestamp(get_current_timestamp());
+        return var;
     }
 
-    void remove_variable(const SEXP rho, const SEXP symbol) {
-        lookup_environment(rho).remove(symbol_to_string(symbol));
+    Variable remove_variable(const SEXP rho, const SEXP symbol,
+                             bool create_environment = true) {
+        return lookup_environment(rho, create_environment)
+            .remove(symbol_to_string(symbol));
     }
 
     // env_id_t to_environment_id(SEXP rho);

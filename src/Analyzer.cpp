@@ -94,23 +94,11 @@ Analyzer::Analyzer(tracer_state_t &tracer_state,
     }
 }
 
-fn_id_t Analyzer::infer_caller_(int nth) {
-    int n = 0;
-    for (auto it = call_stack_.rbegin(); it != call_stack_.rend(); ++it) {
-        if ((*it)->get_function_type() == "Closure") {
-            ++n;
-            if(n == nth) {
-                return (*it) -> get_function_id();
-            }
-        }
-    }
-    return "tracer_failed_to_infer_caller";
-}
 
 void Analyzer::inspect_function_caller_(const std::string &name) {
     for(auto& function_name : interesting_function_names_) {
         if(name != function_name) { continue; }
-        function_caller_count_mapping_.insert(function_name, infer_caller_(1));
+        function_caller_count_mapping_.insert(function_name, get_nth_closure_(1));
         return;
     }
     // for(auto& key_value : caller_count_mapping_) {

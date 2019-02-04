@@ -35,12 +35,20 @@ public:
                 const timestamp_t timestamp) {
         auto iter = variable_mapping_.insert({symbol, Variable(symbol,
                                                                var_id,
-                                                               timestamp)});
+                                                               timestamp,
+                                                               rho_,
+                                                               get_id())});
         return iter.first -> second;
     }
 
-    void remove(const std::string& symbol) {
-        variable_mapping_.erase(symbol);
+    Variable remove(const std::string& symbol) {
+        const auto iter = variable_mapping_.find(symbol);
+        if(iter == variable_mapping_.end()) {
+            dyntrace_log_error("ERROR: unable to find variable for removal");
+        }
+        Variable var = iter -> second;
+        variable_mapping_.erase(iter);
+        return var;
     }
 
 private:
