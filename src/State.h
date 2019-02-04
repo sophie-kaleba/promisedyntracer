@@ -374,7 +374,7 @@ struct tracer_state_t {
         promise_mapper_.clear();
     }
 
-    void push_execution_context(closure_info_t& info) {
+    void push_execution_context(const closure_info_t &info) {
         stack_event_t stack_elem;
         stack_elem.type = stack_type::CALL;
         stack_elem.call_id = info.call_id;
@@ -384,7 +384,25 @@ struct tracer_state_t {
         full_stack.push_back(stack_elem);
     }
 
-    void pop_execution_context(closure_info_t &info) {
+    void push_execution_context(const builtin_info_t &info) {
+        stack_event_t stack_elem;
+        stack_elem.type = stack_type::CALL;
+        stack_elem.call_id = info.call_id;
+        stack_elem.function_info.function_id = info.fn_id;
+        stack_elem.function_info.type = info.fn_type;
+        stack_elem.environment = info.call_ptr;
+        full_stack.push_back(stack_elem);
+    }
+
+    void push_execution_context(const prom_info_t& info, const SEXP env) {
+        stack_event_t stack_elem;
+        stack_elem.type = stack_type::PROMISE;
+        stack_elem.promise_id = info.prom_id;
+        stack_elem.environment = env;
+        full_stack.push_back(stack_elem);
+    }
+
+    void pop_execution_context(const closure_info_t &info) {
         auto exec_context = full_stack.back();
         if (exec_context.type != stack_type::CALL ||
             exec_context.call_id != info.call_id) {
@@ -393,6 +411,32 @@ struct tracer_state_t {
                 " but was expected to be closure with id %d",
                 exec_context.type == stack_type::PROMISE ? "promise" : "call",
                 exec_context.call_id, info.call_id);
+        }
+        full_stack.pop_back();
+    }
+
+    void pop_execution_context(const builtin_info_t &info) {
+        auto thing_on_stack = full_stack.back();
+        if (thing_on_stack.type != stack_type::CALL ||
+            thing_on_stack.call_id != info.call_id) {
+            dyntrace_log_warning(
+                "Object on stack was %s with id %d,"
+                " but was expected to be built-in with id %d",
+                thing_on_stack.type == stack_type::PROMISE ? "promise" : "call",
+                thing_on_stack.call_id, info.call_id);
+        }
+        full_stack.pop_back();
+    }
+
+    void pop_execution_context(const prom_info_t& info) {
+        auto thing_on_stack = full_stack.back();
+        if (thing_on_stack.type != stack_type::PROMISE ||
+            thing_on_stack.promise_id != info.prom_id) {
+            dyntrace_log_warning(
+                "Object on stack was %s with id %d,"
+                " but was expected to be promise with id %d",
+                thing_on_stack.type == stack_type::PROMISE ? "promise" : "call",
+                thing_on_stack.promise_id, info.prom_id);
         }
         full_stack.pop_back();
     }

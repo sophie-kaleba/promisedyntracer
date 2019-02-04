@@ -186,14 +186,7 @@ void print_entry_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     else
         analysis_driver(dyntracer).builtin_entry(info);
 
-    stack_event_t stack_elem;
-    stack_elem.type = stack_type::CALL;
-    stack_elem.call_id = info.call_id;
-    stack_elem.function_info.function_id = info.fn_id;
-    stack_elem.function_info.type = info.fn_type;
-    stack_elem.environment = info.call_ptr;
-    tracer_state(dyntracer).full_stack.push_back(stack_elem);
-
+    tracer_state(dyntracer).push_execution_context(info);
 
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_FUNCTION_BEGIN,
@@ -216,17 +209,7 @@ void print_exit_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     else
         analysis_driver(dyntracer).builtin_exit(info);
 
-    auto thing_on_stack = tracer_state(dyntracer).full_stack.back();
-    if (thing_on_stack.type != stack_type::CALL ||
-        thing_on_stack.call_id != info.call_id) {
-        dyntrace_log_warning(
-            "Object on stack was %s with id %d,"
-            " but was expected to be built-in with id %d",
-            thing_on_stack.type == stack_type::PROMISE ? "promise" : "call",
-            thing_on_stack.call_id, info.call_id);
-    }
-    tracer_state(dyntracer).full_stack.pop_back();
-
+    tracer_state(dyntracer).pop_execution_context(info);
 
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_FUNCTION_FINISH, info.call_id, false);
@@ -280,19 +263,15 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
 
     prom_info_t info = force_promise_entry_get_info(dyntracer, promise);
 
-    env_id_t env_id = tracer_state(dyntracer)
-        .lookup_environment(dyntrace_get_promise_environment(promise))
-        .get_id();
+    SEXP promise_env = dyntrace_get_promise_environment(promise);
+    env_id_t env_id =
+            tracer_state(dyntracer).lookup_environment(promise_env).get_id();
 
     tracer_state(dyntracer).insert_promise(info.prom_id, env_id);
 
     analysis_driver(dyntracer).promise_force_entry(info, promise);
 
-    stack_event_t stack_elem;
-    stack_elem.type = stack_type::PROMISE;
-    stack_elem.promise_id = info.prom_id;
-    stack_elem.environment = dyntrace_get_promise_environment(promise);
-    tracer_state(dyntracer).full_stack.push_back(stack_elem);
+    tracer_state(dyntracer).push_execution_context(info, promise_env);
 
     std::string ent_id = std::string("ent ") + std::to_string(info.prom_id);
 
@@ -313,16 +292,7 @@ void promise_force_exit(dyntracer_t *dyntracer, const SEXP promise) {
 
     analysis_driver(dyntracer).promise_force_exit(info, promise);
 
-    auto thing_on_stack = tracer_state(dyntracer).full_stack.back();
-    if (thing_on_stack.type != stack_type::PROMISE ||
-        thing_on_stack.promise_id != info.prom_id) {
-        dyntrace_log_warning(
-            "Object on stack was %s with id %d,"
-            " but was expected to be promise with id %d",
-            thing_on_stack.type == stack_type::PROMISE ? "promise" : "call",
-            thing_on_stack.promise_id, info.prom_id);
-    }
-    tracer_state(dyntracer).full_stack.pop_back();
+    tracer_state(dyntracer).pop_execution_context(info);
 
     std::string ext_id = std::string("ext ") + std::to_string(info.prom_id);
 
@@ -662,6 +632,8 @@ void environment_action(dyntracer_t *dyntracer, const SEXP symbol, SEXP value,
 void environment_variable_define(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP value, const SEXP rho) {
     pause_execution_timer(tracer_state(dyntracer));
+
+    tracer_state(dyntracer).define_variable(rho, symbol);
 
     analysis_driver(dyntracer).environment_define_var(symbol, value, rho);
 
