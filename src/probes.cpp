@@ -178,17 +178,14 @@ void special_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 void print_entry_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                       const SEXP args, const SEXP rho, function_type fn_type) {
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
     builtin_info_t info =
         builtin_entry_get_info(dyntracer, call, op, rho, fn_type);
-#endif
 
     if (info.fn_type == function_type::SPECIAL)
         analysis_driver(dyntracer).special_entry(info);
     else
         analysis_driver(dyntracer).builtin_entry(info);
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
     stack_event_t stack_elem;
     stack_elem.type = stack_type::CALL;
     stack_elem.call_id = info.call_id;
@@ -196,16 +193,14 @@ void print_entry_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     stack_elem.function_info.type = info.fn_type;
     stack_elem.environment = info.call_ptr;
     tracer_state(dyntracer).full_stack.push_back(stack_elem);
-#endif
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
+
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_FUNCTION_BEGIN,
         sexptype_to_string(info.fn_type == function_type::SPECIAL ? SPECIALSXP
                                                                   : BUILTINSXP),
         info.fn_id, info.call_id,
         tracer_state(dyntracer).lookup_environment(rho).get_id());
-#endif
 
 }
 
@@ -213,17 +208,14 @@ void print_exit_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                      const SEXP args, const SEXP rho, function_type fn_type,
                      const SEXP retval) {
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
     builtin_info_t info =
         builtin_exit_get_info(dyntracer, call, op, rho, fn_type, retval);
-#endif
 
     if (info.fn_type == function_type::SPECIAL)
         analysis_driver(dyntracer).special_exit(info);
     else
         analysis_driver(dyntracer).builtin_exit(info);
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
     auto thing_on_stack = tracer_state(dyntracer).full_stack.back();
     if (thing_on_stack.type != stack_type::CALL ||
         thing_on_stack.call_id != info.call_id) {
@@ -234,16 +226,11 @@ void print_exit_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
             thing_on_stack.call_id, info.call_id);
     }
     tracer_state(dyntracer).full_stack.pop_back();
-#endif
 
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_FUNCTION_FINISH, info.call_id, false);
-#endif
 
-#ifndef RDT_IGNORE_SPECIALS_AND_BUILTINS
-#endif
 }
 
 void gc_allocate(dyntracer_t *dyntracer, const SEXP object) {
