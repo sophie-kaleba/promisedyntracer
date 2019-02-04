@@ -3,13 +3,11 @@
 const size_t FUNCTION_MAPPING_BUCKET_SIZE = 20000;
 
 StrictnessAnalysis::StrictnessAnalysis(tracer_state_t &tracer_state,
-                                       PromiseMapper *const promise_mapper,
                                        const std::string &output_dir,
                                        bool truncate, bool binary,
                                        int compression_level)
     : tracer_state_(tracer_state), output_dir_(output_dir),
       //truncate_{truncate}, binary_{binary}, compression_level_{compression_level},
-      promise_mapper_(promise_mapper),
       functions_(std::unordered_map<fn_id_t, FunctionState>(
           FUNCTION_MAPPING_BUCKET_SIZE)),
       closure_type_(sexptype_to_string(CLOSXP)),
@@ -247,20 +245,15 @@ void StrictnessAnalysis::context_jump(const unwind_info_t &info) {
 
 void StrictnessAnalysis::promise_created(const prom_basic_info_t &prom_basic_info,
                                          const SEXP promise) {
-    update_promise_timestamp_(prom_basic_info.prom_id);
-}
-
-void StrictnessAnalysis::update_promise_timestamp_(prom_id_t promise_id) {
-    promise_mapper_ -> find(promise_id).set_timestamp(tracer_state_.create_next_timestamp());
 }
 
 timestamp_t StrictnessAnalysis::get_promise_timestamp_(prom_id_t promise_id) {
-    return promise_mapper_ -> find(promise_id).get_timestamp();
+    return tracer_state_.lookup_promise(promise_id).get_creation_timestamp();
 }
 
 void StrictnessAnalysis::promise_force_entry(const prom_info_t &prom_info,
                                              const SEXP promise) {
-    PromiseState &promise_state{promise_mapper_->find(prom_info.prom_id)};
+    PromiseState &promise_state{tracer_state_.lookup_promise(prom_info.prom_id)};
 
     /* if promise is not an argument, then don't process it. */
     if (!promise_state.argument) {
@@ -276,7 +269,8 @@ void StrictnessAnalysis::promise_force_entry(const prom_info_t &prom_info,
 
 void StrictnessAnalysis::promise_force_exit(const prom_info_t &prom_info,
                                             const SEXP promise) {
-    PromiseState &promise_state{promise_mapper_->find(prom_info.prom_id)};
+    PromiseState &promise_state{
+        tracer_state_.lookup_promise(prom_info.prom_id)};
 
     /* if promise is not an argument, then don't process it. */
     if (!promise_state.argument) {
@@ -291,7 +285,8 @@ void StrictnessAnalysis::promise_force_exit(const prom_info_t &prom_info,
 
 void StrictnessAnalysis::promise_value_lookup(const prom_info_t &prom_info,
                                               const SEXP promise) {
-    PromiseState &promise_state{promise_mapper_->find(prom_info.prom_id)};
+    PromiseState &promise_state{
+        tracer_state_.lookup_promise(prom_info.prom_id)};
 
     /* if promise is not an argument, then don't process it. */
     if (!promise_state.argument) {
@@ -415,7 +410,8 @@ void StrictnessAnalysis::serialize_call_(const CallState &call_state) {
 
 void StrictnessAnalysis::metaprogram_(const prom_info_t &prom_info,
                                       const SEXP promise) {
-    PromiseState &promise_state{promise_mapper_->find(prom_info.prom_id)};
+    PromiseState &promise_state{
+        tracer_state_.lookup_promise(prom_info.prom_id)};
 
     /* if promise is not an argument, then don't process it. */
     if (!promise_state.argument) {

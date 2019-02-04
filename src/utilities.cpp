@@ -3,17 +3,17 @@
 #include "lookup.h"
 #include <algorithm>
 
-size_t SQLITE3_ERROR_MESSAGE_BUFFER_SIZE = 1000;
-size_t SQLITE3_EXPANDED_SQL_BUFFER_SIZE = 2000;
-
 /* https://stackoverflow.com/questions/8206387/using-non-printable-characters-as-a-delimiter-in-php
  */
 const char RECORD_SEPARATOR = 0x1e;
 const char UNIT_SEPARATOR = 0x1f;
-std::size_t tracer_timestamp = 0;
 
 const eval_depth_t ESCAPED_PROMISE_EVAL_DEPTH = {-2, -2, -2};
 const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH = {-1, -1, -1};
+
+const size_t PROMISE_MAPPING_BUCKET_COUNT = 1000000;
+
+const timestamp_t BEFORE_TIME_BEGAN = -1;
 
 int get_file_size(std::ifstream &file) {
     int position = file.tellg();

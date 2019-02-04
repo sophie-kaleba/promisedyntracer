@@ -1,7 +1,6 @@
 #ifndef __PROMISE_STATE_H__
 #define __PROMISE_STATE_H__
 
-#include "State.h"
 #include "utilities.h"
 
 class PromiseState {
@@ -26,21 +25,25 @@ class PromiseState {
     parameter_mode_t parameter_mode;
     bool evaluated;
     std::vector<int> mutations;
-    bool side_effect_observer_;
-    bool side_effect_creator_;
-    timestamp_t timestamp_;
 
     PromiseState(prom_id_t id, env_id_t env_, bool local)
-        : local(local), argument(false), id(id), env_id(env_id), fn_id(""),
+        : local(local), argument(false), id(id), env_id(env_), fn_id(""),
           call_id(0), formal_parameter_position(-1),
           parameter_mode(parameter_mode_t::UNASSIGNED), evaluated(false),
           mutations(std::vector<int>(to_underlying_type(SlotMutation::COUNT))),
-          side_effect_observer_(false), side_effect_creator_(false) {
-    }
+          transitive_side_effect_observer_(false),
+          direct_side_effect_observer_(false),
+          transitive_side_effect_creator_(false),
+          direct_side_effect_creator_(false),
+          transitive_lexical_scope_mutator_(false),
+          direct_lexical_scope_mutator_(false),
+          transitive_non_lexical_scope_mutator_(false),
+          direct_non_lexical_scope_mutator_(false),
+          creation_timestamp_(BEFORE_TIME_BEGAN) {}
 
     void make_function_argument(fn_id_t fn_id, call_id_t call_id,
-                                int formal_parameter_position,
-                                parameter_mode_t parameter_mode) {
+                                    int formal_parameter_position,
+                                    parameter_mode_t parameter_mode) {
         this->argument = true;
         this->local = true;
         this->fn_id = fn_id;
@@ -53,29 +56,88 @@ class PromiseState {
         ++mutations[to_underlying_type(slot_mutation)];
     }
 
-    void set_side_effect_observer() {
-        side_effect_observer_ = true;
+    bool is_transitive_side_effect_observer() const {
+        return transitive_side_effect_observer_;
     }
 
-    bool is_side_effect_observer() const {
-        return side_effect_observer_;
+    bool is_direct_side_effect_observer() const {
+        return direct_side_effect_observer_;
     }
 
-    void set_side_effect_creator() {
-        side_effect_creator_ = true;
+    bool is_transitive_side_effect_creator() const {
+        return transitive_side_effect_creator_;
     }
 
-    bool is_side_effect_creator() const {
-        return side_effect_creator_;
+    bool is_direct_side_effect_creator() const {
+        return direct_side_effect_creator_;
     }
 
-    void set_timestamp(timestamp_t timestamp) {
-        timestamp_ = timestamp;
+    bool is_transitive_lexical_scope_mutator() const {
+        return transitive_lexical_scope_mutator_;
     }
 
-    timestamp_t get_timestamp() const {
-        return timestamp_;
+    bool is_direct_lexical_scope_mutator() const {
+        return direct_lexical_scope_mutator_;
     }
+
+    bool is_transitive_non_lexical_scope_mutator() const {
+        return transitive_non_lexical_scope_mutator_;
+    }
+
+    bool is_direct_non_lexical_scope_mutator() const {
+        return direct_non_lexical_scope_mutator_;
+    }
+
+    void set_transitive_side_effect_observer() {
+        transitive_side_effect_observer_ = true;
+    }
+
+    void set_direct_side_effect_observer() {
+        direct_side_effect_observer_ = true;
+    }
+
+    void set_transitive_side_effect_creator() {
+        transitive_side_effect_creator_ = true;
+    }
+
+    void set_direct_side_effect_creator() {
+        direct_side_effect_creator_ = true;
+    }
+
+    void set_transitive_lexical_scope_mutator() {
+        transitive_lexical_scope_mutator_ = true;
+    }
+
+    void set_direct_lexical_scope_mutator() {
+        direct_lexical_scope_mutator_ = true;
+    }
+
+    void set_transitive_non_lexical_scope_mutator() {
+        transitive_non_lexical_scope_mutator_ = true;
+    }
+
+    void set_direct_non_lexical_scope_mutator() {
+        direct_non_lexical_scope_mutator_ = true;
+    }
+
+    void set_creation_timestamp(timestamp_t creation_timestamp) {
+        creation_timestamp_ = creation_timestamp;
+    }
+
+    timestamp_t get_creation_timestamp() const {
+        return creation_timestamp_;
+    }
+
+private:
+    timestamp_t creation_timestamp_;
+    bool transitive_side_effect_observer_;
+    bool direct_side_effect_observer_;
+    bool transitive_side_effect_creator_;
+    bool direct_side_effect_creator_;
+    bool transitive_lexical_scope_mutator_;
+    bool direct_lexical_scope_mutator_;
+    bool transitive_non_lexical_scope_mutator_;
+    bool direct_non_lexical_scope_mutator_;
 };
 
 std::string to_string(PromiseState::SlotMutation slot_mutation);

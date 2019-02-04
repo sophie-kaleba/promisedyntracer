@@ -53,7 +53,6 @@ class AnalysisDriver {
 
   private:
     AnalysisSwitch analysis_switch_;
-    PromiseMapper promise_mapper_;
     StrictnessAnalysis strictness_analysis_;
 };
 

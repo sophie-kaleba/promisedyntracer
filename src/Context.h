@@ -12,7 +12,7 @@ class Context {
     Context(std::string trace_filepath, bool truncate, bool enable_trace,
             bool verbose, std::string output_dir, bool binary,
             int compression_level, AnalysisSwitch analysis_switch)
-        : state_(new tracer_state_t()), analysis_switch_{analysis_switch},
+        : state_(new tracer_state_t()), analysis_switch_(analysis_switch),
           serializer_(
               new TraceSerializer(trace_filepath, truncate, enable_trace)),
           driver_(new AnalysisDriver(*state_, verbose, output_dir, truncate,

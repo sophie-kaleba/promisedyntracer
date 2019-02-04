@@ -16,7 +16,6 @@
 class StrictnessAnalysis {
   public:
     StrictnessAnalysis(tracer_state_t &tracer_state,
-                       PromiseMapper *const promise_mapper,
                        const std::string &output_dir, bool truncate,
                        bool binary, int compression_level);
     void closure_entry(const closure_info_t &closure_info);
@@ -43,14 +42,11 @@ class StrictnessAnalysis {
 
     void gc_promise_unmarked(const prom_id_t prom_id,
                              const SEXP promise) {
-        /* TODO - this case throws exception for foreign promises.
-                  Figure out a way to fix that. */
-        return;
-        const PromiseState& promise_state = promise_mapper_ -> find(prom_id);
-        side_effecting_promises_data_table_->write_row(
-            promise_state.fn_id, promise_state.formal_parameter_position,
-            promise_state.is_side_effect_observer(),
-            promise_state.is_side_effect_creator());
+        const PromiseState& promise_state = tracer_state_.lookup_promise(prom_id);
+        // side_effecting_promises_data_table_ -> write_row(
+        //     promise_state.fn_id, promise_state.formal_parameter_position,
+        //     promise_state.is_direct_side_effect_observer(),
+        //     promise_state.is_transitive_side_effect_observer());
     }
 
     void environment_define_var(const SEXP symbol, const SEXP value,
@@ -114,9 +110,9 @@ class StrictnessAnalysis {
                 return;
             } else if (exec_context.type == stack_type::PROMISE) {
                 if(exec_context.environment != rho) {
-                    promise_mapper_
-                        -> find(exec_context.promise_id)
-                        .set_side_effect_creator();
+                    tracer_state_
+                        .lookup_promise(exec_context.promise_id)
+                        .set_direct_side_effect_creator();
                 }
                 return;
             }
@@ -155,7 +151,7 @@ class StrictnessAnalysis {
                     promise_timestamp < variable_timestamp) {
                     /* Now we need to check if the promise is an argument promise
                        or a non argument promise. */
-                    promise_mapper_ -> find(exec_context.promise_id).set_side_effect_observer();
+                    tracer_state_.lookup_promise(exec_context.promise_id).set_direct_side_effect_observer();
                 }
             }
         }
@@ -184,7 +180,6 @@ class StrictnessAnalysis {
     fn_id_t infer_caller_(int nth);
     void inspect_function_caller_(const std::string &name);
     timestamp_t get_promise_timestamp_(prom_id_t promise_id);
-    void update_promise_timestamp_(prom_id_t promise_id);
 
     void inspect_symbol_caller_(const SEXP symbol) {
         std::string name = symbol_to_string(symbol);
@@ -252,7 +247,6 @@ class StrictnessAnalysis {
     // bool truncate_;
     // bool binary_;
     // int compression_level_;
-    PromiseMapper *const promise_mapper_;
     std::unordered_map<fn_id_t, FunctionState> functions_;
     std::vector<std::string> interesting_function_names_;
     const std::string closure_type_;

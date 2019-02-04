@@ -1,5 +1,4 @@
 #include "recorder.h"
-#include "Timer.h"
 #include "lookup.h"
 
 void update_closure_argument(closure_info_t &info, dyntracer_t *dyntracer,
@@ -12,7 +11,7 @@ void update_closure_argument(closure_info_t &info, dyntracer_t *dyntracer,
     SEXPTYPE arg_name_type = TYPEOF(arg_name);
 
     if (arg_name != R_NilValue) {
-        argument.name = string(get_name(arg_name));
+        argument.name = std::string(get_name(arg_name));
     } else {
         argument.name = "promise_dyntracer::missing_name";
     }
@@ -85,7 +84,7 @@ void update_closure_arguments(closure_info_t &info, dyntracer_t *dyntracer,
                     // like
                     // that. If we do, then we should fail here and re-think our
                     // life choices.
-                    string msg = lookup_status_to_string(r.status);
+                    std::string msg = lookup_status_to_string(r.status);
                     dyntrace_log_error("%s", msg.c_str());
                 }
             }
@@ -102,7 +101,6 @@ void update_closure_arguments(closure_info_t &info, dyntracer_t *dyntracer,
 closure_info_t function_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
                                        const SEXP op, const SEXP args,
                                        const SEXP rho) {
-    RECORDER_TIMER_RESET();
     closure_info_t info;
 
     const char *name = get_name(call);
@@ -110,52 +108,41 @@ closure_info_t function_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
 
     info.fn_compiled = is_byte_compiled(op);
     info.fn_type = function_type::CLOSURE;
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_OTHER);
 
     info.fn_definition = get_function_definition(dyntracer, op);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_DEFINITION);
 
     info.fn_id = get_function_id(dyntracer, info.fn_definition);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_FUNCTION_ID);
 
     info.fn_addr = op;
     info.call_ptr = rho;
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_OTHER);
 
     info.call_id = make_funcall_id(dyntracer, op);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_CALL_ID);
 
     stack_event_t event = get_last_on_stack_by_type(
         tracer_state(dyntracer).full_stack, stack_type::CALL);
     info.parent_call_id = event.type == stack_type::NONE ? 0 : event.call_id;
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_PARENT_ID);
 
     info.definition_location = get_definition_location_cpp(op);
     info.callsite_location = get_callsite_cpp(1);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_LOCATION);
 
     void (*probe)(dyntracer_t *, SEXP);
     probe = dyntrace_active_dyntracer->probe_promise_expression_lookup;
     dyntrace_active_dyntracer->probe_promise_expression_lookup = NULL;
     info.call_expression = get_expression(call);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_EXPRESSION);
 
     dyntrace_active_dyntracer->probe_promise_expression_lookup = probe;
     if (ns) {
-        info.name = string(ns) + "::" + check_string(name);
+        info.name = std::string(ns) + "::" + check_string(name);
     } else {
         if (name != NULL)
             info.name = name;
     }
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_NAME);
 
     update_closure_arguments(info, dyntracer, info.call_id, FORMALS(op),
                              FRAME(rho), rho);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_ARGUMENTS);
 
     get_stack_parent(info, tracer_state(dyntracer).full_stack);
     info.in_prom_id = get_parent_promise(dyntracer);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_ENTRY_RECORDER_PARENT_PROMISE);
 
     return info;
 }
@@ -163,46 +150,37 @@ closure_info_t function_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
 closure_info_t function_exit_get_info(dyntracer_t *dyntracer, const SEXP call,
                                       const SEXP op, const SEXP args,
                                       const SEXP rho, const SEXP retval) {
-    RECORDER_TIMER_RESET();
     closure_info_t info;
 
     const char *name = get_name(call);
     const char *ns = get_ns_name(op);
 
     info.fn_compiled = is_byte_compiled(op);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_OTHER);
 
     info.fn_definition = get_function_definition(dyntracer, op);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_DEFINITION);
 
     info.fn_id = get_function_id(dyntracer, info.fn_definition);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_FUNCTION_ID);
 
     info.fn_addr = op;
 
     stack_event_t call_event = get_last_on_stack_by_type(
         tracer_state(dyntracer).full_stack, stack_type::CALL);
     info.call_id = call_event.type == stack_type::NONE ? 0 : call_event.call_id;
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_CALL_ID);
 
     info.fn_type = function_type::CLOSURE;
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_OTHER);
 
     info.definition_location = get_definition_location_cpp(op);
     info.callsite_location = get_callsite_cpp(0);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_LOCATION);
 
     if (ns) {
-        info.name = string(ns) + "::" + check_string(name);
+        info.name = std::string(ns) + "::" + check_string(name);
     } else {
         if (name != NULL)
             info.name = name;
     }
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_NAME);
 
     update_closure_arguments(info, dyntracer, info.call_id, FORMALS(op),
                              FRAME(rho), rho);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_ARGUMENTS);
 
     info.fn_definition = get_expression(op);
 
@@ -210,14 +188,11 @@ closure_info_t function_exit_get_info(dyntracer_t *dyntracer, const SEXP call,
         tracer_state(dyntracer).full_stack, stack_type::CALL, 1);
     info.parent_call_id =
         parent_call.type == stack_type::NONE ? 0 : parent_call.call_id;
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_PARENT_ID);
 
     get_stack_parent2(info, tracer_state(dyntracer).full_stack);
     info.in_prom_id = get_parent_promise(dyntracer);
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_PARENT_PROMISE);
 
     info.return_value_type = static_cast<sexptype_t>(TYPEOF(retval));
-    RECORDER_TIMER_END_SEGMENT(FUNCTION_EXIT_RECORDER_OTHER);
 
     return info;
 }

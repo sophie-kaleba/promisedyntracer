@@ -2,7 +2,6 @@
 #define PROMISEDYNTRACER_FUNCTION_ANALYSIS_H
 
 #include "State.h"
-#include "Timer.h"
 #include "table.h"
 #include "utilities.h"
 

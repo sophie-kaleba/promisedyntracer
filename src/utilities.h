@@ -5,8 +5,38 @@
 #include "stdlibs.h"
 #include <openssl/evp.h>
 
-typedef std::size_t timestamp_t;
-extern std::size_t tracer_timestamp;
+#define RID_INVALID 0 //(rid_t) - 1
+
+// Typical human-readable representation
+typedef uintptr_t rid_t; // hexadecimal
+typedef intptr_t rsid_t; // hexadecimal
+
+// typedef rsid_t prom_id_t;  // hexadecimal
+typedef rsid_t prom_id_t;
+typedef rid_t
+    call_id_t; // integer TODO this is pedantic, but shouldn't this be int?
+
+typedef std::string fn_id_t;  // integer
+typedef std::string fn_key_t; // pun
+typedef int env_id_t;
+typedef int var_id_t;
+typedef unsigned long int arg_id_t; // integer
+
+typedef int event_t;
+
+typedef std::pair<call_id_t, std::string> arg_key_t;
+
+enum class parameter_mode_t {
+    UNASSIGNED = 0,
+    MISSING,
+    DEFAULT,
+    CUSTOM,
+    NONPROMISE
+};
+
+typedef long long int timestamp_t;
+extern const timestamp_t BEFORE_TIME_BEGAN;
+
 extern const char UNIT_SEPARATOR;
 extern const char RECORD_SEPARATOR;
 
@@ -18,6 +48,11 @@ struct eval_depth_t {
 
 extern const eval_depth_t ESCAPED_PROMISE_EVAL_DEPTH;
 extern const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH;
+
+extern const size_t PROMISE_MAPPING_BUCKET_COUNT;
+
+
+
 
 #define failwith(format, ...)                                                  \
     failwith_impl(__FILE__, __LINE__, format, __VA_ARGS__)

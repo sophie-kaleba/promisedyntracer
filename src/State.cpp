@@ -65,9 +65,9 @@ static stack_event_t make_dummy_stack_event() {
 }
 
 // TODO return pointer?
-stack_event_t get_last_on_stack_by_type(vector<stack_event_t> &stack,
+stack_event_t get_last_on_stack_by_type(std::vector<stack_event_t> &stack,
                                         stack_type type) {
-    for (vector<stack_event_t>::reverse_iterator i = stack.rbegin();
+    for (std::vector<stack_event_t>::reverse_iterator i = stack.rbegin();
          i != stack.rend(); ++i)
         if (type == i->type)
             return *i;
@@ -75,10 +75,10 @@ stack_event_t get_last_on_stack_by_type(vector<stack_event_t> &stack,
     return make_dummy_stack_event();
 }
 
-stack_event_t get_from_back_of_stack_by_type(vector<stack_event_t> &stack,
+stack_event_t get_from_back_of_stack_by_type(std::vector<stack_event_t> &stack,
                                              stack_type type, int rposition) {
     int rindex = rposition;
-    for (vector<stack_event_t>::reverse_iterator i = stack.rbegin();
+    for (std::vector<stack_event_t>::reverse_iterator i = stack.rbegin();
          i != stack.rend(); ++i)
         if (type == i->type) {
             if (rindex == 0)

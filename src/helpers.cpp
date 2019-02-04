@@ -46,7 +46,7 @@ prom_id_t make_promise_id(dyntracer_t *dyntracer, SEXP promise, bool negative) {
     return prom_id;
 }
 
-string get_function_definition(dyntracer_t *dyntracer, const SEXP function) {
+std::string get_function_definition(dyntracer_t *dyntracer, const SEXP function) {
     auto &definitions = tracer_state(dyntracer).function_definitions;
     auto it = definitions.find(function);
     if (it != definitions.end()) {
@@ -58,7 +58,7 @@ string get_function_definition(dyntracer_t *dyntracer, const SEXP function) {
 #endif
         return it->second;
     } else {
-        string definition = get_expression(function);
+        std::string definition = get_expression(function);
         tracer_state(dyntracer).function_definitions[function] = definition;
         return definition;
     }
@@ -72,7 +72,7 @@ void remove_function_definition(dyntracer_t *dyntracer, const SEXP function) {
 }
 
 fn_id_t get_function_id(dyntracer_t *dyntracer,
-                        const string &function_definition, bool builtin) {
+                        const std::string &function_definition, bool builtin) {
     fn_key_t definition(function_definition);
 
     auto &function_ids = tracer_state(dyntracer).function_ids;
@@ -129,7 +129,7 @@ prom_id_t get_parent_promise(dyntracer_t *dyntracer) {
 
 size_t get_no_of_ancestor_promises_on_stack(dyntracer_t *dyntracer) {
     size_t result = 0;
-    vector<stack_event_t> &stack = tracer_state(dyntracer).full_stack;
+    std::vector<stack_event_t> &stack = tracer_state(dyntracer).full_stack;
     for (auto it = stack.begin(); it != stack.end(); ++it) {
         if (it->type == stack_type::PROMISE)
             result++;
@@ -138,7 +138,7 @@ size_t get_no_of_ancestor_promises_on_stack(dyntracer_t *dyntracer) {
 }
 
 arg_id_t get_argument_id(dyntracer_t *dyntracer, call_id_t call_id,
-                         const string &argument) {
+                         const std::string &argument) {
     arg_id_t argument_id = ++tracer_state(dyntracer).argument_id_sequence;
     return argument_id;
 }
