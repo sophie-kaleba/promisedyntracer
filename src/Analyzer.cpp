@@ -1,11 +1,11 @@
-#include "StrictnessAnalysis.h"
+#include "Analyzer.h"
 
 const size_t FUNCTION_MAPPING_BUCKET_SIZE = 20000;
 
-StrictnessAnalysis::StrictnessAnalysis(tracer_state_t &tracer_state,
-                                       const std::string &output_dir,
-                                       bool truncate, bool binary,
-                                       int compression_level)
+Analyzer::Analyzer(tracer_state_t &tracer_state,
+                   const std::string &output_dir,
+                   bool truncate, bool binary,
+                   int compression_level)
     : tracer_state_(tracer_state), output_dir_(output_dir),
       //truncate_{truncate}, binary_{binary}, compression_level_{compression_level},
       functions_(std::unordered_map<fn_id_t, FunctionState>(
@@ -76,6 +76,10 @@ StrictnessAnalysis::StrictnessAnalysis(tracer_state_t &tracer_state,
     // caller_count_mapping_.insert({"::enquote", {}});
     // caller_count_mapping_.insert({"base::enquote", {}});
 
+    // if (verbose) {
+    //     std::cout << analysis_switch;
+    // }
+
     for(const std::string& function_name : std::vector({"force",
                                                  "forceAndCall",
                                                  "delayedAssign",
@@ -90,7 +94,7 @@ StrictnessAnalysis::StrictnessAnalysis(tracer_state_t &tracer_state,
     }
 }
 
-fn_id_t StrictnessAnalysis::infer_caller_(int nth) {
+fn_id_t Analyzer::infer_caller_(int nth) {
     int n = 0;
     for (auto it = call_stack_.rbegin(); it != call_stack_.rend(); ++it) {
         if ((*it)->get_function_type() == "Closure") {
@@ -103,7 +107,7 @@ fn_id_t StrictnessAnalysis::infer_caller_(int nth) {
     return "tracer_failed_to_infer_caller";
 }
 
-void StrictnessAnalysis::inspect_function_caller_(const std::string &name) {
+void Analyzer::inspect_function_caller_(const std::string &name) {
     for(auto& function_name : interesting_function_names_) {
         if(name != function_name) { continue; }
         function_caller_count_mapping_.insert(function_name, infer_caller_(1));
@@ -127,7 +131,7 @@ void StrictnessAnalysis::inspect_function_caller_(const std::string &name) {
     // }
 }
 
-void StrictnessAnalysis::function_entry_(call_id_t call_id, fn_id_t fn_id,
+void Analyzer::function_entry_(call_id_t call_id, fn_id_t fn_id,
                                          const std::string &fn_type,
                                          const std::string &name,
                                          int formal_parameter_count,
@@ -147,7 +151,7 @@ void StrictnessAnalysis::function_entry_(call_id_t call_id, fn_id_t fn_id,
     call_map_.insert({call_id, call_state});
 }
 
-CallState StrictnessAnalysis::function_exit_(call_id_t call_id,
+CallState Analyzer::function_exit_(call_id_t call_id,
                                              sexptype_t return_value_type) {
     CallState *call_state{call_stack_.back()};
     call_stack_.pop_back();
@@ -168,7 +172,7 @@ CallState StrictnessAnalysis::function_exit_(call_id_t call_id,
    We also update the function table to create an entry for this function.
    This entry contains the evaluation information of the function's arguments.
  */
-void StrictnessAnalysis::closure_entry(const closure_info_t &closure_info) {
+void Analyzer::closure_entry(const closure_info_t &closure_info) {
     // push call_id to call_stack
     call_id_t call_id = closure_info.call_id;
     fn_id_t fn_id = closure_info.fn_id;
@@ -206,33 +210,33 @@ void StrictnessAnalysis::closure_entry(const closure_info_t &closure_info) {
     }
 }
 
-void StrictnessAnalysis::closure_exit(const closure_info_t &closure_info) {
+void Analyzer::closure_exit(const closure_info_t &closure_info) {
     function_exit_(closure_info.call_id, closure_info.return_value_type);
 }
 
-void StrictnessAnalysis::special_entry(const builtin_info_t &special_info) {
+void Analyzer::special_entry(const builtin_info_t &special_info) {
     function_entry_(special_info.call_id, special_info.fn_id, special_type_,
                     special_info.name, special_info.formal_parameter_count,
                     std::to_string(special_info.eval),
                     special_info.fn_definition);
 }
 
-void StrictnessAnalysis::special_exit(const builtin_info_t &special_info) {
+void Analyzer::special_exit(const builtin_info_t &special_info) {
     function_exit_(special_info.call_id, special_info.return_value_type);
 }
 
-void StrictnessAnalysis::builtin_entry(const builtin_info_t &builtin_info) {
+void Analyzer::builtin_entry(const builtin_info_t &builtin_info) {
     function_entry_(builtin_info.call_id, builtin_info.fn_id, builtin_type_,
                     builtin_info.name, builtin_info.formal_parameter_count,
                     std::to_string(builtin_info.eval),
                     builtin_info.fn_definition);
 }
 
-void StrictnessAnalysis::builtin_exit(const builtin_info_t &builtin_info) {
+void Analyzer::builtin_exit(const builtin_info_t &builtin_info) {
     function_exit_(builtin_info.call_id, builtin_info.return_value_type);
 }
 
-void StrictnessAnalysis::context_jump(const unwind_info_t &info) {
+void Analyzer::context_jump(const unwind_info_t &info) {
     for (auto &element : info.unwound_frames) {
         if (element.type == stack_type::CALL) {
             CallState call_state{function_exit_(element.call_id, JUMPSXP)};
@@ -243,15 +247,15 @@ void StrictnessAnalysis::context_jump(const unwind_info_t &info) {
     }
 }
 
-void StrictnessAnalysis::promise_created(const prom_basic_info_t &prom_basic_info,
+void Analyzer::promise_created(const prom_basic_info_t &prom_basic_info,
                                          const SEXP promise) {
 }
 
-timestamp_t StrictnessAnalysis::get_promise_timestamp_(prom_id_t promise_id) {
+timestamp_t Analyzer::get_promise_timestamp_(prom_id_t promise_id) {
     return tracer_state_.lookup_promise(promise_id).get_creation_timestamp();
 }
 
-void StrictnessAnalysis::promise_force_entry(const prom_info_t &prom_info,
+void Analyzer::promise_force_entry(const prom_info_t &prom_info,
                                              const SEXP promise) {
     PromiseState &promise_state{tracer_state_.lookup_promise(prom_info.prom_id)};
 
@@ -267,7 +271,7 @@ void StrictnessAnalysis::promise_force_entry(const prom_info_t &prom_info,
                             eval_depth);
 }
 
-void StrictnessAnalysis::promise_force_exit(const prom_info_t &prom_info,
+void Analyzer::promise_force_exit(const prom_info_t &prom_info,
                                             const SEXP promise) {
     PromiseState &promise_state{
         tracer_state_.lookup_promise(prom_info.prom_id)};
@@ -283,7 +287,7 @@ void StrictnessAnalysis::promise_force_exit(const prom_info_t &prom_info,
                            tracer_state_.full_stack.back().execution_time);
 }
 
-void StrictnessAnalysis::promise_value_lookup(const prom_info_t &prom_info,
+void Analyzer::promise_value_lookup(const prom_info_t &prom_info,
                                               const SEXP promise) {
     PromiseState &promise_state{
         tracer_state_.lookup_promise(prom_info.prom_id)};
@@ -298,29 +302,29 @@ void StrictnessAnalysis::promise_value_lookup(const prom_info_t &prom_info,
     call_state->lookup(promise_state.formal_parameter_position);
 }
 
-void StrictnessAnalysis::promise_value_assign(const prom_info_t &prom_info,
+void Analyzer::promise_value_assign(const prom_info_t &prom_info,
                                               const SEXP promise) {
     metaprogram_(prom_info, promise);
 }
 
-void StrictnessAnalysis::promise_environment_lookup(
+void Analyzer::promise_environment_lookup(
     const prom_info_t &prom_info, const SEXP promise) {
     metaprogram_(prom_info, promise);
 }
-void StrictnessAnalysis::promise_environment_assign(
+void Analyzer::promise_environment_assign(
     const prom_info_t &prom_info, const SEXP promise) {
     metaprogram_(prom_info, promise);
 }
-void StrictnessAnalysis::promise_expression_lookup(const prom_info_t &prom_info,
+void Analyzer::promise_expression_lookup(const prom_info_t &prom_info,
                                                    const SEXP promise) {
     metaprogram_(prom_info, promise);
 }
-void StrictnessAnalysis::promise_expression_assign(const prom_info_t &prom_info,
+void Analyzer::promise_expression_assign(const prom_info_t &prom_info,
                                                    const SEXP promise) {
     metaprogram_(prom_info, promise);
 }
 
-void StrictnessAnalysis::end(dyntracer_t *dyntracer) {
+void Analyzer::end(dyntracer_t *dyntracer) {
 
     for (const auto &key_value : call_map_) {
         const CallState &call_state = *key_value.second;
@@ -334,7 +338,7 @@ void StrictnessAnalysis::end(dyntracer_t *dyntracer) {
 
 }
 
-// void StrictnessAnalysis::serialize_function_callers_() {
+// void Analyzer::serialize_function_callers_() {
 //     for(const auto & key_value : function_caller_count_mapping_) {
 //         for (const auto & caller_count : key_value.second) {
 //             function_caller_data_table_ -> write_row(key_value.first,
@@ -344,7 +348,7 @@ void StrictnessAnalysis::end(dyntracer_t *dyntracer) {
 //     }
 // }
 
-// void StrictnessAnalysis::serialize_function_callers_() {
+// void Analyzer::serialize_function_callers_() {
 //     for(const auto & key_value : function_caller_count_mapping_) {
 //         for (const auto & caller_count : key_value.second) {
 //             function_caller_data_table_ -> write_row(key_value.first,
@@ -354,7 +358,7 @@ void StrictnessAnalysis::end(dyntracer_t *dyntracer) {
 //     }
 // }
 
-// void StrictnessAnalysis::serialize_caller_count_mapping_(const caller_table_t& caller_count_mapping,
+// void Analyzer::serialize_caller_count_mapping_(const caller_table_t& caller_count_mapping,
 //                                                          DataTableStream* data_table) {
 //     for(const auto & key_value : caller_count_mapping_) {
 //         for (const auto & caller_count : key_value.second) {
@@ -365,7 +369,7 @@ void StrictnessAnalysis::end(dyntracer_t *dyntracer) {
 //     }
 // }
 
-StrictnessAnalysis::~StrictnessAnalysis() {
+Analyzer::~Analyzer() {
     delete argument_data_table_;
     delete call_data_table_;
     delete call_graph_data_table_;
@@ -373,7 +377,7 @@ StrictnessAnalysis::~StrictnessAnalysis() {
     delete symbol_user_data_table_;
 }
 
-void StrictnessAnalysis::serialize_arguments_(const CallState &call_state) {
+void Analyzer::serialize_arguments_(const CallState &call_state) {
 
     const auto &parameter_uses{call_state.get_parameter_uses()};
 
@@ -398,7 +402,7 @@ void StrictnessAnalysis::serialize_arguments_(const CallState &call_state) {
     }
 }
 
-void StrictnessAnalysis::serialize_call_(const CallState &call_state) {
+void Analyzer::serialize_call_(const CallState &call_state) {
     call_data_table_->write_row(
         static_cast<double>(call_state.get_call_id()),
         call_state.get_function_id(), call_state.get_function_type(),
@@ -408,7 +412,7 @@ void StrictnessAnalysis::serialize_call_(const CallState &call_state) {
         call_state.get_execution_time());
 }
 
-void StrictnessAnalysis::metaprogram_(const prom_info_t &prom_info,
+void Analyzer::metaprogram_(const prom_info_t &prom_info,
                                       const SEXP promise) {
     PromiseState &promise_state{
         tracer_state_.lookup_promise(prom_info.prom_id)};
@@ -423,7 +427,7 @@ void StrictnessAnalysis::metaprogram_(const prom_info_t &prom_info,
     call_state->metaprogram(promise_state.formal_parameter_position);
 }
 
-CallState *StrictnessAnalysis::get_call_state(const call_id_t call_id) {
+CallState *Analyzer::get_call_state(const call_id_t call_id) {
 
     auto it{call_stack_.rbegin()};
     bool leaf = true;
@@ -444,7 +448,7 @@ CallState *StrictnessAnalysis::get_call_state(const call_id_t call_id) {
     return (*it);
 }
 
-void StrictnessAnalysis::add_call_graph_edge_(const call_id_t callee_id) {
+void Analyzer::add_call_graph_edge_(const call_id_t callee_id) {
     if (call_stack_.empty())
         return;
     call_graph_data_table_->write_row(
@@ -452,7 +456,7 @@ void StrictnessAnalysis::add_call_graph_edge_(const call_id_t callee_id) {
         static_cast<double>(callee_id));
 }
 
-void StrictnessAnalysis::write_function_body_(const fn_id_t &fn_id,
+void Analyzer::write_function_body_(const fn_id_t &fn_id,
                                               const std::string &definition) {
     auto result = handled_functions_.insert(fn_id);
     if (!result.second)

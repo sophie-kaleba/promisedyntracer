@@ -1,7 +1,7 @@
 #ifndef PROMISEDYNTRACER_CONTEXT_H
 #define PROMISEDYNTRACER_CONTEXT_H
 
-#include "AnalysisDriver.h"
+#include "Analyzer.h"
 #include "AnalysisSwitch.h"
 #include "State.h"
 #include "TraceSerializer.h"
@@ -15,9 +15,8 @@ class Context {
         : state_(new tracer_state_t()), analysis_switch_(analysis_switch),
           serializer_(
               new TraceSerializer(trace_filepath, truncate, enable_trace)),
-          driver_(new AnalysisDriver(*state_, verbose, output_dir, truncate,
-                                     binary, compression_level,
-                                     analysis_switch)),
+          analyzer_(new Analyzer(*state_, output_dir, truncate,
+                                 binary, compression_level)),
           output_dir_(output_dir),
           binary_{binary}, verbose_{verbose}, truncate_{truncate},
           compression_level_{compression_level} {}
@@ -26,7 +25,7 @@ class Context {
 
     TraceSerializer &get_serializer() { return *serializer_; }
 
-    AnalysisDriver &get_analysis_driver() { return *driver_; }
+    Analyzer &get_analyzer() { return *analyzer_; }
 
     const std::string &get_output_dir() const { return output_dir_; }
 
@@ -44,7 +43,7 @@ class Context {
 
     ~Context() {
 
-        delete driver_;
+        delete analyzer_;
         delete serializer_;
         /* delete state in the end as everything else
            can store reference to the state */
@@ -55,7 +54,7 @@ class Context {
     tracer_state_t *state_;
     AnalysisSwitch analysis_switch_;
     TraceSerializer *serializer_;
-    AnalysisDriver *driver_;
+    Analyzer *analyzer_;
     std::string output_dir_;
     bool binary_;
     bool verbose_;
@@ -75,8 +74,8 @@ inline TraceSerializer &tracer_serializer(dyntracer_t *dyntracer) {
     return (static_cast<Context *>(dyntracer->state))->get_serializer();
 }
 
-inline AnalysisDriver &analysis_driver(dyntracer_t *dyntracer) {
-    return (static_cast<Context *>(dyntracer->state))->get_analysis_driver();
+inline Analyzer &tracer_analyzer(dyntracer_t *dyntracer) {
+    return (static_cast<Context *>(dyntracer->state))->get_analyzer();
 }
 
 inline const std::string &tracer_output_dir(dyntracer_t *dyntracer) {

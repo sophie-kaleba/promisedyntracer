@@ -1,5 +1,5 @@
-#ifndef PROMISEDYNTRACER_STRICTNESS_ANALYSIS_H
-#define PROMISEDYNTRACER_STRICTNESS_ANALYSIS_H
+#ifndef PROMISEDYNTRACER_ANALYZER_H
+#define PROMISEDYNTRACER_ANALYZER_H
 
 #include "CallState.h"
 #include "FunctionState.h"
@@ -13,11 +13,12 @@
 #include "CallerCountMapping.h"
 
 
-class StrictnessAnalysis {
+class Analyzer {
   public:
-    StrictnessAnalysis(tracer_state_t &tracer_state,
-                       const std::string &output_dir, bool truncate,
-                       bool binary, int compression_level);
+    Analyzer(tracer_state_t &tracer_state,
+             const std::string &output_dir, bool truncate,
+             bool binary, int compression_level);
+    void begin(dyntracer_t* dyntracer) {}
     void closure_entry(const closure_info_t &closure_info);
     void special_entry(const builtin_info_t &special_info);
     void builtin_entry(const builtin_info_t &builtin_info);
@@ -162,7 +163,7 @@ class StrictnessAnalysis {
     }
 
     void end(dyntracer_t *dyntracer);
-    ~StrictnessAnalysis();
+    ~Analyzer();
 
   private:
     void serialize_call_(const CallState &call_state);
@@ -266,4 +267,4 @@ class StrictnessAnalysis {
     CallerCountMapping symbol_user_count_mapping_;
 };
 
-#endif /* PROMISEDYNTRACER_STRICTNESS_ANALYSIS_H */
+#endif /* PROMISEDYNTRACER_ANALYZER_H */
