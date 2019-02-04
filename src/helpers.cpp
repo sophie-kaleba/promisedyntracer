@@ -5,7 +5,7 @@
 #include <cassert>
 #include <sstream>
 
-prom_id_t get_promise_id(dyntracer_t *dyntracer, SEXP promise) {
+prom_id_t get_promise_id(tracer_state_t & state, SEXP promise) {
 
     if (promise == R_NilValue)
         return RID_INVALID;
@@ -16,28 +16,28 @@ prom_id_t get_promise_id(dyntracer_t *dyntracer, SEXP promise) {
     // A new promise is always created for each argument.
     // Even if the argument is already a promise passed from the caller, it gets
     // re-wrapped.
-    auto &promise_ids = tracer_state(dyntracer).promise_ids;
+    auto &promise_ids = state.promise_ids;
     auto it = promise_ids.find(promise);
     if (it != promise_ids.end()) {
         return it->second;
     } else {
-        return make_promise_id(dyntracer, promise, true);
+        return make_promise_id(state, promise, true);
     }
 }
 
-prom_id_t make_promise_id(dyntracer_t *dyntracer, SEXP promise, bool negative) {
+prom_id_t make_promise_id(tracer_state_t & state, SEXP promise, bool negative) {
     if (promise == R_NilValue)
         return RID_INVALID;
 
     prom_id_t prom_id;
 
     if (negative) {
-        prom_id = --tracer_state(dyntracer).prom_neg_id_counter;
+        prom_id = --state.prom_neg_id_counter;
     } else {
-        prom_id = tracer_state(dyntracer).prom_id_counter++;
+        prom_id = state.prom_id_counter++;
     }
 
-    tracer_state(dyntracer).promise_ids[promise] = prom_id;
+    state.promise_ids[promise] = prom_id;
 
     // auto &already_inserted_negative_promises =
     //     tracer_state(dyntracer).already_inserted_negative_promises;
@@ -64,12 +64,6 @@ std::string get_function_definition(dyntracer_t *dyntracer, const SEXP function)
     }
 }
 
-void remove_function_definition(dyntracer_t *dyntracer, const SEXP function) {
-    auto &definitions = tracer_state(dyntracer).function_definitions;
-    auto it = definitions.find(function);
-    if (it != definitions.end())
-        tracer_state(dyntracer).function_definitions.erase(it);
-}
 
 fn_id_t get_function_id(dyntracer_t *dyntracer,
                         const std::string &function_definition, bool builtin) {

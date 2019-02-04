@@ -17,7 +17,7 @@ void update_closure_argument(closure_info_t &info, dyntracer_t *dyntracer,
     }
 
     if (arg_value_type == PROMSXP) {
-        argument.promise_id = get_promise_id(dyntracer, arg_value);
+        argument.promise_id = get_promise_id(tracer_state(dyntracer), arg_value);
         argument.parameter_mode = PRENV(arg_value) == environment
                                       ? parameter_mode_t::DEFAULT
                                       : parameter_mode_t::CUSTOM;
@@ -266,7 +266,7 @@ prom_basic_info_t create_promise_get_info(dyntracer_t *dyntracer,
                                           const SEXP promise, const SEXP rho) {
     prom_basic_info_t info;
 
-    info.prom_id = make_promise_id(dyntracer, promise);
+    info.prom_id = make_promise_id(tracer_state(dyntracer), promise);
     tracer_state(dyntracer).fresh_promises.insert(info.prom_id);
 
     info.prom_type = static_cast<sexptype_t>(TYPEOF(PRCODE(promise)));
@@ -287,7 +287,7 @@ prom_basic_info_t create_promise_get_info(dyntracer_t *dyntracer,
 prom_info_t force_promise_entry_get_info(dyntracer_t *dyntracer,
                                          const SEXP promise) {
     prom_info_t info;
-    info.prom_id = get_promise_id(dyntracer, promise);
+    info.prom_id = get_promise_id(tracer_state(dyntracer), promise);
 
     stack_event_t elem = get_last_on_stack_by_type(
         tracer_state(dyntracer).full_stack, stack_type::CALL);
@@ -312,7 +312,7 @@ prom_info_t force_promise_entry_get_info(dyntracer_t *dyntracer,
 prom_info_t force_promise_exit_get_info(dyntracer_t *dyntracer,
                                         const SEXP promise) {
     prom_info_t info;
-    info.prom_id = get_promise_id(dyntracer, promise);
+    info.prom_id = get_promise_id(tracer_state(dyntracer), promise);
 
     stack_event_t elem = get_last_on_stack_by_type(
         tracer_state(dyntracer).full_stack, stack_type::CALL);
@@ -333,7 +333,7 @@ prom_info_t force_promise_exit_get_info(dyntracer_t *dyntracer,
 prom_info_t promise_lookup_get_info(dyntracer_t *dyntracer,
                                     const SEXP promise) {
     prom_info_t info;
-    info.prom_id = get_promise_id(dyntracer, promise);
+    info.prom_id = get_promise_id(tracer_state(dyntracer), promise);
 
     stack_event_t elem = get_last_on_stack_by_type(
         tracer_state(dyntracer).full_stack, stack_type::CALL);
@@ -355,7 +355,7 @@ prom_info_t promise_expression_lookup_get_info(dyntracer_t *dyntracer,
                                                const SEXP prom) {
     prom_info_t info;
 
-    info.prom_id = get_promise_id(dyntracer, prom);
+    info.prom_id = get_promise_id(tracer_state(dyntracer), prom);
 
     stack_event_t elem = get_last_on_stack_by_type(
         tracer_state(dyntracer).full_stack, stack_type::CALL);

@@ -123,14 +123,11 @@ struct gc_info_t {
 
 struct type_gc_info_t {
     int gc_trigger_counter;
-    int type;
-    long length;
-    long bytes;
+    unsigned int type;
+    unsigned long int length;
+    unsigned long int bytes;
 };
 
-prom_id_t get_promise_id(dyntracer_t *dyntracer, SEXP promise);
-prom_id_t make_promise_id(dyntracer_t *dyntracer, SEXP promise,
-                          bool negative = false);
 call_id_t make_funcall_id(dyntracer_t *dyntracer, SEXP);
 std::string get_function_definition(dyntracer_t *dyntracer, const SEXP function);
 void remove_function_definition(dyntracer_t *dyntracer, const SEXP function);
@@ -258,7 +255,19 @@ struct tracer_state_t {
                                            // (unless overwrite is true)
     int gc_trigger_counter; // Incremented each time there is a gc_entry
 
-    void finish_pass();
+    void finish_pass() {
+
+        promise_origin.clear();
+
+        clear_promises();
+
+        if (!full_stack.empty()) {
+            dyntrace_log_warning(
+                "Function/promise stack is not balanced: %d remaining",
+                full_stack.size());
+            full_stack.clear();
+        }
+    }
 
     Environment& create_environment(const SEXP rho) {
         auto iter = environment_mapping_.find(rho);
@@ -361,7 +370,7 @@ struct tracer_state_t {
         return timestamp_;
     }
 
-    timestamp_t create_next_timestamp() {
+    timestamp_t increment_timestamp() {
         return timestamp_++;
     }
 
@@ -466,7 +475,22 @@ struct tracer_state_t {
     timestamp_t timestamp_;
 
     PromiseMapper promise_mapper_;
+
+public:
+    void exit_probe() {
+        resume_execution_timer();
+    }
+
+    void enter_probe() {
+        pause_execution_timer();
+        increment_timestamp();
+    }
 };
+
+
+prom_id_t get_promise_id(tracer_state_t & state, SEXP promise);
+prom_id_t make_promise_id(tracer_state_t & state, SEXP promise,
+                          bool negative = false);
 
 inline std::string parameter_mode_to_string(parameter_mode_t parameter_mode) {
     switch (parameter_mode) {

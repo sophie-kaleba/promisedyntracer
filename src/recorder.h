@@ -29,12 +29,6 @@ prom_info_t promise_expression_lookup_get_info(dyntracer_t *dyntracer,
                                                const SEXP prom);
 gc_info_t gc_exit_get_info(int gc_count);
 
-// When doing longjump (exception thrown, etc.) this function gets the
-// target environment
-// and unwinds function call stack until that environment is on top. It also
-// fixes indentation.
-void adjust_stacks(dyntracer_t *dyntracer, unwind_info_t &info);
-
 void write_environment_variables(const std::string &filepath);
 
 void write_configuration(const Context &context, const std::string &filepath);

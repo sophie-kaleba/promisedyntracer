@@ -2,8 +2,6 @@
 #include "TraceSerializer.h"
 #include "utilities.h"
 
-void tracer_state_t::finish_pass() { promise_origin.clear(); }
-
 tracer_state_t::tracer_state_t() {
     call_id_counter = 0;
     fn_id_counter = 0;
