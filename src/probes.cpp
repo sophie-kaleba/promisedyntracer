@@ -65,45 +65,30 @@ void closure_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
         info.fn_id, info.call_id,
         state.lookup_environment(rho, true).get_id());
 
-    auto &fresh_promises = state.fresh_promises;
-
     // Associate promises with call ID
     for (auto argument: info.arguments) {
-        auto &promise = argument.promise_id;
         // if promise environment is same as the caller's environment, then
         // serialize this promise as it is a default argument.
 
-        auto it = fresh_promises.find(promise);
-        if (it != fresh_promises.end()) {
-            state.promise_origin[promise] = info.call_id;
-            fresh_promises.erase(it);
-        }
-
         if (argument.parameter_mode == parameter_mode_t::DEFAULT ||
             argument.parameter_mode == parameter_mode_t::CUSTOM) {
+
+            // first we insert the promise as usual.
+            PromiseState *promise_state =
+                state.insert_promise(argument.promise);
+
+            // now, we make this promise object, a function argument by
+            // providing the relevant information.
+
+            promise_state->make_function_argument(
+                info.fn_id, info.call_id, argument.formal_parameter_position,
+                argument.parameter_mode);
 
             tracer_serializer(dyntracer).serialize(
                 TraceSerializer::OPCODE_ARGUMENT_PROMISE_ASSOCIATE, info.fn_id,
                 info.call_id, argument.formal_parameter_position,
                 state.lookup_variable(rho, argument.name).get_id(),
-                argument.name, argument.promise_id);
-
-
-            // first we insert the promise as usual.
-            env_id_t env_id = state
-                .lookup_environment(argument.promise_environment)
-                .get_id();
-
-            state.insert_promise(argument.promise_id, env_id);
-
-            // now, we make this promise object, a function argument by providing the
-            // relevant information.
-            PromiseState &promise_state =
-                state.lookup_promise(argument.promise_id);
-
-            promise_state.make_function_argument(
-                info.fn_id, info.call_id,
-                argument.formal_parameter_position, argument.parameter_mode);
+                argument.name, promise_state -> get_id());
         }
     }
 
@@ -263,31 +248,19 @@ void gc_allocate(dyntracer_t *dyntracer, const SEXP object) {
     state.enter_probe();
 
     if(TYPEOF(object) == PROMSXP) {
-        const SEXP rho = dyntrace_get_promise_environment(object);
 
-        env_id_t env_id = state.lookup_environment(rho).get_id();
+        PromiseState *promise_state = state.create_promise(object);
 
-        prom_basic_info_t info = create_promise_get_info(dyntracer, object, rho);
+        analyzer.promise_created(promise_state, object);
 
-        state.create_promise(info.prom_id, env_id);
+        std::string cre_id = std::string("cre ") + std::to_string(promise_state -> get_id());
 
-        analyzer.promise_created(info, object);
-
-        std::string cre_id = std::string("cre ") + std::to_string(info.prom_id);
-
-        tracer_serializer(dyntracer).serialize(
-            TraceSerializer::OPCODE_PROMISE_CREATE, info.prom_id,
-            env_id, info.expression);
+        tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_PROMISE_CREATE,
+                                               promise_state -> get_id(),
+                                               promise_state -> get_environment_id(),
+                                               promise_state -> get_expression());
     }
     else if(TYPEOF(object) == ENVSXP) {
-        //TODO - check if this is needed at all, most likely, it is not.
-        stack_event_t event =
-            get_last_on_stack_by_type(state.full_stack, stack_type::CALL);
-
-        fn_id_t fn_id = event.type == stack_type::NONE
-                            ? compute_hash("")
-                            : event.function_info.function_id;
-
         env_id_t env_id = state.create_environment(object).get_id();
 
         tracer_serializer(dyntracer).serialize(
@@ -313,22 +286,17 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
 
     state.enter_probe();
 
-    prom_info_t info = force_promise_entry_get_info(dyntracer, promise);
+    PromiseState* promise_state = state.lookup_promise(promise);
 
-    SEXP promise_env = dyntrace_get_promise_environment(promise);
-    env_id_t env_id =
-            state.lookup_environment(promise_env).get_id();
+    analyzer.promise_force_entry(promise_state,
+                                 promise);
 
-    state.insert_promise(info.prom_id, env_id);
+    state.push_execution_context(promise_state);
 
-    analyzer.promise_force_entry(info, promise);
+    std::string ent_id = std::string("ent ") + std::to_string(promise_state -> get_id());
 
-    state.push_execution_context(info, promise_env);
-
-    std::string ent_id = std::string("ent ") + std::to_string(info.prom_id);
-
-    tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_PROMISE_BEGIN, info.prom_id);
+    tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_PROMISE_BEGIN,
+                                           promise_state -> get_id());
 
     state.exit_probe();
 }
@@ -340,20 +308,23 @@ void promise_force_exit(dyntracer_t *dyntracer, const SEXP promise) {
 
     state.enter_probe();
 
-    prom_info_t info = force_promise_exit_get_info(dyntracer, promise);
+    /* lookup_promise will internally throw error if promise does not exist */
+    PromiseState* promise_state = state.lookup_promise(promise);
 
     // TODO - check that promise exists at this point in the mapper
     //        throw an error if it does not
     // state.insert_promise(info.prom_id, promise);
 
-    analyzer.promise_force_exit(info, promise);
+    analyzer.promise_force_exit(promise_state, promise);
 
-    state.pop_execution_context(info);
+    state.pop_execution_context(promise_state);
 
-    std::string ext_id = std::string("ext ") + std::to_string(info.prom_id);
+    std::string ext_id = std::string("ext ") + std::to_string(promise_state -> get_id());
 
     tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_PROMISE_FINISH, info.prom_id, false);
+        TraceSerializer::OPCODE_PROMISE_FINISH,
+        promise_state -> get_id(),
+        false);
 
     state.exit_probe();
 }
@@ -365,151 +336,115 @@ void promise_value_lookup(dyntracer_t *dyntracer, const SEXP promise) {
 
     state.enter_probe();
 
-    prom_info_t info = promise_lookup_get_info(dyntracer, promise);
+    PromiseState* promise_state = state.insert_promise(promise);
 
-    env_id_t env_id =
-        state
-            .lookup_environment(dyntrace_get_promise_environment(promise))
-            .get_id();
+    analyzer.promise_value_lookup(promise_state, promise);
 
-    state.insert_promise(info.prom_id, env_id);
-
-    analyzer.promise_value_lookup(info, promise);
-
-    std::string val_id = std::string("val ") + std::to_string(info.prom_id);
+    std::string val_id = std::string("val ") + std::to_string(promise_state -> get_id());
 
     tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_PROMISE_VALUE_LOOKUP, info.prom_id,
+        TraceSerializer::OPCODE_PROMISE_VALUE_LOOKUP,
+        promise_state -> get_id(),
         value_type_to_string(dyntrace_get_promise_value(promise)));
 
     state.exit_probe();
 }
 
 
-void promise_expression_lookup(dyntracer_t *dyntracer, const SEXP prom) {
+void promise_expression_lookup(dyntracer_t *dyntracer, const SEXP promise) {
     tracer_state_t& state = tracer_state(dyntracer);
     Analyzer& analyzer = tracer_analyzer(dyntracer);
 
     state.enter_probe();
 
-    prom_info_t info = promise_expression_lookup_get_info(dyntracer, prom);
+    PromiseState* promise_state = state.insert_promise(promise);
 
-    env_id_t env_id =
-        state
-        .lookup_environment(dyntrace_get_promise_environment(prom))
-        .get_id();
-
-    state.insert_promise(info.prom_id, env_id);
-
-    analyzer.promise_expression_lookup(info, prom);
+    analyzer.promise_expression_lookup(promise_state, promise);
 
     tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_PROMISE_EXPRESSION_LOOKUP, info.prom_id,
-        get_expression(dyntrace_get_promise_expression(prom)));
+        TraceSerializer::OPCODE_PROMISE_EXPRESSION_LOOKUP,
+        promise_state -> get_id(),
+        get_expression(dyntrace_get_promise_expression(promise)));
 
     state.exit_probe();
 }
 
 
-void promise_environment_lookup(dyntracer_t *dyntracer, const SEXP prom) {
+void promise_environment_lookup(dyntracer_t *dyntracer, const SEXP promise) {
     tracer_state_t& state = tracer_state(dyntracer);
     Analyzer& analyzer = tracer_analyzer(dyntracer);
 
     state.enter_probe();
 
-    prom_info_t info = promise_expression_lookup_get_info(dyntracer, prom);
+    PromiseState* promise_state = state.insert_promise(promise);
 
-    const SEXP rho = dyntrace_get_promise_environment(prom);
-
-    env_id_t env_id = state.lookup_environment(rho).get_id();
-
-    state.insert_promise(info.prom_id, env_id);
-
-    auto environment_id = state.lookup_environment(rho).get_id();
-
-    analyzer.promise_environment_lookup(info, prom);
+    analyzer.promise_environment_lookup(promise_state, promise);
 
     tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_LOOKUP, info.prom_id,
-        environment_id);
+        TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_LOOKUP,
+        promise_state->get_id(),
+        promise_state->get_environment_id());
 
     state.exit_probe();
 }
 
 
-void promise_expression_assign(dyntracer_t *dyntracer, const SEXP prom,
+void promise_expression_assign(dyntracer_t *dyntracer, const SEXP promise,
                                const SEXP expression) {
     tracer_state_t& state = tracer_state(dyntracer);
     Analyzer& analyzer = tracer_analyzer(dyntracer);
 
     state.enter_probe();
 
-    prom_info_t info = promise_expression_lookup_get_info(dyntracer, prom);
+    PromiseState* promise_state = state.insert_promise(promise);
 
-    const SEXP rho = dyntrace_get_promise_environment(prom);
-
-    env_id_t env_id = state.lookup_environment(rho).get_id();
-
-    state.insert_promise(info.prom_id, env_id);
-
-    analyzer.promise_expression_assign(info, prom);
+    analyzer.promise_expression_assign(promise_state, promise);
 
     tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_PROMISE_EXPRESSION_ASSIGN, info.prom_id,
+        TraceSerializer::OPCODE_PROMISE_EXPRESSION_ASSIGN,
+        promise_state -> get_id(),
         get_expression(expression));
 
     state.exit_probe();
 }
 
 
-void promise_value_assign(dyntracer_t *dyntracer, const SEXP prom,
+void promise_value_assign(dyntracer_t *dyntracer, const SEXP promise,
                           const SEXP value) {
     tracer_state_t& state = tracer_state(dyntracer);
     Analyzer& analyzer = tracer_analyzer(dyntracer);
 
     state.enter_probe();
 
-    prom_info_t info = promise_expression_lookup_get_info(dyntracer, prom);
+    PromiseState * promise_state = state.insert_promise(promise);
 
-    env_id_t env_id =
-        state
-            .lookup_environment(dyntrace_get_promise_environment(prom))
-            .get_id();
-    state.insert_promise(info.prom_id, env_id);
-
-    analyzer.promise_value_assign(info, prom);
+    analyzer.promise_value_assign(promise_state, promise);
 
     tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_PROMISE_VALUE_ASSIGN, info.prom_id,
+        TraceSerializer::OPCODE_PROMISE_VALUE_ASSIGN,
+        promise_state -> get_id(),
         value_type_to_string(value));
 
     state.exit_probe();
 }
 
 
-void promise_environment_assign(dyntracer_t *dyntracer, const SEXP prom,
+void promise_environment_assign(dyntracer_t *dyntracer, const SEXP promise,
                                 const SEXP environment) {
     tracer_state_t& state = tracer_state(dyntracer);
     Analyzer& analyzer = tracer_analyzer(dyntracer);
 
     state.enter_probe();
 
-    prom_info_t info = promise_expression_lookup_get_info(dyntracer, prom);
+    PromiseState * promise_state = state.insert_promise(promise);
 
-    env_id_t env_id =
-        state
-            .lookup_environment(dyntrace_get_promise_environment(prom))
-            .get_id();
-    state.insert_promise(info.prom_id, env_id);
-
-    auto environment_id =
-        state.lookup_environment(environment).get_id();
-
-    analyzer.promise_environment_assign(info, prom);
+    analyzer.promise_environment_assign(promise_state, promise);
 
     tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_ASSIGN, info.prom_id,
-        environment_id);
+        TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_ASSIGN,
+        promise_state->get_id(),
+        promise_state->get_environment_id());
+
     state.exit_probe();
 }
 
@@ -542,28 +477,11 @@ void gc_promise_unmark(tracer_state_t & state,
                        Analyzer& analyzer,
                        const SEXP promise) {
 
-    prom_id_t id = get_promise_id(state, promise);
+    PromiseState * promise_state = state.insert_promise(promise);
 
-    env_id_t env_id =
-        state
-            .lookup_environment(dyntrace_get_promise_environment(promise))
-            .get_id();
-    state.insert_promise(id, env_id);
+    analyzer.gc_promise_unmarked(promise_state, promise);
 
-    auto &promise_origin = state.promise_origin;
-
-    analyzer.gc_promise_unmarked(id, promise);
-
-    state.remove_promise(id);
-
-    auto iter = promise_origin.find(id);
-    if (iter != promise_origin.end()) {
-        // If this is one of our traced promises,
-        // delete it from origin map because it is ready to be GCed
-        promise_origin.erase(iter);
-    }
-
-    state.promise_ids.erase(promise);
+    state.remove_promise(promise);
 }
 
 
@@ -649,7 +567,8 @@ void context_jump(dyntracer_t *dyntracer, const RCNTXT *cptr,
             info.unwound_frames.push_back(element);
         } else if (element.type == stack_type::PROMISE) {
             tracer_serializer(dyntracer).serialize(
-                TraceSerializer::OPCODE_PROMISE_FINISH, element.promise_id,
+                TraceSerializer::OPCODE_PROMISE_FINISH,
+                element.promise_state -> get_id(),
                 true);
             info.unwound_frames.push_back(element);
         } else /* if (element.type == stack_type::NONE) */

@@ -17,14 +17,14 @@ void update_closure_argument(closure_info_t &info, dyntracer_t *dyntracer,
     }
 
     if (arg_value_type == PROMSXP) {
-        argument.promise_id = get_promise_id(tracer_state(dyntracer), arg_value);
+        argument.promise = arg_value;
         argument.parameter_mode = PRENV(arg_value) == environment
                                       ? parameter_mode_t::DEFAULT
                                       : parameter_mode_t::CUSTOM;
         argument.promise_environment = PRENV(arg_value);
         argument.expression_type = static_cast<sexptype_t>(arg_value_type);
     } else {
-        argument.promise_id = 0;
+        argument.promise = nullptr;
         argument.parameter_mode =
             missing ? parameter_mode_t::MISSING : parameter_mode_t ::NONPROMISE;
 
@@ -118,10 +118,6 @@ closure_info_t function_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
 
     info.call_id = make_funcall_id(dyntracer, op);
 
-    stack_event_t event = get_last_on_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL);
-    info.parent_call_id = event.type == stack_type::NONE ? 0 : event.call_id;
-
     info.definition_location = get_definition_location_cpp(op);
     info.callsite_location = get_callsite_cpp(1);
 
@@ -140,9 +136,6 @@ closure_info_t function_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
 
     update_closure_arguments(info, dyntracer, info.call_id, FORMALS(op),
                              FRAME(rho), rho);
-
-    get_stack_parent(info, tracer_state(dyntracer).full_stack);
-    info.in_prom_id = get_parent_promise(dyntracer);
 
     return info;
 }
@@ -163,9 +156,14 @@ closure_info_t function_exit_get_info(dyntracer_t *dyntracer, const SEXP call,
 
     info.fn_addr = op;
 
-    stack_event_t call_event = get_last_on_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL);
-    info.call_id = call_event.type == stack_type::NONE ? 0 : call_event.call_id;
+    info.call_id = 0;
+    auto& stack = tracer_state(dyntracer).full_stack;
+    for(auto i = stack.rbegin(); i != stack.rend(); ++i) {
+        if(i -> type == stack_type::CALL) {
+            info.call_id = i -> call_id;
+            break;
+        }
+    }
 
     info.fn_type = function_type::CLOSURE;
 
@@ -184,13 +182,7 @@ closure_info_t function_exit_get_info(dyntracer_t *dyntracer, const SEXP call,
 
     info.fn_definition = get_expression(op);
 
-    stack_event_t parent_call = get_from_back_of_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL, 1);
-    info.parent_call_id =
-        parent_call.type == stack_type::NONE ? 0 : parent_call.call_id;
-
-    get_stack_parent2(info, tracer_state(dyntracer).full_stack);
-    info.in_prom_id = get_parent_promise(dyntracer);
+    //get_stack_parent2(info, tracer_state(dyntracer).full_stack);
 
     info.return_value_type = static_cast<sexptype_t>(TYPEOF(retval));
 
@@ -210,16 +202,14 @@ builtin_info_t builtin_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
     info.name = info.name;
     info.fn_type = fn_type;
     info.fn_compiled = is_byte_compiled(op);
-    stack_event_t elem = get_last_on_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL);
-    info.parent_call_id = elem.type == stack_type::NONE ? 0 : elem.call_id;
+
     info.definition_location = get_definition_location_cpp(op);
     info.callsite_location = get_callsite_cpp(0);
     info.call_ptr = rho;
     info.call_id = make_funcall_id(dyntracer, op);
 
-    get_stack_parent(info, tracer_state(dyntracer).full_stack);
-    info.in_prom_id = get_parent_promise(dyntracer);
+    //get_stack_parent(info, tracer_state(dyntracer).full_stack);
+
     info.formal_parameter_count = PRIMARITY(op);
     info.eval = (R_FunTab[(op)->u.primsxp.offset].eval) % 10;
 
@@ -237,10 +227,16 @@ builtin_info_t builtin_exit_get_info(dyntracer_t *dyntracer, const SEXP call,
     info.fn_definition = get_function_definition(dyntracer, op);
     info.fn_id = get_function_id(dyntracer, info.fn_definition, true);
     info.fn_addr = op;
-    stack_event_t elem = get_last_on_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL);
 
-    info.call_id = elem.type == stack_type::NONE ? 0 : elem.call_id;
+    info.call_id = 0;
+    auto &stack = tracer_state(dyntracer).full_stack;
+    for (auto i = stack.rbegin(); i != stack.rend(); ++i) {
+        if (i->type == stack_type::CALL) {
+            info.call_id = i->call_id;
+            break;
+        }
+    }
+
     if (name != NULL)
         info.name = name;
     info.fn_type = fn_type;
@@ -248,123 +244,11 @@ builtin_info_t builtin_exit_get_info(dyntracer_t *dyntracer, const SEXP call,
     info.definition_location = get_definition_location_cpp(op);
     info.callsite_location = get_callsite_cpp(0);
 
-    stack_event_t parent_call = get_from_back_of_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL, 1);
-    info.parent_call_id =
-        parent_call.type == stack_type::NONE ? 0 : parent_call.call_id;
+    //get_stack_parent2(info, tracer_state(dyntracer).full_stack);
 
-    get_stack_parent2(info, tracer_state(dyntracer).full_stack);
-    info.in_prom_id = get_parent_promise(dyntracer);
     info.return_value_type = static_cast<sexptype_t>(TYPEOF(retval));
     info.formal_parameter_count = PRIMARITY(op);
     info.eval = (R_FunTab[(op)->u.primsxp.offset].eval) % 10;
-
-    return info;
-}
-
-prom_basic_info_t create_promise_get_info(dyntracer_t *dyntracer,
-                                          const SEXP promise, const SEXP rho) {
-    prom_basic_info_t info;
-
-    info.prom_id = make_promise_id(tracer_state(dyntracer), promise);
-    tracer_state(dyntracer).fresh_promises.insert(info.prom_id);
-
-    info.prom_type = static_cast<sexptype_t>(TYPEOF(PRCODE(promise)));
-    get_full_type(promise, info.full_type);
-
-    get_stack_parent(info, tracer_state(dyntracer).full_stack);
-    info.in_prom_id = get_parent_promise(dyntracer);
-    info.depth = get_no_of_ancestor_promises_on_stack(dyntracer);
-    void (*probe)(dyntracer_t *, SEXP);
-    // probe = dyntrace_active_dyntracer->probe_promise_expression_lookup;
-    // dyntrace_active_dyntracer->probe_promise_expression_lookup = NULL;
-    info.expression =
-        "not computed for efficiency"; // get_expression(PRCODE(promise));
-    // dyntrace_active_dyntracer->probe_promise_expression_lookup = probe;
-    return info;
-}
-
-prom_info_t force_promise_entry_get_info(dyntracer_t *dyntracer,
-                                         const SEXP promise) {
-    prom_info_t info;
-    info.prom_id = get_promise_id(tracer_state(dyntracer), promise);
-
-    stack_event_t elem = get_last_on_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL);
-    info.in_call_id = elem.type == stack_type::NONE ? 0 : elem.call_id;
-    info.from_call_id = tracer_state(dyntracer).promise_origin[info.prom_id];
-
-    info.prom_type = static_cast<sexptype_t>(TYPEOF(PRCODE(promise)));
-    get_full_type(promise, info.full_type);
-    info.return_type = (sexptype_t)OMEGASXP;
-    get_stack_parent(info, tracer_state(dyntracer).full_stack);
-    info.in_prom_id = get_parent_promise(dyntracer);
-    info.depth = get_no_of_ancestor_promises_on_stack(dyntracer);
-    void (*probe)(dyntracer_t *, SEXP);
-    // probe = dyntrace_active_dyntracer->probe_promise_expression_lookup;
-    // dyntrace_active_dyntracer->probe_promise_expression_lookup = NULL;
-    info.expression = "not computed for efficiency";
-    get_expression(PRCODE(promise));
-    // dyntrace_active_dyntracer->probe_promise_expression_lookup = probe;
-    return info;
-}
-
-prom_info_t force_promise_exit_get_info(dyntracer_t *dyntracer,
-                                        const SEXP promise) {
-    prom_info_t info;
-    info.prom_id = get_promise_id(tracer_state(dyntracer), promise);
-
-    stack_event_t elem = get_last_on_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL);
-    info.in_call_id = elem.type == stack_type::NONE ? 0 : elem.call_id;
-    info.from_call_id = tracer_state(dyntracer).promise_origin[info.prom_id];
-
-    info.prom_type = static_cast<sexptype_t>(TYPEOF(PRCODE(promise)));
-    get_full_type(promise, info.full_type);
-    info.return_type = static_cast<sexptype_t>(TYPEOF(PRVALUE(promise)));
-
-    get_stack_parent2(info, tracer_state(dyntracer).full_stack);
-    info.in_prom_id = get_parent_promise(dyntracer);
-    info.depth = get_no_of_ancestor_promises_on_stack(dyntracer);
-
-    return info;
-}
-
-prom_info_t promise_lookup_get_info(dyntracer_t *dyntracer,
-                                    const SEXP promise) {
-    prom_info_t info;
-    info.prom_id = get_promise_id(tracer_state(dyntracer), promise);
-
-    stack_event_t elem = get_last_on_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL);
-    info.in_call_id = elem.type == stack_type::NONE ? 0 : elem.call_id;
-    info.from_call_id = tracer_state(dyntracer).promise_origin[info.prom_id];
-
-    info.prom_type = static_cast<sexptype_t>(TYPEOF(PRCODE(promise)));
-    info.full_type.push_back((sexptype_t)OMEGASXP);
-    info.return_type = static_cast<sexptype_t>(TYPEOF(PRVALUE(promise)));
-
-    get_stack_parent(info, tracer_state(dyntracer).full_stack);
-    info.in_prom_id = get_parent_promise(dyntracer);
-    info.depth = get_no_of_ancestor_promises_on_stack(dyntracer);
-
-    return info;
-}
-
-prom_info_t promise_expression_lookup_get_info(dyntracer_t *dyntracer,
-                                               const SEXP prom) {
-    prom_info_t info;
-
-    info.prom_id = get_promise_id(tracer_state(dyntracer), prom);
-
-    stack_event_t elem = get_last_on_stack_by_type(
-        tracer_state(dyntracer).full_stack, stack_type::CALL);
-    info.in_call_id = elem.type == stack_type::NONE ? 0 : elem.call_id;
-    info.from_call_id = tracer_state(dyntracer).promise_origin[info.prom_id];
-
-    info.prom_type = static_cast<sexptype_t>(TYPEOF(PRCODE(prom)));
-    info.full_type.push_back((sexptype_t)OMEGASXP);
-    info.return_type = static_cast<sexptype_t>(TYPEOF(PRCODE(prom)));
 
     return info;
 }

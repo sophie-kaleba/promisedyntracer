@@ -3,6 +3,8 @@
 
 #include "utilities.h"
 
+typedef long int promise_id_t;
+
 class PromiseState {
   public:
     enum class SlotMutation {
@@ -17,7 +19,7 @@ class PromiseState {
 
     bool local;
     bool argument;
-    prom_id_t id;
+    promise_id_t id;
     env_id_t env_id;
     fn_id_t fn_id;
     call_id_t call_id;
@@ -26,8 +28,8 @@ class PromiseState {
     bool evaluated;
     std::vector<int> mutations;
 
-    PromiseState(prom_id_t id, env_id_t env_, bool local)
-        : local(local), argument(false), id(id), env_id(env_), fn_id(""),
+    PromiseState(promise_id_t id, env_id_t environment_id, bool local)
+        : local(local), argument(false), id(id), env_id(environment_id), fn_id(""),
           call_id(0), formal_parameter_position(-1),
           parameter_mode(parameter_mode_t::UNASSIGNED), evaluated(false),
           mutations(std::vector<int>(to_underlying_type(SlotMutation::COUNT))),
@@ -39,7 +41,21 @@ class PromiseState {
           direct_lexical_scope_mutator_(false),
           transitive_non_lexical_scope_mutator_(false),
           direct_non_lexical_scope_mutator_(false),
-          creation_timestamp_(UNDEFINED_TIMESTAMP) {}
+          creation_timestamp_(UNDEFINED_TIMESTAMP) {
+    }
+
+    promise_id_t get_id() const {
+        return id;
+    }
+
+    env_id_t get_environment_id() const {
+        return env_id;
+    }
+
+    std::string get_expression() const {
+        // TODO
+        return "UNIMPLEMENTED";
+    }
 
     void make_function_argument(fn_id_t fn_id, call_id_t call_id,
                                     int formal_parameter_position,

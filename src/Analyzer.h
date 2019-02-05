@@ -25,29 +25,78 @@ class Analyzer {
     void closure_exit(const closure_info_t &closure_info);
     void special_exit(const builtin_info_t &special_info);
     void builtin_exit(const builtin_info_t &builtin_info);
-    void promise_created(const prom_basic_info_t &prom_basic_info,
-                         const SEXP promise);
-    void promise_force_entry(const prom_info_t &prom_info, const SEXP promise);
-    void promise_force_exit(const prom_info_t &prom_info, const SEXP promise);
-    void promise_value_lookup(const prom_info_t &prom_info, const SEXP promise);
-    void promise_value_assign(const prom_info_t &info, const SEXP promise);
-    void promise_environment_lookup(const prom_info_t &prom_info,
-                                    const SEXP promise);
-    void promise_environment_assign(const prom_info_t &prom_info,
-                                    const SEXP promise);
-    void promise_expression_lookup(const prom_info_t &prom_info,
-                                   const SEXP promise);
-    void promise_expression_assign(const prom_info_t &prom_info,
-                                   const SEXP promise);
+
+    void promise_created(PromiseState* promise_state,
+                         const SEXP promise) {
+        // TODO check the source of creation of this promise?
+    }
+
+    void promise_force_entry(PromiseState *promise_state, const SEXP promise) {
+        /* if promise is not an argument, then don't process it. */
+        if (!promise_state->argument) {
+            return;
+        }
+
+        auto *call_state = get_call_state(promise_state->call_id);
+        eval_depth_t eval_depth = get_evaluation_depth_(promise_state->call_id);
+        call_state->force_entry(
+            promise, promise_state->formal_parameter_position, eval_depth);
+    }
+
+    void promise_force_exit(PromiseState *promise_state, const SEXP promise) {
+        /* if promise is not an argument, then don't process it. */
+        if (!promise_state->argument) {
+            return;
+        }
+
+        auto *call_state = get_call_state(promise_state->call_id);
+
+        call_state->force_exit(promise,
+                               promise_state->formal_parameter_position,
+                               tracer_state_.full_stack.back().execution_time);
+    }
+
+    void promise_value_lookup(PromiseState *promise_state, const SEXP promise) {
+
+        /* if promise is not an argument, then don't process it. */
+        if (!promise_state->argument) {
+            return;
+        }
+
+        auto *call_state = get_call_state(promise_state->call_id);
+
+        call_state->lookup(promise_state->formal_parameter_position);
+    }
+
+    void promise_value_assign(PromiseState *promise_state, const SEXP promise) {
+        metaprogram_(promise_state, promise);
+    }
+
+    void promise_environment_lookup(PromiseState *promise_state,
+                                    const SEXP promise) {
+        metaprogram_(promise_state, promise);
+    }
+    void promise_environment_assign(PromiseState *promise_state,
+                                    const SEXP promise) {
+        metaprogram_(promise_state, promise);
+    }
+    void promise_expression_lookup(PromiseState *promise_state,
+                                   const SEXP promise) {
+        metaprogram_(promise_state, promise);
+    }
+    void promise_expression_assign(PromiseState *promise_state,
+                                   const SEXP promise) {
+        metaprogram_(promise_state, promise);
+    }
+
     void context_jump(const unwind_info_t &info);
 
-    void gc_promise_unmarked(const prom_id_t prom_id,
+    void gc_promise_unmarked(PromiseState * promise_state,
                              const SEXP promise) {
-        const PromiseState& promise_state = tracer_state_.lookup_promise(prom_id);
         // side_effecting_promises_data_table_ -> write_row(
-        //     promise_state.fn_id, promise_state.formal_parameter_position,
-        //     promise_state.is_direct_side_effect_observer(),
-        //     promise_state.is_transitive_side_effect_observer());
+        //     promise_state -> fn_id, promise_state.formal_parameter_position,
+        //     promise_state -> is_direct_side_effect_observer(),
+        //     promise_state -> is_transitive_side_effect_observer());
     }
 
     void environment_variable_define(const Variable &var) {
@@ -95,17 +144,16 @@ class Analyzer {
 
             if (exec_context.type == stack_type::PROMISE) {
 
-                PromiseState &promise_state =
-                    tracer_state_.lookup_promise(exec_context.promise_id);
+                PromiseState *promise_state = exec_context.promise_state;
 
                 /* if promise is created after the variable it is currently
                    assigning to, then its a side effect creator. */
-                if (promise_state.get_creation_timestamp() > var_timestamp) {
+                if (promise_state -> get_creation_timestamp() > var_timestamp) {
 
                     if (direct)
-                        promise_state.set_direct_side_effect_creator();
+                        promise_state -> set_direct_side_effect_creator();
                     else
-                        promise_state.set_transitive_side_effect_creator();
+                        promise_state -> set_transitive_side_effect_creator();
 
                     /* after the first promise is encountered, all promises
                        are
@@ -153,18 +201,17 @@ class Analyzer {
 
             if (exec_context.type == stack_type::PROMISE) {
 
-                PromiseState &promise_state =
-                    tracer_state_.lookup_promise(exec_context.promise_id);
+                PromiseState *promise_state = exec_context.promise_state;
 
                 /* if promise is created before the variable it is looking at
                    is modified, then it is a side effect observer. In other
                    words, if this promise is forced at its point of creation,
                    it will lookup a different value bound to this variable.*/
-                if (var_timestamp > promise_state.get_creation_timestamp()) {
+                if (var_timestamp > promise_state -> get_creation_timestamp()) {
                     if (direct)
-                        promise_state.set_direct_side_effect_observer();
+                        promise_state -> set_direct_side_effect_observer();
                     else
-                        promise_state.set_transitive_side_effect_observer();
+                        promise_state -> set_transitive_side_effect_observer();
 
                     /* after the first promise is encountered, all promises are
                        only indirectly responsible for this side effect */
@@ -183,7 +230,19 @@ class Analyzer {
     void serialize_call_(const CallState &call_state);
     void serialize_arguments_(const CallState &call_state);
     void add_call_graph_edge_(const call_id_t callee_id);
-    void metaprogram_(const prom_info_t &prom_info, const SEXP promise);
+
+    void metaprogram_(const PromiseState* promise_state,
+                                const SEXP promise) {
+        /* if promise is not an argument, then don't process it. */
+        if (!promise_state -> argument) {
+            return;
+        }
+
+        auto *call_state = get_call_state(promise_state -> call_id);
+
+        call_state->metaprogram(promise_state -> formal_parameter_position);
+    }
+
     CallState *get_call_state(const call_id_t call_id);
     void write_function_body_(const fn_id_t &fn_id,
                               const std::string &definition);
@@ -193,8 +252,6 @@ class Analyzer {
                          const std::string &definition);
     CallState function_exit_(call_id_t call_id, sexptype_t return_value_type);
     void inspect_function_caller_(const std::string &name);
-    timestamp_t get_promise_timestamp_(prom_id_t promise_id);
-
     bool is_dot_dot_variable_(const Variable& var) {
         const std::string& name = var.get_name();
         if (name.size() < 2) {

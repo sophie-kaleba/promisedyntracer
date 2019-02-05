@@ -5,47 +5,6 @@
 #include <cassert>
 #include <sstream>
 
-prom_id_t get_promise_id(tracer_state_t & state, SEXP promise) {
-
-    if (promise == R_NilValue)
-        return RID_INVALID;
-
-    if (TYPEOF(promise) != PROMSXP)
-        return RID_INVALID;
-
-    // A new promise is always created for each argument.
-    // Even if the argument is already a promise passed from the caller, it gets
-    // re-wrapped.
-    auto &promise_ids = state.promise_ids;
-    auto it = promise_ids.find(promise);
-    if (it != promise_ids.end()) {
-        return it->second;
-    } else {
-        return make_promise_id(state, promise, true);
-    }
-}
-
-prom_id_t make_promise_id(tracer_state_t & state, SEXP promise, bool negative) {
-    if (promise == R_NilValue)
-        return RID_INVALID;
-
-    prom_id_t prom_id;
-
-    if (negative) {
-        prom_id = --state.prom_neg_id_counter;
-    } else {
-        prom_id = state.prom_id_counter++;
-    }
-
-    state.promise_ids[promise] = prom_id;
-
-    // auto &already_inserted_negative_promises =
-    //     tracer_state(dyntracer).already_inserted_negative_promises;
-    // already_inserted_negative_promises.insert(prom_id);
-
-    return prom_id;
-}
-
 std::string get_function_definition(dyntracer_t *dyntracer, const SEXP function) {
     auto &definitions = tracer_state(dyntracer).function_definitions;
     auto it = definitions.find(function);
@@ -91,12 +50,6 @@ bool register_inserted_function(dyntracer_t *dyntracer, fn_id_t id) {
     return result.second;
 }
 
-bool negative_promise_already_inserted(dyntracer_t *dyntracer, prom_id_t id) {
-    auto &already_inserted =
-        tracer_state(dyntracer).already_inserted_negative_promises;
-    return already_inserted.count(id) > 0;
-}
-
 bool function_already_inserted(dyntracer_t *dyntracer, fn_id_t id) {
     auto &already_inserted_functions =
         tracer_state(dyntracer).already_inserted_functions;
@@ -110,26 +63,6 @@ call_id_t make_funcall_id(dyntracer_t *dyntracer, SEXP function) {
     return ++tracer_state(dyntracer).call_id_counter;
 }
 
-// FIXME use general parent function by type instead.
-prom_id_t get_parent_promise(dyntracer_t *dyntracer) {
-    for (std::vector<stack_event_t>::reverse_iterator iterator =
-             tracer_state(dyntracer).full_stack.rbegin();
-         iterator != tracer_state(dyntracer).full_stack.rend(); ++iterator) {
-        if (iterator->type == stack_type::PROMISE)
-            return iterator->promise_id;
-    }
-    return 0; // FIXME should return a special value or something
-}
-
-size_t get_no_of_ancestor_promises_on_stack(dyntracer_t *dyntracer) {
-    size_t result = 0;
-    std::vector<stack_event_t> &stack = tracer_state(dyntracer).full_stack;
-    for (auto it = stack.begin(); it != stack.end(); ++it) {
-        if (it->type == stack_type::PROMISE)
-            result++;
-    }
-    return result;
-}
 
 arg_id_t get_argument_id(dyntracer_t *dyntracer, call_id_t call_id,
                          const std::string &argument) {

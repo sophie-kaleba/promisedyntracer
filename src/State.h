@@ -13,7 +13,7 @@ struct arg_t {
     std::string name;
     sexptype_t expression_type;
     sexptype_t name_type;
-    prom_id_t promise_id; // only set if sexptype_t == PROM
+    SEXP promise;
     SEXP promise_environment;
     parameter_mode_t parameter_mode;
     int formal_parameter_position;
@@ -30,30 +30,23 @@ enum class function_type {
 enum class stack_type { PROMISE = 1, CALL = 2, CONTEXT = 3, NONE = 0 };
 
 struct stack_event_t {
+
     stack_event_t() : execution_time(0) {}
 
     stack_type type;
     union {
-        prom_id_t promise_id;
+        PromiseState * promise_state;
+        //promise_id_t promise_id;
         call_id_t call_id;
         rid_t context_id;
     };
-    SEXP environment;
+    //SEXP environment;
     // Only initialized for type == CALL
     struct {
         fn_id_t function_id;
         function_type type;
     } function_info;
     std::uint64_t execution_time;
-};
-
-typedef std::map<std::string, std::string> metadata_t;
-
-struct call_stack_elem_t {
-    call_id_t call_id;
-    fn_id_t function_id;
-    function_type type;
-    SEXP environment;
 };
 
 struct context_t {
@@ -73,11 +66,7 @@ struct call_info_t {
     std::string name; // fully qualified function name, if available
     call_id_t call_id;
     SEXP call_ptr;
-    call_id_t
-        parent_call_id; // the id of the parent call that executed this call
-    prom_id_t in_prom_id;
 
-    stack_event_t parent_on_stack;
     sexptype_t return_value_type;
     std::string call_expression;
     int formal_parameter_count;
@@ -92,24 +81,6 @@ struct closure_info_t : call_info_t {
 
 struct builtin_info_t : call_info_t {};
 
-// FIXME would it make sense to add type of action here?
-struct prom_basic_info_t {
-    prom_id_t prom_id;
-
-    sexptype_t prom_type;
-    full_sexp_type full_type;
-
-    prom_id_t in_prom_id;
-    stack_event_t parent_on_stack;
-    int depth;
-    std::string expression;
-};
-
-struct prom_info_t : prom_basic_info_t {
-    call_id_t in_call_id;
-    call_id_t from_call_id;
-    sexptype_t return_type;
-};
 
 struct unwind_info_t {
     rid_t jump_context;
@@ -138,70 +109,7 @@ fn_id_t get_function_id(dyntracer_t *dyntracer, const std::string &def,
 bool register_inserted_function(dyntracer_t *dyntracer, fn_id_t id);
 
 bool function_already_inserted(fn_id_t id);
-bool negative_promise_already_inserted(dyntracer_t *dyntracer, prom_id_t id);
-template <typename T>
-void get_stack_parent(T &info, std::vector<stack_event_t> &stack) {
-    // put the body here
-    static_assert(std::is_base_of<prom_basic_info_t, T>::value ||
-                      std::is_base_of<prom_info_t, T>::value ||
-                      std::is_base_of<call_info_t, T>::value,
-                  "get_stack_parent is only applicable for arguments of types: "
-                  "prom_basic_info_t,  prom_info_t, or call_info_t.");
 
-    if (!stack.empty()) {
-        stack_event_t stack_elem = stack.back();
-        // parent type
-        info.parent_on_stack.type = stack_elem.type;
-        switch (info.parent_on_stack.type) {
-            case stack_type::PROMISE:
-                info.parent_on_stack.promise_id = stack_elem.call_id;
-                break;
-            case stack_type::CALL:
-                info.parent_on_stack.call_id = stack_elem.promise_id;
-                break;
-            case stack_type::NONE:
-                break;
-        }
-    } else {
-        info.parent_on_stack.type = stack_type::NONE;
-        info.parent_on_stack.call_id = 0;
-    }
-}
-
-template <typename T>
-void get_stack_parent2(T &info, std::vector<stack_event_t> &stack) {
-    // put the body here
-    static_assert(std::is_base_of<prom_basic_info_t, T>::value ||
-                      std::is_base_of<prom_info_t, T>::value ||
-                      std::is_base_of<call_info_t, T>::value,
-                  "get_stack_parent is only applicable for arguments of types: "
-                  "prom_basic_info_t,  prom_info_t, or call_info_t.");
-
-    if (stack.size() > 1) {
-        stack_event_t stack_elem = stack.rbegin()[1];
-        info.parent_on_stack.type = stack_elem.type;
-        switch (info.parent_on_stack.type) {
-            case stack_type::PROMISE:
-                info.parent_on_stack.promise_id = stack_elem.call_id;
-                break;
-            case stack_type::CALL:
-                info.parent_on_stack.call_id = stack_elem.promise_id;
-                break;
-            case stack_type::NONE:
-                break;
-        }
-    } else {
-        info.parent_on_stack.type = stack_type::NONE;
-        info.parent_on_stack.call_id = 0;
-    }
-}
-
-stack_event_t get_last_on_stack_by_type(std::vector<stack_event_t> &stack,
-                                        stack_type type);
-stack_event_t get_from_back_of_stack_by_type(std::vector<stack_event_t> &stack,
-                                             stack_type type, int rposition);
-
-prom_id_t get_parent_promise(dyntracer_t *dyntracer);
 arg_id_t get_argument_id(dyntracer_t *dyntracer, call_id_t call_id,
                          const std::string &argument);
 
@@ -209,31 +117,17 @@ void update_closure_arguments(closure_info_t &info, dyntracer_t *dyntracer,
                               const call_id_t call_id, const SEXP formals,
                               const SEXP args, const SEXP environment);
 
-size_t get_no_of_ancestor_promises_on_stack(dyntracer_t *dyntracer);
-size_t get_no_of_ancestors_on_stack();
-size_t get_no_of_ancestor_calls_on_stack();
-
-
 struct tracer_state_t {
     std::vector<stack_event_t> full_stack; // Should be reset on each tracer pass
 
-    // Map from promise IDs to call IDs
-    std::unordered_map<prom_id_t, call_id_t>
-        promise_origin; // Should be reset on each tracer pass
-    std::unordered_set<prom_id_t> fresh_promises;
-    // Map from promise address to promise ID;
-    std::unordered_map<SEXP, prom_id_t> promise_ids;
-    std::unordered_map<prom_id_t, int> promise_lookup_gc_trigger_counter;
+    std::unordered_map<promise_id_t, int> promise_lookup_gc_trigger_counter;
     call_id_t call_id_counter; // IDs assigned should be globally unique but we
                                // can reset it after each pass if overwrite is
                                // true)
-    prom_id_t fn_id_counter;   // IDs assigned should be globally unique but we
+    promise_id_t fn_id_counter;   // IDs assigned should be globally unique but we
                                // can reset it after each pass if overwrite is
                                // true)
-    prom_id_t prom_id_counter; // IDs assigned should be globally unique but we
-                               // can reset it after each pass if overwrite is
-                               // true)
-    prom_id_t prom_neg_id_counter;
+
 
     std::unordered_map<SEXP, std::string> function_definitions;
 
@@ -243,21 +137,32 @@ struct tracer_state_t {
     std::unordered_set<fn_id_t> already_inserted_functions; // Should be kept across
                                                        // Rdt calls (unless
                                                        // overwrite is true)
-    std::unordered_set<prom_id_t>
-        already_inserted_negative_promises; // Should be kept
-                                            // across Rdt
-                                            // calls (unless
-                                            // overwrite is
-                                            // true)
+
     arg_id_t argument_id_sequence; // Should be globally unique (can reset
                                    // between tracer calls if overwrite is true)
     std::map<arg_key_t, arg_id_t> argument_ids; // Should be kept across Rdt calls
                                            // (unless overwrite is true)
     int gc_trigger_counter; // Incremented each time there is a gc_entry
 
-    void finish_pass() {
+    tracer_state_t() {
+        call_id_counter = 0;
+        fn_id_counter = 0;
+        argument_id_sequence = 0;
+        gc_trigger_counter = 0;
+        environment_id_ = 0;
+        variable_id_ = 0;
+        timestamp_ = 0;
+    }
 
-        promise_origin.clear();
+    void increment_gc_trigger_counter() {
+        gc_trigger_counter++;
+    }
+
+    int get_gc_trigger_counter() const {
+        return gc_trigger_counter;
+    }
+
+    void finish_pass() {
 
         clear_promises();
 
@@ -337,17 +242,6 @@ struct tracer_state_t {
             .remove(symbol_to_string(symbol));
     }
 
-    // env_id_t to_environment_id(SEXP rho);
-    // var_id_t to_variable_id(SEXP symbol, SEXP rho, bool &exists);
-    // var_id_t to_variable_id(const std::string &symbol, SEXP rho, bool &exists);
-    prom_id_t enclosing_promise_id();
-
-    void increment_gc_trigger_counter();
-
-    int get_gc_trigger_counter() const;
-
-    tracer_state_t();
-
     void resume_execution_timer() {
        execution_resume_time_ = std::chrono::high_resolution_clock::now();
     }
@@ -374,20 +268,24 @@ struct tracer_state_t {
         return timestamp_++;
     }
 
-    void create_promise(const prom_id_t prom_id, const env_id_t env_id) {
-        promise_mapper_.create(prom_id, env_id, get_current_timestamp());
+    PromiseState* create_promise(const SEXP promise) {
+        const SEXP rho = dyntrace_get_promise_environment(promise);
+        env_id_t env_id = lookup_environment(rho).get_id();
+        return promise_mapper_.create(promise, env_id, get_current_timestamp());
     }
 
-    void insert_promise(const prom_id_t& promise_id, const env_id_t env_id) {
-        promise_mapper_.insert(promise_id, env_id);
+    PromiseState* insert_promise(const SEXP promise) {
+        const SEXP rho = dyntrace_get_promise_environment(promise);
+        env_id_t env_id = lookup_environment(rho).get_id();
+        return promise_mapper_.insert(promise, env_id);
     }
 
-    void remove_promise(const prom_id_t prom_id) {
-        promise_mapper_.remove(prom_id);
+    void remove_promise(const SEXP promise) {
+        promise_mapper_.remove(promise);
     }
 
-    PromiseState& lookup_promise(const prom_id_t &promise_id) {
-        return promise_mapper_.find(promise_id);
+    PromiseState* lookup_promise(const SEXP promise) {
+        return promise_mapper_.find(promise);
     }
 
     void clear_promises() {
@@ -400,7 +298,6 @@ struct tracer_state_t {
         stack_elem.call_id = info.call_id;
         stack_elem.function_info.function_id = info.fn_id;
         stack_elem.function_info.type = function_type::CLOSURE;
-        stack_elem.environment = info.call_ptr;
         full_stack.push_back(stack_elem);
     }
 
@@ -410,15 +307,13 @@ struct tracer_state_t {
         stack_elem.call_id = info.call_id;
         stack_elem.function_info.function_id = info.fn_id;
         stack_elem.function_info.type = info.fn_type;
-        stack_elem.environment = info.call_ptr;
         full_stack.push_back(stack_elem);
     }
 
-    void push_execution_context(const prom_info_t& info, const SEXP env) {
+    void push_execution_context(PromiseState * promise_state) {
         stack_event_t stack_elem;
         stack_elem.type = stack_type::PROMISE;
-        stack_elem.promise_id = info.prom_id;
-        stack_elem.environment = env;
+        stack_elem.promise_state = promise_state;
         full_stack.push_back(stack_elem);
     }
 
@@ -448,15 +343,15 @@ struct tracer_state_t {
         full_stack.pop_back();
     }
 
-    void pop_execution_context(const prom_info_t& info) {
-        auto thing_on_stack = full_stack.back();
-        if (thing_on_stack.type != stack_type::PROMISE ||
-            thing_on_stack.promise_id != info.prom_id) {
+    void pop_execution_context(PromiseState *promise_state) {
+        auto exec_context = full_stack.back();
+        if (exec_context.type != stack_type::PROMISE ||
+            exec_context.promise_state != promise_state) {
             dyntrace_log_warning(
                 "Object on stack was %s with id %d,"
                 " but was expected to be promise with id %d",
-                thing_on_stack.type == stack_type::PROMISE ? "promise" : "call",
-                thing_on_stack.promise_id, info.prom_id);
+                exec_context.type == stack_type::PROMISE ? "promise" : "call",
+                exec_context.promise_state -> get_id(), promise_state -> get_id());
         }
         full_stack.pop_back();
     }
@@ -487,10 +382,6 @@ public:
     }
 };
 
-
-prom_id_t get_promise_id(tracer_state_t & state, SEXP promise);
-prom_id_t make_promise_id(tracer_state_t & state, SEXP promise,
-                          bool negative = false);
 
 inline std::string parameter_mode_to_string(parameter_mode_t parameter_mode) {
     switch (parameter_mode) {

@@ -11,8 +11,7 @@
 typedef uintptr_t rid_t; // hexadecimal
 typedef intptr_t rsid_t; // hexadecimal
 
-// typedef rsid_t prom_id_t;  // hexadecimal
-typedef rsid_t prom_id_t;
+// typedef rsid_t promise_id_t;  // hexadecimal
 typedef rid_t
     call_id_t; // integer TODO this is pedantic, but shouldn't this be int?
 

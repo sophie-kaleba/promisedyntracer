@@ -140,14 +140,14 @@ void Analyzer::function_entry_(call_id_t call_id, fn_id_t fn_id,
 }
 
 CallState Analyzer::function_exit_(call_id_t call_id,
-                                             sexptype_t return_value_type) {
+                                   sexptype_t return_value_type) {
     CallState *call_state{call_stack_.back()};
     call_stack_.pop_back();
 
     if (call_state->get_call_id() != call_id) {
-        std::cerr << "call " << call_id << " does not match "
-                  << call_state->get_call_id() << " on stack." << std::endl;
-        exit(EXIT_FAILURE);
+        dyntrace_log_error("call %d does not match %d on stack\n", call_id,
+                           call_state->get_call_id());
+
     }
     call_state->set_return_value_type(return_value_type);
     call_state->make_inactive();
@@ -233,83 +233,6 @@ void Analyzer::context_jump(const unwind_info_t &info) {
             }
         }
     }
-}
-
-void Analyzer::promise_created(const prom_basic_info_t &prom_basic_info,
-                                         const SEXP promise) {
-}
-
-timestamp_t Analyzer::get_promise_timestamp_(prom_id_t promise_id) {
-    return tracer_state_.lookup_promise(promise_id).get_creation_timestamp();
-}
-
-void Analyzer::promise_force_entry(const prom_info_t &prom_info,
-                                             const SEXP promise) {
-    PromiseState &promise_state{tracer_state_.lookup_promise(prom_info.prom_id)};
-
-    /* if promise is not an argument, then don't process it. */
-    if (!promise_state.argument) {
-        return;
-    }
-
-    auto *call_state = get_call_state(promise_state.call_id);
-    eval_depth_t eval_depth = get_evaluation_depth_(promise_state.call_id);
-    call_state->force_entry(promise,
-                            promise_state.formal_parameter_position,
-                            eval_depth);
-}
-
-void Analyzer::promise_force_exit(const prom_info_t &prom_info,
-                                            const SEXP promise) {
-    PromiseState &promise_state{
-        tracer_state_.lookup_promise(prom_info.prom_id)};
-
-    /* if promise is not an argument, then don't process it. */
-    if (!promise_state.argument) {
-        return;
-    }
-
-    auto *call_state = get_call_state(promise_state.call_id);
-
-    call_state->force_exit(promise, promise_state.formal_parameter_position,
-                           tracer_state_.full_stack.back().execution_time);
-}
-
-void Analyzer::promise_value_lookup(const prom_info_t &prom_info,
-                                              const SEXP promise) {
-    PromiseState &promise_state{
-        tracer_state_.lookup_promise(prom_info.prom_id)};
-
-    /* if promise is not an argument, then don't process it. */
-    if (!promise_state.argument) {
-        return;
-    }
-
-    auto *call_state = get_call_state(promise_state.call_id);
-
-    call_state->lookup(promise_state.formal_parameter_position);
-}
-
-void Analyzer::promise_value_assign(const prom_info_t &prom_info,
-                                              const SEXP promise) {
-    metaprogram_(prom_info, promise);
-}
-
-void Analyzer::promise_environment_lookup(
-    const prom_info_t &prom_info, const SEXP promise) {
-    metaprogram_(prom_info, promise);
-}
-void Analyzer::promise_environment_assign(
-    const prom_info_t &prom_info, const SEXP promise) {
-    metaprogram_(prom_info, promise);
-}
-void Analyzer::promise_expression_lookup(const prom_info_t &prom_info,
-                                                   const SEXP promise) {
-    metaprogram_(prom_info, promise);
-}
-void Analyzer::promise_expression_assign(const prom_info_t &prom_info,
-                                                   const SEXP promise) {
-    metaprogram_(prom_info, promise);
 }
 
 void Analyzer::end(dyntracer_t *dyntracer) {
@@ -400,20 +323,6 @@ void Analyzer::serialize_call_(const CallState &call_state) {
         call_state.get_execution_time());
 }
 
-void Analyzer::metaprogram_(const prom_info_t &prom_info,
-                                      const SEXP promise) {
-    PromiseState &promise_state{
-        tracer_state_.lookup_promise(prom_info.prom_id)};
-
-    /* if promise is not an argument, then don't process it. */
-    if (!promise_state.argument) {
-        return;
-    }
-
-    auto *call_state = get_call_state(promise_state.call_id);
-
-    call_state->metaprogram(promise_state.formal_parameter_position);
-}
 
 CallState *Analyzer::get_call_state(const call_id_t call_id) {
 

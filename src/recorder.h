@@ -18,15 +18,6 @@ builtin_info_t builtin_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
 builtin_info_t builtin_exit_get_info(dyntracer_t *dyntracer, const SEXP call,
                                      const SEXP op, const SEXP rho,
                                      function_type fn_type, const SEXP retval);
-prom_basic_info_t create_promise_get_info(dyntracer_t *dyntracer,
-                                          const SEXP promise, const SEXP rho);
-prom_info_t force_promise_entry_get_info(dyntracer_t *dyntracer,
-                                         const SEXP promise);
-prom_info_t force_promise_exit_get_info(dyntracer_t *dyntracer,
-                                        const SEXP promise);
-prom_info_t promise_lookup_get_info(dyntracer_t *dyntracer, const SEXP promise);
-prom_info_t promise_expression_lookup_get_info(dyntracer_t *dyntracer,
-                                               const SEXP prom);
 gc_info_t gc_exit_get_info(int gc_count);
 
 void write_environment_variables(const std::string &filepath);

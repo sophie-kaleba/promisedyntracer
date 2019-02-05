@@ -9,61 +9,78 @@
 #include <vector>
 
 class PromiseMapper {
-    using promises_t = std::unordered_map<prom_id_t, PromiseState>;
+    using promises_t = std::unordered_map<SEXP, PromiseState*>;
 
   public:
     using iterator = promises_t::iterator;
     using const_iterator = promises_t::const_iterator;
 
     PromiseMapper()
-        : promises_(promises_t(PROMISE_MAPPING_BUCKET_COUNT)) {}
+        : promises_(promises_t(PROMISE_MAPPING_BUCKET_COUNT)),
+          promise_id_counter_(0) {
+    }
 
-    void create(const prom_id_t prom_id, const env_id_t env_id, const timestamp_t timestamp) {
+    PromiseState* create(const SEXP promise,
+                         const env_id_t env_id,
+                         const timestamp_t timestamp) {
 
-        auto result = promises_.insert({prom_id, PromiseState(prom_id, env_id, true)});
-        // if result.second is false, this means that a promise with this id
-        // already exists in map. This means that the promise with the same id
-        // has either not been removed in the gc_promise_unmarked stage or the
-        // the promise id assignment scheme assigns same id to two promises.
-        if (!result.second) {
-            dyntrace_log_error("PromiseMapper: New promise created already "
-                               "exists in the promise map.");
+        PromiseState *promise_state = new PromiseState(get_next_promise_id_(),
+                                                       env_id,
+                                                       true);
+        auto result = promises_.insert_or_assign(promise, promise_state);
+        promise_state -> set_creation_timestamp(timestamp);
+        return promise_state;
+    }
+
+    void remove(const SEXP promise) {
+
+        // TODO - think about deleting this promise pointer
+        /* it is possible that the promise does not exist in mapping.
+           this happens if the promise was created outside of tracing
+           but is being garbage collected in the middle of tracing */
+        auto iter = promises_.find(promise);
+        if(iter == promises_.end()) {
+            dyntrace_log_error("Unable to delete promise %p\n", promise);
         }
-
-        result.first -> second.set_creation_timestamp(timestamp);
+        promises_.erase(iter);
+        delete iter -> second;
     }
 
-    void remove(const prom_id_t prom_id) {
+    PromiseState* insert(const SEXP promise, const env_id_t env_id) {
 
-        // it is possible that the promise does not exist in mapping.
-        // this happens if the promise was created outside of tracing
-        // but is being garbage collected in the middle of tracing
-        promises_.erase(prom_id);
-    }
+        /* the insertion only happens if the promise with this id does not
+           already exist. If the promise does not already exist, it means that
+           we have not seen its creation which means it is non local.
+           the timestamp is automatically set to UNDEFINED_TIMESTAMP */
 
-    void insert(const prom_id_t prom_id, const env_id_t env_id) {
-
-        // the insertion only happens if the promise with this id does not
-        // already exist. If the promise does not already exist, it means that
-        // we have not seen its creation which means it is non local.
-        // the timestamp is automatically set to UNDEFINED_TIMESTAMP
-        promises_.insert({prom_id, PromiseState(prom_id, env_id, false)});
+        auto iter = promises_.find(promise);
+        if(iter == promises_.end()) {
+            PromiseState *promise_state = new PromiseState(get_next_promise_id_(),
+                                                           env_id,
+                                                           false);
+            auto iter = promises_.insert({promise, promise_state});
+            return promise_state;
+        }
+        else {
+            return iter -> second;
+        }
     }
 
     void clear() {
         promises_.clear();
     }
 
-    PromiseState &find(const prom_id_t prom_id) {
-        auto iter = promises_.find(prom_id);
-        // all promises encountered are added to the map. Its not possible for
-        // a promise id to be encountered which is not already mapped.
-        // If this happens, possibly, the mapper methods are not the first to
-        // be called in the analysis driver methods. Hence, they are not able
-        // to update the mapping.
+    PromiseState* find(const SEXP promise) {
+        auto iter = promises_.find(promise);
+
+        /* all promises encountered are added to the map. Its not possible for
+           a promise id to be encountered which is not already mapped.
+           If this happens, possibly, the mapper methods are not the first to
+           be called in the analysis. Hence, they are not able to update the mapping. */
         if (iter == promises_.end()) {
-            dyntrace_log_error("Unable to find promise with id %d\n", prom_id);
+            dyntrace_log_error("Unable to find promise %p\n", promise);
         }
+
         return iter->second;
     }
 
@@ -81,7 +98,12 @@ class PromiseMapper {
 
   private:
 
+    promise_id_t get_next_promise_id_() {
+        return promise_id_counter_++;
+    }
+
     promises_t promises_;
+    promise_id_t promise_id_counter_;
 };
 
 #endif /* __PROMISE_ACCESS_ANALYSIS_H__ */
