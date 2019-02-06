@@ -12,18 +12,15 @@ typedef uintptr_t rid_t; // hexadecimal
 typedef intptr_t rsid_t; // hexadecimal
 
 // typedef rsid_t promise_id_t;  // hexadecimal
-typedef rid_t
-    call_id_t; // integer TODO this is pedantic, but shouldn't this be int?
+typedef long int call_id_t;
+typedef std::string function_id_t;
 
-typedef std::string fn_id_t;  // integer
-typedef std::string fn_key_t; // pun
 typedef int env_id_t;
 typedef int var_id_t;
-typedef unsigned long int arg_id_t; // integer
+
 
 typedef int event_t;
 
-typedef std::pair<call_id_t, std::string> arg_key_t;
 
 enum class parameter_mode_t {
     UNASSIGNED = 0,
@@ -49,8 +46,7 @@ extern const eval_depth_t ESCAPED_PROMISE_EVAL_DEPTH;
 extern const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH;
 
 extern const size_t PROMISE_MAPPING_BUCKET_COUNT;
-
-
+extern const size_t FUNCTION_MAPPING_BUCKET_SIZE;
 
 
 #define failwith(format, ...)                                                  \
@@ -86,7 +82,7 @@ const char *get_ns_name(SEXP op);
 const char *get_name(SEXP call);
 std::string get_definition_location_cpp(SEXP op);
 std::string get_callsite_cpp(int);
-int is_byte_compiled(SEXP op);
+
 // char *to_string(SEXP var);
 std::string get_expression(SEXP e);
 std::string escape(const std::string &s);

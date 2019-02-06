@@ -15,16 +15,148 @@
 
 class Analyzer {
   public:
-    Analyzer(tracer_state_t &tracer_state,
-             const std::string &output_dir, bool truncate,
-             bool binary, int compression_level);
+    Analyzer(tracer_state_t &tracer_state, const std::string &output_dir,
+             bool truncate, bool binary, int compression_level)
+        : tracer_state_(tracer_state), output_dir_(output_dir),
+          // truncate_{truncate}, binary_{binary},
+          // compression_level_{compression_level},
+          functions_(std::unordered_map<function_id_t, FunctionState>(
+              FUNCTION_MAPPING_BUCKET_SIZE)),
+          closure_type_(sexptype_to_string(CLOSXP)),
+          builtin_type_(sexptype_to_string(BUILTINSXP)),
+          special_type_(sexptype_to_string(SPECIALSXP)),
+          undefined_timestamp_(std::numeric_limits<std::size_t>::max()) {
+
+        argument_data_table_ = create_data_table(
+            output_dir + "/" + "arguments",
+            {"call_id", "function_id", "parameter_position", "argument_mode",
+             "expression_type", "value_type", "escape", "call_depth",
+             "promise_depth", "nested_promise_depth", "force_count",
+             "lookup_count", "metaprogram_count", "execution_time"},
+            truncate, binary, compression_level);
+
+        call_data_table_ = create_data_table(
+            output_dir + "/" + "calls",
+            {"call_id", "function_id", "function_type",
+             "formal_parameter_count", "function_name", "return_value_type",
+             "force_order", "intrinsic_force_order", "execution_time"},
+            truncate, binary, compression_level);
+
+        call_graph_data_table_ = create_data_table(
+            output_dir + "/" + "call-graph", {"caller_id", "callee_id"},
+            truncate, binary, compression_level);
+
+        function_caller_data_table_ = create_data_table(
+            output_dir_ + "/" + "function-callers",
+            {"callee_function_name", "caller_function_id", "call_count"},
+            truncate, binary, compression_level);
+
+        symbol_user_data_table_ = create_data_table(
+            output_dir_ + "/" + "symbol-users",
+            {"symbol_name", "caller_function_id", "use_count"}, truncate,
+            binary, compression_level);
+
+        // caller_count_mapping_.insert({"delayedAssign", {}});
+        // caller_count_mapping_.insert({"::delayedAssign", {}});
+        // caller_count_mapping_.insert({"base::delayedAssign", {}});
+
+        // caller_count_mapping_.insert({"force", {}});
+        // caller_count_mapping_.insert({"::force", {}});
+        // caller_count_mapping_.insert({"base::force", {}});
+
+        // caller_count_mapping_.insert({"forceAndCall", {}});
+        // caller_count_mapping_.insert({"::forceAndCall", {}});
+        // caller_count_mapping_.insert({"base::forceAndCall", {}});
+
+        // caller_count_mapping_.insert({"substitute", {}});
+        // caller_count_mapping_.insert({"::substitute", {}});
+        // caller_count_mapping_.insert({"base::substitute", {}});
+
+        // caller_count_mapping_.insert({"sQuote", {}});
+        // caller_count_mapping_.insert({"::sQuote", {}});
+        // caller_count_mapping_.insert({"base::sQuote", {}});
+
+        // caller_count_mapping_.insert({"dQuote", {}});
+        // caller_count_mapping_.insert({"::dQuote", {}});
+        // caller_count_mapping_.insert({"base::dQuote", {}});
+
+        // caller_count_mapping_.insert({"quote", {}});
+        // caller_count_mapping_.insert({"::quote", {}});
+        // caller_count_mapping_.insert({"base::quote", {}});
+
+        // caller_count_mapping_.insert({"enquote", {}});
+        // caller_count_mapping_.insert({"::enquote", {}});
+        // caller_count_mapping_.insert({"base::enquote", {}});
+
+        // if (verbose) {
+        //     std::cout << analysis_switch;
+        // }
+
+        for (const std::string &function_name : std::vector(
+                 {"force", "forceAndCall", "delayedAssign", "substitute",
+                  "sQuote", "dQuote", "quote", "enquote"})) {
+            interesting_function_names_.push_back(function_name);
+            interesting_function_names_.push_back("::" + function_name);
+            interesting_function_names_.push_back("base::" + function_name);
+        }
+    }
+
     void begin(dyntracer_t* dyntracer) {}
-    void closure_entry(const closure_info_t &closure_info);
-    void special_entry(const builtin_info_t &special_info);
-    void builtin_entry(const builtin_info_t &builtin_info);
-    void closure_exit(const closure_info_t &closure_info);
-    void special_exit(const builtin_info_t &special_info);
-    void builtin_exit(const builtin_info_t &builtin_info);
+
+    void closure_entry(CallState * call_state) {
+        // TODO - remove this
+        // write the caller callee edge to file
+        //add_call_graph_edge_(call_id);
+
+        // TODO - do this in the end?
+        // write function body to file
+        //write_function_body_(fn_id, definition);
+
+
+        /* this checks the caller of functions we are interested in
+           and adds them to a table */
+        // TODO fix this
+        //inspect_function_caller_(closure_);
+
+        // TODO - do this when the summarizing call info,
+        // its better to add this when deleting the call object
+        // auto fn_iter = functions_.insert(std::make_pair(
+        //     fn_id, FunctionState(closure_info.formal_parameter_count)));
+        // fn_iter.first->second.increment_call();
+
+    }
+
+    void closure_exit(CallState *call_state) {
+        serialize_call_(call_state);
+    }
+
+    void special_entry(CallState *call_state) {
+        // TODO - remove this
+        // write the caller callee edge to file
+        //add_call_graph_edge_(call_id);
+
+        // TODO - do this in the end?
+        // write function body to file
+        // write_function_body_(fn_id, definition);
+    }
+
+    void special_exit(CallState *call_state) {
+        serialize_call_(call_state);
+    }
+
+    void builtin_entry(CallState *call_state) {
+        // TODO - remove this
+        // write the caller callee edge to file
+        //add_call_graph_edge_(call_id);
+
+        // TODO - do this in the end?
+        // write function body to file
+        // write_function_body_(fn_id, definition);
+    }
+
+    void builtin_exit(CallState *call_state) {
+        serialize_call_(call_state);
+    }
 
     void promise_created(PromiseState* promise_state,
                          const SEXP promise) {
@@ -37,33 +169,36 @@ class Analyzer {
             return;
         }
 
-        auto *call_state = get_call_state(promise_state->call_id);
+        auto *call_state = tracer_state_.get_call_state(promise_state->call_id);
         eval_depth_t eval_depth = get_evaluation_depth_(promise_state->call_id);
         call_state->force_entry(
             promise, promise_state->formal_parameter_position, eval_depth);
     }
 
     void promise_force_exit(PromiseState *promise_state, const SEXP promise) {
+
         /* if promise is not an argument, then don't process it. */
         if (!promise_state->argument) {
             return;
         }
 
-        auto *call_state = get_call_state(promise_state->call_id);
+        auto *call_state = tracer_state_.get_call_state(promise_state->call_id);
 
         call_state->force_exit(promise,
                                promise_state->formal_parameter_position,
                                tracer_state_.full_stack.back().execution_time);
     }
 
-    void promise_value_lookup(PromiseState *promise_state, const SEXP promise) {
+    // TODO remove promise argument from all of these cases
+    void promise_value_lookup(PromiseState *promise_state,
+                              const SEXP promise) {
 
         /* if promise is not an argument, then don't process it. */
         if (!promise_state->argument) {
             return;
         }
 
-        auto *call_state = get_call_state(promise_state->call_id);
+        auto *call_state = tracer_state_.get_call_state(promise_state->call_id);
 
         call_state->lookup(promise_state->formal_parameter_position);
     }
@@ -76,20 +211,31 @@ class Analyzer {
                                     const SEXP promise) {
         metaprogram_(promise_state, promise);
     }
+
     void promise_environment_assign(PromiseState *promise_state,
                                     const SEXP promise) {
+
         metaprogram_(promise_state, promise);
     }
+
     void promise_expression_lookup(PromiseState *promise_state,
                                    const SEXP promise) {
         metaprogram_(promise_state, promise);
     }
+
     void promise_expression_assign(PromiseState *promise_state,
                                    const SEXP promise) {
         metaprogram_(promise_state, promise);
     }
 
-    void context_jump(const unwind_info_t &info);
+    void context_jump(const unwind_info_t &info) {
+        for (auto &element : info.unwound_frames) {
+            if (element.type == stack_type::CALL) {
+                // TODO - serialize calls which have been unwound and write their type
+                //        as JUMPSXP
+            }
+        }
+    }
 
     void gc_promise_unmarked(PromiseState * promise_state,
                              const SEXP promise) {
@@ -223,30 +369,95 @@ class Analyzer {
     }
 
 
-    void end(dyntracer_t *dyntracer);
-    ~Analyzer();
+    void end(dyntracer_t *dyntracer) {
+        // TODO - serialize functions on exit. This should be done later on
+        // when the function state mappings are fully there.
+        // the function state will summarize results from call state.
+        // serializing it will result in a few entries in the functions table
+        // and its definition file.
+
+        // TODO check if this is non empty on exit.
+        // it should not be.
+        // for (const auto &key_value : call_map_) {
+        //     const CallState &call_state = *key_value.second;
+        //     if(call_state.get_function_type() == "Closure") {
+        //         serialize_arguments_(call_state);
+        //     }
+        // }
+
+        function_caller_count_mapping_.serialize(function_caller_data_table_);
+        symbol_user_count_mapping_.serialize(symbol_user_data_table_);
+    }
+
+    ~Analyzer() {
+        delete argument_data_table_;
+        delete call_data_table_;
+        delete call_graph_data_table_;
+        delete function_caller_data_table_;
+        delete symbol_user_data_table_;
+    }
 
   private:
-    void serialize_call_(const CallState &call_state);
-    void serialize_arguments_(const CallState &call_state);
-    void add_call_graph_edge_(const call_id_t callee_id);
+    void serialize_call_(const CallState *call_state) {
+        call_data_table_->write_row(static_cast<double>(call_state -> get_call_id()),
+                                    call_state -> get_function_id(),
+                                    call_state -> get_function_type(),
+                                    call_state -> get_formal_parameter_count(),
+                                    call_state -> get_function_name(),
+                                    sexptype_to_string(call_state -> get_return_value_type()),
+                                    call_state -> get_order(),
+                                    call_state -> get_intrinsic_order(),
+                                    call_state -> get_execution_time());
+    }
+
+    void serialize_arguments_(const CallState &call_state) {
+            const auto &parameter_uses{call_state.get_parameter_uses()};
+
+            for (int position = 0;
+                 position < call_state.get_formal_parameter_count();
+                 ++position) {
+
+                const auto &parameter{parameter_uses[position]};
+
+                argument_data_table_->write_row(
+                    static_cast<double>(call_state.get_call_id()),
+                    call_state.get_function_id(), position,
+                    parameter_mode_to_string(parameter.get_parameter_mode()),
+                    sexptype_to_string(parameter.get_expression_type()),
+                    sexptype_to_string(parameter.get_value_type()),
+                    parameter.get_escape(),
+                    parameter.get_evaluation_depth().call_depth,
+                    parameter.get_evaluation_depth().promise_depth,
+                    parameter.get_evaluation_depth().nested_promise_depth,
+                    parameter.get_force(), parameter.get_lookup(),
+                    parameter.get_metaprogram(),
+                    parameter.get_execution_time());
+            }
+    }
 
     void metaprogram_(const PromiseState* promise_state,
-                                const SEXP promise) {
+                      const SEXP promise) {
         /* if promise is not an argument, then don't process it. */
         if (!promise_state -> argument) {
             return;
         }
 
-        auto *call_state = get_call_state(promise_state -> call_id);
+        auto *call_state = tracer_state_.get_call_state(promise_state -> call_id);
 
         call_state->metaprogram(promise_state -> formal_parameter_position);
     }
 
-    CallState *get_call_state(const call_id_t call_id);
-    void write_function_body_(const fn_id_t &fn_id,
-                              const std::string &definition);
-    void function_entry_(call_id_t call_id, fn_id_t fn_id,
+    // void write_function_body_(const function_id_t &fn_id,
+    //                           const std::string &definition) {
+    //     auto result = handled_functions_.insert(fn_id);
+    //     if (!result.second)
+    //         return;
+    //     std::ofstream fout(output_dir_ + "/functions/" + fn_id, std::ios::trunc);
+    //     fout << definition;
+    //     fout.close();
+    // }
+
+    void function_entry_(call_id_t call_id, function_id_t fn_id,
                          const std::string &fn_type, const std::string &name,
                          int formal_parameter_count, const std::string &order,
                          const std::string &definition);
@@ -277,16 +488,17 @@ class Analyzer {
         return true;
     }
 
-    fn_id_t get_nth_closure_(int nth) {
+    function_id_t get_nth_closure_(int nth) {
         int n = 0;
-        for (auto it = call_stack_.rbegin(); it != call_stack_.rend(); ++it) {
-            if ((*it)->get_function_type() == "Closure") {
-                ++n;
-                if (n == nth) {
-                    return (*it)->get_function_id();
-                }
-            }
-        }
+        // TODO - fix this stack walking.
+        // for (auto it = call_stack_.rbegin(); it != call_stack_.rend(); ++it) {
+        //     if ((*it)->get_function_type() == "Closure") {
+        //         ++n;
+        //         if (n == nth) {
+        //             return (*it)->get_function_id();
+        //         }
+        //     }
+        // }
         return "tracer_failed_to_infer_caller";
     }
 
@@ -314,9 +526,9 @@ class Analyzer {
             stack_event_t exec_context = tracer_state_.full_stack[i];
 
             if (exec_context.type == stack_type::CALL &&
-                exec_context.function_info.type == function_type::CLOSURE) {
+                exec_context.call_state -> get_function_type() == "Closure") {
                 nesting = false;
-                if(exec_context.call_id == call_id) break;
+                if(exec_context.call_state -> get_call_id() == call_id) break;
                 ++eval_depth.call_depth;
             } else if (exec_context.type == stack_type::PROMISE) {
                 ++eval_depth.promise_depth;
@@ -342,7 +554,7 @@ class Analyzer {
     // bool truncate_;
     // bool binary_;
     // int compression_level_;
-    std::unordered_map<fn_id_t, FunctionState> functions_;
+    std::unordered_map<function_id_t, FunctionState> functions_;
     std::vector<std::string> interesting_function_names_;
     const std::string closure_type_;
     const std::string builtin_type_;
@@ -354,9 +566,6 @@ class Analyzer {
     DataTableStream *function_caller_data_table_;
     DataTableStream *symbol_user_data_table_;
     DataTableStream *side_effecting_promises_data_table_;
-    std::vector<CallState *> call_stack_;
-    std::unordered_map<call_id_t, CallState *> call_map_;
-    std::unordered_set<fn_id_t> handled_functions_;
     CallerCountMapping function_caller_count_mapping_;
     CallerCountMapping symbol_user_count_mapping_;
     };

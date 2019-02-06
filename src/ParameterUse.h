@@ -1,7 +1,6 @@
 #ifndef PROMISE_DYNTRACER_PARAMETER_USE_H
 #define PROMISE_DYNTRACER_PARAMETER_USE_H
 
-#include "State.h"
 #include "sexptypes.h"
 #include <cstdint>
 #include <string>

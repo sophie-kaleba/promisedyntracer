@@ -87,7 +87,7 @@ class FunctionAnalysis {
         }
     }
 
-    void write_function_body_(const fn_id_t &fn_id,
+    void write_function_body_(const function_id_t &fn_id,
                               const std::string &definition) {
         auto result = handled_functions_.insert(fn_id);
         if (!result.second)
@@ -108,7 +108,7 @@ class FunctionAnalysis {
         }
     }
 
-    void push_function_(fn_id_t fn_id, const std::string &fn_name,
+    void push_function_(function_id_t fn_id, const std::string &fn_name,
                         const std::string &fn_type, int parameter_count) {
         function_key_t key{fn_id, fn_name, fn_type, "unknown", parameter_count};
         function_stack_.push_back(key);
@@ -135,7 +135,7 @@ class FunctionAnalysis {
     const std::string special_type_;
     const std::string builtin_type_;
     std::unordered_map<function_key_t, int, FunctionKeyHasher> functions_;
-    std::unordered_set<fn_id_t> handled_functions_;
+    std::unordered_set<function_id_t> handled_functions_;
     std::vector<function_key_t> function_stack_;
     DataTableStream *function_data_table_;
 };

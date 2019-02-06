@@ -18,7 +18,7 @@ public:
         }
     }
 
-    void insert(const std::string& item, const fn_id_t& caller_id) {
+    void insert(const std::string& item, const function_id_t& caller_id) {
         auto first_iter = table_.insert({item, {}});
         auto second_iter = first_iter.first -> second.insert({caller_id, 1});
         if(!second_iter.second) {
@@ -38,7 +38,7 @@ public:
 
 private:
 
-    std::unordered_map<std::string, std::unordered_map<fn_id_t, int>> table_;
+    std::unordered_map<std::string, std::unordered_map<function_id_t, int>> table_;
 };
 
 #endif /* PROMISEDYNTRACER_CALLER_COUNT_MAPPING_H */

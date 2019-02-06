@@ -17,15 +17,10 @@ void closure_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                    const SEXP args, const SEXP rho);
 void closure_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP retval);
-void print_entry_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
-                      const SEXP args, const SEXP rho, function_type fn_type);
 void builtin_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                    const SEXP args, const SEXP rho);
 void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                    const SEXP args, const SEXP rho);
-void print_exit_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
-                     const SEXP args, const SEXP rho, function_type fn_type,
-                     const SEXP retval);
 void builtin_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP retval);
 void special_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,

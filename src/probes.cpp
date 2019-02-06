@@ -55,44 +55,32 @@ void closure_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
     state.enter_probe();
 
-    closure_info_t info =
-        function_entry_get_info(dyntracer, call, op, args, rho);
-
-    state.push_execution_context(info);
+    CallState *call_state = state.create_call(call, op, args, rho);
 
     tracer_serializer(dyntracer).serialize(
         TraceSerializer::OPCODE_FUNCTION_BEGIN, sexptype_to_string(CLOSXP),
-        info.fn_id, info.call_id,
+        call_state -> get_function_id(),
+        call_state -> get_call_id(),
         state.lookup_environment(rho, true).get_id());
 
-    // Associate promises with call ID
-    for (auto argument: info.arguments) {
-        // if promise environment is same as the caller's environment, then
-        // serialize this promise as it is a default argument.
+    // TODO - now we are calling this before putting the closure on the stack.
+    // This should be made consistent.
+    analyzer.closure_entry(call_state);
 
-        if (argument.parameter_mode == parameter_mode_t::DEFAULT ||
-            argument.parameter_mode == parameter_mode_t::CUSTOM) {
+    // TODO - check that pushing happens after the analyzer is called.
+    // This is inconsistent with the case of promises.
+    state.push_execution_context(call_state);
 
-            // first we insert the promise as usual.
-            PromiseState *promise_state =
-                state.insert_promise(argument.promise);
 
-            // now, we make this promise object, a function argument by
-            // providing the relevant information.
-
-            promise_state->make_function_argument(
-                info.fn_id, info.call_id, argument.formal_parameter_position,
-                argument.parameter_mode);
-
-            tracer_serializer(dyntracer).serialize(
-                TraceSerializer::OPCODE_ARGUMENT_PROMISE_ASSOCIATE, info.fn_id,
-                info.call_id, argument.formal_parameter_position,
-                state.lookup_variable(rho, argument.name).get_id(),
-                argument.name, promise_state -> get_id());
-        }
-    }
-
-    analyzer.closure_entry(info);
+    // TODO - this function call has to be made only for the DEFAULT and
+    //        CUSTOM arguments. The trick is to loop over all the promises
+    //        in the call_state and only call this function for those that
+    //        satisfy the criterion.
+    // tracer_serializer(dyntracer).serialize(
+    //     TraceSerializer::OPCODE_ARGUMENT_PROMISE_ASSOCIATE, info.fn_id,
+    //     info.call_id, argument.formal_parameter_position,
+    //     state.lookup_variable(rho, argument.name).get_id(), argument.name,
+    //     promise_state->get_id());
 
     state.exit_probe();
 }
@@ -105,15 +93,14 @@ void closure_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
     state.enter_probe();
 
-    closure_info_t info =
-        function_exit_get_info(dyntracer, call, op, args, rho, retval);
+    CallState *call_state =  state.pop_execution_context(retval);
 
-    state.pop_execution_context(info);
+    analyzer.closure_exit(call_state);
 
-    analyzer.closure_exit(info);
+    tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_FUNCTION_FINISH,
+                                           call_state -> get_call_id(), false);
 
-    tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_FUNCTION_FINISH, info.call_id, false);
+    //TODO delete call_state
 
     state.exit_probe();
 }
@@ -122,20 +109,22 @@ void closure_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 void builtin_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                    const SEXP args, const SEXP rho) {
     tracer_state_t& state = tracer_state(dyntracer);
+    Analyzer &analyzer = tracer_analyzer(dyntracer);
 
     state.enter_probe();
 
-    function_type fn_type;
+    CallState *call_state = state.create_call(call, op, args, rho);
 
-    if (TYPEOF(op) == BUILTINSXP) {
-        fn_type = (PRIMINTERNAL(op) == 0) ? function_type::TRUE_BUILTIN
-                                          : function_type::BUILTIN;
-    } else {
-        /*the weird case of NewBuiltin2 , where op is a language expression*/
-        fn_type = function_type::TRUE_BUILTIN;
-    }
+    analyzer.builtin_entry(call_state);
 
-    print_entry_info(dyntracer, call, op, args, rho, fn_type);
+    // TODO - check that pushing happens after the analyzer is called.
+    // This is inconsistent with the case of promises.
+    state.push_execution_context(call_state);
+
+    tracer_serializer(dyntracer).serialize(
+        TraceSerializer::OPCODE_FUNCTION_BEGIN,
+        sexptype_to_string(BUILTINSXP), call_state -> get_function_id(),
+        call_state -> get_call_id(), state.lookup_environment(rho).get_id());
 
     state.exit_probe();
 }
@@ -144,19 +133,21 @@ void builtin_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 void builtin_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP retval) {
     tracer_state_t& state = tracer_state(dyntracer);
+    Analyzer &analyzer = tracer_analyzer(dyntracer);
 
     state.enter_probe();
 
-    function_type fn_type;
-    if (TYPEOF(op) == BUILTINSXP) {
-        fn_type = (PRIMINTERNAL(op) == 0) ? function_type::TRUE_BUILTIN
-                                          : function_type::BUILTIN;
-    } else {
-        fn_type = function_type::TRUE_BUILTIN;
-    }
+    // TODO - the object is removed before the analyzer is done.
+    //        This should be taken into account on the analyzer side.
+    CallState *call_state = state.pop_execution_context(retval);
 
-    print_exit_info(dyntracer, call, op, args, rho, fn_type, retval);
+    analyzer.builtin_exit(call_state);
 
+    tracer_serializer(dyntracer).serialize(
+        TraceSerializer::OPCODE_FUNCTION_FINISH, call_state->get_call_id(),
+        false);
+
+    // TODO - delete call_state
     state.exit_probe();
 }
 
@@ -164,10 +155,24 @@ void builtin_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                    const SEXP args, const SEXP rho) {
     tracer_state_t& state = tracer_state(dyntracer);
+    Analyzer &analyzer = tracer_analyzer(dyntracer);
 
     state.enter_probe();
 
-    print_entry_info(dyntracer, call, op, args, rho, function_type::SPECIAL);
+    CallState * call_state = state.create_call(call, op, args, rho);
+
+    analyzer.special_entry(call_state);
+
+    // TODO - check that pushing happens after the analyzer is called.
+    // This is inconsistent with the case of promises.
+    state.push_execution_context(call_state);
+
+    tracer_serializer(dyntracer).serialize(
+        TraceSerializer::OPCODE_FUNCTION_BEGIN,
+        sexptype_to_string(SPECIALSXP),
+        call_state -> get_function_id(),
+        call_state -> get_call_id(),
+        state.lookup_environment(rho).get_id());
 
     state.exit_probe();
 }
@@ -175,68 +180,24 @@ void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
 void special_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP retval) {
-    tracer_state_t& state = tracer_state(dyntracer);
 
-    state.enter_probe();
-
-    print_exit_info(dyntracer, call, op, args, rho, function_type::SPECIAL,
-                    retval);
-
-    state.exit_probe();
-}
-
-
-void print_entry_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
-                      const SEXP args, const SEXP rho, function_type fn_type) {
     tracer_state_t& state = tracer_state(dyntracer);
     Analyzer &analyzer = tracer_analyzer(dyntracer);
 
-    builtin_info_t info =
-        builtin_entry_get_info(dyntracer, call, op, rho, fn_type);
+    state.enter_probe();
 
-    if (info.fn_type == function_type::SPECIAL) {
-        analyzer.special_entry(info);
-    }
-    else {
-        analyzer.builtin_entry(info);
-    }
+    // TODO - the object is removed before the analyzer is done.
+    //        This should be taken into account on the analyzer side.
+    CallState * call_state = state.pop_execution_context(retval);
 
-    // TODO - check that pushing happens after the analyzer is called.
-    // This is inconsistent with the case of promises.
-    state.push_execution_context(info);
+    analyzer.special_exit(call_state);
 
-    tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_FUNCTION_BEGIN,
-        sexptype_to_string(info.fn_type == function_type::SPECIAL ? SPECIALSXP
-                                                                  : BUILTINSXP),
-        info.fn_id, info.call_id,
-        state.lookup_environment(rho).get_id());
+    tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_FUNCTION_FINISH,
+                                           call_state -> get_call_id(),
+                                           false);
+    // TODO - delete call_state
 
-}
-
-void print_exit_info(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
-                     const SEXP args, const SEXP rho, function_type fn_type,
-                     const SEXP retval) {
-    tracer_state_t& state = tracer_state(dyntracer);
-    Analyzer& analyzer = tracer_analyzer(dyntracer);
-
-    builtin_info_t info =
-        builtin_exit_get_info(dyntracer, call, op, rho, fn_type, retval);
-
-    if (info.fn_type == function_type::SPECIAL) {
-        analyzer.special_exit(info);
-    }
-    else {
-        analyzer.builtin_exit(info);
-    }
-
-    // TODO - the object is being removed after the analyzer is done
-    //        this should be made consistent.
-    state.pop_execution_context(info);
-
-    tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_FUNCTION_FINISH, info.call_id, false);
-
+    state.exit_probe();
 }
 
 
@@ -288,8 +249,7 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
 
     PromiseState* promise_state = state.lookup_promise(promise);
 
-    analyzer.promise_force_entry(promise_state,
-                                 promise);
+    analyzer.promise_force_entry(promise_state, promise);
 
     state.push_execution_context(promise_state);
 
@@ -486,13 +446,7 @@ void gc_promise_unmark(tracer_state_t & state,
 
 
 void gc_closure_unmark(tracer_state_t& state, const SEXP function) {
-
-    auto &definitions = state.function_definitions;
-
-    auto it = definitions.find(function);
-
-    if (it != definitions.end())
-        state.function_definitions.erase(it);
+    state.remove_closure(function);
 }
 
 
@@ -562,14 +516,15 @@ void context_jump(dyntracer_t *dyntracer, const RCNTXT *cptr,
             else
                 info.unwound_frames.push_back(element);
         else if (element.type == stack_type::CALL) {
-            tracer_serializer(dyntracer).serialize(
-                TraceSerializer::OPCODE_FUNCTION_FINISH, element.call_id, true);
+            tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_FUNCTION_FINISH,
+                                                   // Change api to get_id instead
+                                                   element.call_state -> get_call_id(),
+                                                   true);
             info.unwound_frames.push_back(element);
         } else if (element.type == stack_type::PROMISE) {
-            tracer_serializer(dyntracer).serialize(
-                TraceSerializer::OPCODE_PROMISE_FINISH,
-                element.promise_state -> get_id(),
-                true);
+            tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_PROMISE_FINISH,
+                                                   element.promise_state -> get_id(),
+                                                   true);
             info.unwound_frames.push_back(element);
         } else /* if (element.type == stack_type::NONE) */
             dyntrace_log_error("NONE object found on tracer's full stack.");

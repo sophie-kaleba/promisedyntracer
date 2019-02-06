@@ -21,7 +21,7 @@ class PromiseState {
     bool argument;
     promise_id_t id;
     env_id_t env_id;
-    fn_id_t fn_id;
+    function_id_t fn_id;
     call_id_t call_id;
     int formal_parameter_position;
     parameter_mode_t parameter_mode;
@@ -57,7 +57,7 @@ class PromiseState {
         return "UNIMPLEMENTED";
     }
 
-    void make_function_argument(fn_id_t fn_id, call_id_t call_id,
+    void make_function_argument(function_id_t fn_id, call_id_t call_id,
                                     int formal_parameter_position,
                                     parameter_mode_t parameter_mode) {
         this->argument = true;

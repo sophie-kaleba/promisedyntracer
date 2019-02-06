@@ -12,6 +12,7 @@ const eval_depth_t ESCAPED_PROMISE_EVAL_DEPTH = {-2, -2, -2};
 const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH = {-1, -1, -1};
 
 const size_t PROMISE_MAPPING_BUCKET_COUNT = 1000000;
+const size_t FUNCTION_MAPPING_BUCKET_SIZE = 20000;
 
 const timestamp_t UNDEFINED_TIMESTAMP = -1;
 
@@ -76,6 +77,13 @@ const char *get_name(SEXP sexp) {
     }
 
     return s;
+}
+
+std::string symbol_to_string(const SEXP symbol) {
+    if(symbol == R_NilValue) {
+        return "PROMISEDYNTRACER::NotAString";
+    }
+    return CHAR(PRINTNAME(symbol));
 }
 
 static int get_lineno(SEXP srcref) {
@@ -171,10 +179,7 @@ std::string get_definition_location_cpp(SEXP op) {
     return extract_location_information(srcref);
 }
 
-int is_byte_compiled(SEXP op) {
-    SEXP body = BODY(op);
-    return TYPEOF(body) == BCODESXP;
-}
+
 
 std::string get_expression(SEXP e) {
     std::string expression;

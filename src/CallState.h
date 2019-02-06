@@ -3,23 +3,25 @@
 
 #include "ParameterUse.h"
 #include "Rdyntrace.h"
-#include "State.h"
 #include "table.h"
 #include "utilities.h"
+#include "Rinternals.h"
 
 class CallState {
   public:
-    explicit CallState(call_id_t call_id, fn_id_t fn_id,
+    explicit CallState(call_id_t call_id, function_id_t fn_id,
                        const std::string &function_type,
                        const std::string &function_name,
-                       int formal_parameter_count, const std::string &order)
-        : call_id_{call_id}, fn_id_{fn_id}, function_type_(function_type),
+                       int formal_parameter_count, const std::string &order,
+                       const SEXP environment, bool byte_compiled)
+        : call_id_(call_id), fn_id_(fn_id), function_type_(function_type),
           function_name_(function_name),
-          formal_parameter_count_{formal_parameter_count},
-          parameter_uses_{
-              static_cast<std::size_t>(std::max(formal_parameter_count, 0))},
-          order_{order}, intrinsic_order_{order},
-          return_value_type_{UNASSIGNEDSXP}, leaf_(true), active_(true),
+          formal_parameter_count_(formal_parameter_count),
+          parameter_uses_(
+              static_cast<std::size_t>(std::max(formal_parameter_count, 5))),
+          order_(order), environment_(environment), byte_compiled_(byte_compiled),
+          intrinsic_order_(order),
+          return_value_type_(UNASSIGNEDSXP), leaf_(true), active_(true),
           execution_time_(0.0) {
 
         /* INFO - Reserve size to 15 bytes to prevent repeated string
@@ -31,7 +33,7 @@ class CallState {
 
     call_id_t get_call_id() const { return call_id_; }
 
-    const fn_id_t &get_function_id() const { return fn_id_; }
+    const function_id_t &get_function_id() const { return fn_id_; }
 
     const std::string &get_function_type() const { return function_type_; }
 
@@ -39,6 +41,7 @@ class CallState {
 
     void set_leaf(bool leaf) { leaf_ = leaf; }
 
+    // TODO - fix this to make it about wrapper types.
     bool is_leaf() const { return leaf_; }
 
     void make_active() { active_ = true; }
@@ -47,11 +50,20 @@ class CallState {
 
     void make_inactive() { active_ = false; }
 
+    SEXP get_environment() const { return environment_; }
+
+    bool is_byte_compiled() { return byte_compiled_; }
+
     void set_return_value_type(sexptype_t return_value_type) {
         return_value_type_ = return_value_type;
     }
 
     sexptype_t get_return_value_type() const { return return_value_type_; }
+
+
+    void set_formal_parameter_count(int formal_parameter_count) {
+        formal_parameter_count_ = formal_parameter_count;
+    }
 
     const int get_formal_parameter_count() const {
         return formal_parameter_count_;
@@ -64,10 +76,18 @@ class CallState {
     }
 
     void set_expression_type(sexptype_t expression_type, std::size_t position) {
+        if(parameter_uses_.size() <= position) {
+            parameter_uses_.resize(position + 1);
+            set_formal_parameter_count(position + 1);
+        }
         parameter_uses_[position].set_expression_type(expression_type);
     }
 
     void set_value_type(sexptype_t value_type, std::size_t position) {
+        if(parameter_uses_.size() <= position) {
+            parameter_uses_.resize(position + 1);
+            set_formal_parameter_count(position + 1);
+        }
         parameter_uses_[position].set_value_type(value_type);
     }
 
@@ -138,12 +158,14 @@ class CallState {
 
 private:
     call_id_t call_id_;
-    fn_id_t fn_id_;
+    function_id_t fn_id_;
     std::string function_type_;
     std::string function_name_;
     int formal_parameter_count_;
     std::vector<ParameterUse> parameter_uses_;
     std::string order_;
+    const SEXP environment_;
+    bool byte_compiled_;
     std::string intrinsic_order_;
     sexptype_t return_value_type_;
     bool leaf_;
