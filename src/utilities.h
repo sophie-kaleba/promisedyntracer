@@ -117,6 +117,15 @@ inline void *calloc_or_die(std::size_t num, std::size_t size) {
     return data;
 }
 
+inline void *realloc_or_die(void * ptr, std::size_t size) {
+    void *data = std::realloc(ptr, size);
+    if (data == nullptr) {
+        failwith("memory allocation error: unable to reallocate %lu bytes.\n",
+                 size);
+    }
+    return data;
+}
+
 inline bool timestamp_is_undefined(const timestamp_t timestamp) {
     return timestamp == UNDEFINED_TIMESTAMP;
 }
