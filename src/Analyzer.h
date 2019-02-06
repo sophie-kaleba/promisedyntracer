@@ -355,7 +355,6 @@ class Analyzer {
     DataTableStream *symbol_user_data_table_;
     DataTableStream *side_effecting_promises_data_table_;
     std::vector<CallState *> call_stack_;
-    std::unordered_map<call_id_t, CallState *> call_map_;
     std::unordered_set<fn_id_t> handled_functions_;
     CallerCountMapping function_caller_count_mapping_;
     CallerCountMapping symbol_user_count_mapping_;

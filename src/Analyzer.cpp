@@ -2,12 +2,11 @@
 
 const size_t FUNCTION_MAPPING_BUCKET_SIZE = 20000;
 
-Analyzer::Analyzer(tracer_state_t &tracer_state,
-                   const std::string &output_dir,
-                   bool truncate, bool binary,
-                   int compression_level)
+Analyzer::Analyzer(tracer_state_t &tracer_state, const std::string &output_dir,
+                   bool truncate, bool binary, int compression_level)
     : tracer_state_(tracer_state), output_dir_(output_dir),
-      //truncate_{truncate}, binary_{binary}, compression_level_{compression_level},
+      // truncate_{truncate}, binary_{binary},
+      // compression_level_{compression_level},
       functions_(std::unordered_map<fn_id_t, FunctionState>(
           FUNCTION_MAPPING_BUCKET_SIZE)),
       closure_type_(sexptype_to_string(CLOSXP)),
@@ -19,8 +18,8 @@ Analyzer::Analyzer(tracer_state_t &tracer_state,
         output_dir + "/" + "arguments",
         {"call_id", "function_id", "parameter_position", "argument_mode",
          "expression_type", "value_type", "escape", "call_depth",
-         "promise_depth", "nested_promise_depth", "force_count",
-         "lookup_count", "metaprogram_count", "execution_time"},
+         "promise_depth", "nested_promise_depth", "force_count", "lookup_count",
+         "metaprogram_count", "execution_time"},
         truncate, binary, compression_level);
 
     call_data_table_ = create_data_table(
@@ -80,25 +79,22 @@ Analyzer::Analyzer(tracer_state_t &tracer_state,
     //     std::cout << analysis_switch;
     // }
 
-    for(const std::string& function_name : std::vector({"force",
-                                                 "forceAndCall",
-                                                 "delayedAssign",
-                                                 "substitute",
-                                                 "sQuote",
-                                                 "dQuote",
-                                                 "quote",
-                                                 "enquote"})) {
+    for (const std::string &function_name :
+         std::vector({"force", "forceAndCall", "delayedAssign", "substitute",
+                      "sQuote", "dQuote", "quote", "enquote"})) {
         interesting_function_names_.push_back(function_name);
         interesting_function_names_.push_back("::" + function_name);
         interesting_function_names_.push_back("base::" + function_name);
     }
 }
 
-
 void Analyzer::inspect_function_caller_(const std::string &name) {
-    for(auto& function_name : interesting_function_names_) {
-        if(name != function_name) { continue; }
-        function_caller_count_mapping_.insert(function_name, get_nth_closure_(1));
+    for (auto &function_name : interesting_function_names_) {
+        if (name != function_name) {
+            continue;
+        }
+        function_caller_count_mapping_.insert(function_name,
+                                              get_nth_closure_(1));
         return;
     }
     // for(auto& key_value : caller_count_mapping_) {
@@ -120,11 +116,11 @@ void Analyzer::inspect_function_caller_(const std::string &name) {
 }
 
 void Analyzer::function_entry_(call_id_t call_id, fn_id_t fn_id,
-                                         const std::string &fn_type,
-                                         const std::string &name,
-                                         int formal_parameter_count,
-                                         const std::string &order,
-                                         const std::string &definition) {
+                               const std::string &fn_type,
+                               const std::string &name,
+                               int formal_parameter_count,
+                               const std::string &order,
+                               const std::string &definition) {
 
     // write the caller callee edge to file
     add_call_graph_edge_(call_id);
@@ -147,11 +143,11 @@ CallState Analyzer::function_exit_(call_id_t call_id,
     if (call_state->get_call_id() != call_id) {
         dyntrace_log_error("call %d does not match %d on stack\n", call_id,
                            call_state->get_call_id());
-
     }
     call_state->set_return_value_type(return_value_type);
     call_state->make_inactive();
-    call_state->set_execution_time(tracer_state_.full_stack.back().execution_time);
+    call_state->set_execution_time(
+        tracer_state_.full_stack.back().execution_time);
     serialize_call_(*call_state);
     return *call_state;
 }
@@ -190,7 +186,7 @@ void Analyzer::closure_entry(const closure_info_t &closure_info) {
         if (argument.expression_type == MISSINGSXP) {
             call_stack_.back()->set_value_type(
                 argument.expression_type, argument.formal_parameter_position);
-        } else if(argument.expression_type == PROMSXP) {
+        } else if (argument.expression_type == PROMSXP) {
             // call_stack_.back()->set_value_type(
             //     type_of_sexp(dyntrace_get_promise_value(argument.pr)),
             //     argument.formal_parameter_position);
@@ -239,14 +235,13 @@ void Analyzer::end(dyntracer_t *dyntracer) {
 
     for (const auto &key_value : call_map_) {
         const CallState &call_state = *key_value.second;
-        if(call_state.get_function_type() == "Closure") {
+        if (call_state.get_function_type() == "Closure") {
             serialize_arguments_(call_state);
         }
     }
 
     function_caller_count_mapping_.serialize(function_caller_data_table_);
     symbol_user_count_mapping_.serialize(symbol_user_data_table_);
-
 }
 
 // void Analyzer::serialize_function_callers_() {
@@ -269,8 +264,10 @@ void Analyzer::end(dyntracer_t *dyntracer) {
 //     }
 // }
 
-// void Analyzer::serialize_caller_count_mapping_(const caller_table_t& caller_count_mapping,
-//                                                          DataTableStream* data_table) {
+// void Analyzer::serialize_caller_count_mapping_(const caller_table_t&
+// caller_count_mapping,
+//                                                          DataTableStream*
+//                                                          data_table) {
 //     for(const auto & key_value : caller_count_mapping_) {
 //         for (const auto & caller_count : key_value.second) {
 //             data_table_ -> write_row(key_value.first,
@@ -303,13 +300,11 @@ void Analyzer::serialize_arguments_(const CallState &call_state) {
             parameter_mode_to_string(parameter.get_parameter_mode()),
             sexptype_to_string(parameter.get_expression_type()),
             sexptype_to_string(parameter.get_value_type()),
-            parameter.get_escape(),
-            parameter.get_evaluation_depth().call_depth,
+            parameter.get_escape(), parameter.get_evaluation_depth().call_depth,
             parameter.get_evaluation_depth().promise_depth,
             parameter.get_evaluation_depth().nested_promise_depth,
-            parameter.get_force(),
-            parameter.get_lookup(), parameter.get_metaprogram(),
-            parameter.get_execution_time());
+            parameter.get_force(), parameter.get_lookup(),
+            parameter.get_metaprogram(), parameter.get_execution_time());
     }
 }
 
@@ -322,7 +317,6 @@ void Analyzer::serialize_call_(const CallState &call_state) {
         call_state.get_order(), call_state.get_intrinsic_order(),
         call_state.get_execution_time());
 }
-
 
 CallState *Analyzer::get_call_state(const call_id_t call_id) {
 
@@ -354,7 +348,7 @@ void Analyzer::add_call_graph_edge_(const call_id_t callee_id) {
 }
 
 void Analyzer::write_function_body_(const fn_id_t &fn_id,
-                                              const std::string &definition) {
+                                    const std::string &definition) {
     auto result = handled_functions_.insert(fn_id);
     if (!result.second)
         return;

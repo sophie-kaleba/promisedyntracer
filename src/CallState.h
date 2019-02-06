@@ -1,5 +1,5 @@
-#ifndef PROMISE_DYNTRACER_CALL_STATE_H
-#define PROMISE_DYNTRACER_CALL_STATE_H
+#ifndef PROMISEDYNTRACER_CALL_STATE_H
+#define PROMISEDYNTRACER_CALL_STATE_H
 
 #include "ParameterUse.h"
 #include "Rdyntrace.h"
@@ -29,6 +29,7 @@ class CallState {
         intrinsic_order_.reserve(15);
     }
 
+    // TODO - change get_call_id to get_id
     call_id_t get_call_id() const { return call_id_; }
 
     const fn_id_t &get_function_id() const { return fn_id_; }
@@ -158,4 +159,4 @@ inline std::ostream &operator<<(std::ostream &os, const CallState &call_state) {
     return os;
 }
 
-#endif /* PROMISE_DYTRACER_CALL_STATE_H */
+#endif /* PROMISEDYTRACER_CALL_STATE_H */

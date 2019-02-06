@@ -44,59 +44,6 @@ void update_closure_argument(closure_info_t &info, dyntracer_t *dyntracer,
     info.arguments.push_back(argument);
 }
 
-void update_closure_arguments(closure_info_t &info, dyntracer_t *dyntracer,
-                              const call_id_t call_id, const SEXP formals,
-                              const SEXP args, const SEXP environment) {
-
-    int formal_parameter_position = 0;
-    SEXP arg_name = R_NilValue;
-    SEXP arg_value = R_NilValue;
-    for (SEXP current_formal = formals; current_formal != R_NilValue;
-         current_formal = CDR(current_formal), formal_parameter_position++) {
-        // Retrieve the argument name.
-        arg_name = TAG(current_formal);
-        arg_value = dyntrace_lookup_environment(environment, arg_name);
-
-        // Encountered a triple-dot argument, break it up further.
-        if (TYPEOF(arg_value) == DOTSXP) {
-            for (SEXP dot_args = arg_value; dot_args != R_NilValue;
-                 dot_args = CDR(dot_args)) {
-                update_closure_argument(info, dyntracer, call_id, TAG(dot_args),
-                                        CAR(dot_args), environment, true,
-                                        MISSING(current_formal),
-                                        formal_parameter_position);
-            }
-        } else {
-
-            // We want the promise associated with the symbol.
-            // Generally, the argument value should be the promise.
-            // But if JIT is enabled, its possible for the argument_expression
-            // to be unpromised. In this case, we dereference the argument.
-            if (TYPEOF(arg_value) == SYMSXP) {
-                lookup_result r =
-                    find_binding_in_environment(arg_value, environment);
-                if (r.status == lookup_status::SUCCESS) {
-                    arg_value = r.value;
-                } else {
-                    // So... since this is a function, then I assume we
-                    // shouldn't
-                    // get any arguments that are active bindings or anything
-                    // like
-                    // that. If we do, then we should fail here and re-think our
-                    // life choices.
-                    std::string msg = lookup_status_to_string(r.status);
-                    dyntrace_log_error("%s", msg.c_str());
-                }
-            }
-            // The general case: single argument.
-            update_closure_argument(
-                info, dyntracer, call_id, arg_name, arg_value, environment,
-                false, arg_value == R_MissingArg, formal_parameter_position);
-        }
-    }
-
-    info.formal_parameter_count = formal_parameter_position;
-}
 
 closure_info_t function_entry_get_info(dyntracer_t *dyntracer, const SEXP call,
                                        const SEXP op, const SEXP args,

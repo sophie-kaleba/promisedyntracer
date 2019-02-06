@@ -63,9 +63,3 @@ call_id_t make_funcall_id(dyntracer_t *dyntracer, SEXP function) {
     return ++tracer_state(dyntracer).call_id_counter;
 }
 
-
-arg_id_t get_argument_id(dyntracer_t *dyntracer, call_id_t call_id,
-                         const std::string &argument) {
-    arg_id_t argument_id = ++tracer_state(dyntracer).argument_id_sequence;
-    return argument_id;
-}
