@@ -5,12 +5,6 @@
 #include "stdlibs.h"
 #include <openssl/evp.h>
 
-#define RID_INVALID 0 //(rid_t) - 1
-
-// Typical human-readable representation
-typedef uintptr_t rid_t; // hexadecimal
-typedef intptr_t rsid_t; // hexadecimal
-
 // typedef rsid_t promise_id_t;  // hexadecimal
 typedef long int call_id_t;
 typedef std::string function_id_t;
@@ -18,20 +12,12 @@ typedef std::string function_id_t;
 typedef int env_id_t;
 typedef int var_id_t;
 
-
-typedef int event_t;
-
-
-enum class parameter_mode_t {
-    UNASSIGNED = 0,
-    MISSING,
-    DEFAULT,
-    CUSTOM,
-    NONPROMISE
-};
-
 typedef long long int timestamp_t;
+typedef long int promise_id_t;
+
 extern const timestamp_t UNDEFINED_TIMESTAMP;
+
+extern const promise_id_t UNASSIGNED_DENOTED_VALUE_ID;
 
 extern const char UNIT_SEPARATOR;
 extern const char RECORD_SEPARATOR;
@@ -78,8 +64,8 @@ typename std::underlying_type<T>::type to_underlying_type(const T &enum_val) {
 }
 
 std::string compute_hash(const char *data);
-const char *get_ns_name(SEXP op);
-const char *get_name(SEXP call);
+
+const char* get_name(SEXP call);
 std::string get_definition_location_cpp(SEXP op);
 std::string get_callsite_cpp(int);
 

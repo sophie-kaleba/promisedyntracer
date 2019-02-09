@@ -1,58 +1,92 @@
-#ifndef PROMISE_DYNTRACER_CALL_STATE_H
-#define PROMISE_DYNTRACER_CALL_STATE_H
+#ifndef PROMISEDYNTRACER_CALL_STATE_H
+#define PROMISEDYNTRACER_CALL_STATE_H
 
-#include "ParameterUse.h"
 #include "Rdyntrace.h"
 #include "table.h"
 #include "utilities.h"
 #include "Rinternals.h"
+#include "PromiseState.h"
+
+class Function;
 
 class CallState {
   public:
-    explicit CallState(call_id_t call_id, function_id_t fn_id,
-                       const std::string &function_type,
+    explicit CallState(const call_id_t id,
+                       const function_id_t& function_id,
+                       const sexptype_t function_type,
                        const std::string &function_name,
-                       int formal_parameter_count, const std::string &order,
-                       const SEXP environment, bool byte_compiled)
-        : call_id_(call_id), fn_id_(fn_id), function_type_(function_type),
-          function_name_(function_name),
+                       const int formal_parameter_count,
+                       const int actual_argument_count,
+                       const SEXP environment,
+                       Function * function)
+        : id_(id), function_id_(function_id),
+          function_type_(function_type), function_name_(function_name),
           formal_parameter_count_(formal_parameter_count),
-          parameter_uses_(
-              static_cast<std::size_t>(std::max(formal_parameter_count, 5))),
-          order_(order), environment_(environment), byte_compiled_(byte_compiled),
-          intrinsic_order_(order),
-          return_value_type_(UNASSIGNEDSXP), leaf_(true), active_(true),
-          execution_time_(0.0) {
+          actual_argument_count_(actual_argument_count),
+          environment_(environment), function_(function),
+          return_value_type_(UNASSIGNEDSXP) {
 
+        /* most calls have only one argument. Argument list of size 5
+           covers almost every call */
+        arguments_.reserve(std::max(get_actual_argument_count(), 5));
         /* INFO - Reserve size to 15 bytes to prevent repeated string
          * allocations when forced arguments are added. This increases
          * the memory requirement but should speed up the program. */
-        order_.reserve(15);
-        intrinsic_order_.reserve(15);
+        force_order_.reserve(15);
     }
 
-    call_id_t get_call_id() const { return call_id_; }
+    ~CallState() {
 
-    const function_id_t &get_function_id() const { return fn_id_; }
+        if(get_function_type() != CLOSXP) return;
 
-    const std::string &get_function_type() const { return function_type_; }
+        for(int i = 0; i < arguments_.size(); ++i) {
+            /* delete a promise iff it is inactive. An active promise
+               is currently not garbage collected by R and is present
+               in the promise mapping managed by the tracer state. */
+            if(!arguments_[i] -> is_active()) {
+                delete arguments_[i];
+            } else {
+                arguments_[i] -> free_argument();
+            }
+            arguments_[i] = nullptr;
+        }
+    }
+
+    call_id_t get_id() const { return id_; }
+
+    const function_id_t &get_function_id() const { return function_id_; }
+
+    sexptype_t get_function_type() const { return function_type_; }
+
+    bool is_closure() const {
+        return get_function_type() == CLOSXP;
+    }
+
+    bool is_special() const { return get_function_type() == SPECIALSXP; }
+
+    bool is_builtin() const { return get_function_type() == BUILTINSXP; }
 
     const std::string &get_function_name() const { return function_name_; }
 
-    void set_leaf(bool leaf) { leaf_ = leaf; }
+    Function* get_function() { return function_; }
 
-    // TODO - fix this to make it about wrapper types.
-    bool is_leaf() const { return leaf_; }
+    void set_formal_parameter_count(int formal_parameter_count) {
+        formal_parameter_count_ = formal_parameter_count;
+    }
 
-    void make_active() { active_ = true; }
+    int get_formal_parameter_count() const {
+        return formal_parameter_count_;
+    }
 
-    bool is_active() const { return active_; }
+    void set_actual_argument_count(int actual_argument_count) {
+        actual_argument_count_ = actual_argument_count;
+    }
 
-    void make_inactive() { active_ = false; }
+    int get_actual_argument_count() const {
+        return actual_argument_count_;
+    }
 
     SEXP get_environment() const { return environment_; }
-
-    bool is_byte_compiled() { return byte_compiled_; }
 
     void set_return_value_type(sexptype_t return_value_type) {
         return_value_type_ = return_value_type;
@@ -60,124 +94,47 @@ class CallState {
 
     sexptype_t get_return_value_type() const { return return_value_type_; }
 
-
-    void set_formal_parameter_count(int formal_parameter_count) {
-        formal_parameter_count_ = formal_parameter_count;
+    std::vector<PromiseState *> &get_arguments() {
+        return arguments_;
     }
 
-    const int get_formal_parameter_count() const {
-        return formal_parameter_count_;
+    PromiseState* get_argument(int actual_argument_position) {
+        return arguments_[actual_argument_position];
     }
 
-    double get_execution_time() const { return execution_time_; }
-
-    void set_execution_time(double execution_time) {
-        execution_time_ = execution_time;
+    void add_argument(PromiseState* argument) {
+        arguments_.push_back(argument);
+        ++actual_argument_count_;
     }
 
-    void set_expression_type(sexptype_t expression_type, std::size_t position) {
-        if(parameter_uses_.size() <= position) {
-            parameter_uses_.resize(position + 1);
-            set_formal_parameter_count(position + 1);
-        }
-        parameter_uses_[position].set_expression_type(expression_type);
-    }
+    const std::string &get_force_order() const { return force_order_; }
 
-    void set_value_type(sexptype_t value_type, std::size_t position) {
-        if(parameter_uses_.size() <= position) {
-            parameter_uses_.resize(position + 1);
-            set_formal_parameter_count(position + 1);
-        }
-        parameter_uses_[position].set_value_type(value_type);
-    }
+    void set_force_order(const std::string& force_order) { force_order_ = force_order; }
 
-    void force_entry(const SEXP promise,
-                     std::size_t position,
-                     const eval_depth_t& eval_depth) {
-
-        bool previous_forced_state = parameter_uses_[position].get_force();
-        parameter_uses_[position].force();
-
-        /* reset the expression type when forcing in case metaprogramming
-           happened after promise creation and before forcing
-        */
-        set_expression_type(TYPEOF(dyntrace_get_promise_expression(promise)),
-                            position);
-        /* iff the argument is forced and has not been previously forced
-           do we add it to the order. This ensures that there is a single
-           order entry for all elements of ...
-        */
-
-        if (!is_active()) {
-            parameter_uses_[position].set_escape("F");
-        } else if (!previous_forced_state) {
-            order_.append(" | ").append(std::to_string(position));
-            if (is_leaf()) {
-                intrinsic_order_.append(" | ").append(std::to_string(position));
-            }
-        }
-
-        parameter_uses_[position].set_evaluation_depth(eval_depth);
-    }
-
-    void force_exit(const SEXP promise, std::size_t position,
-                    double execution_time) {
-        set_value_type(TYPEOF(dyntrace_get_promise_value(promise)), position);
-        set_argument_execution_time_(position, execution_time);
-    }
-
-    void lookup(std::size_t position) {
-        if (!is_active()) {
-            parameter_uses_[position].set_escape("L");
-        }
-        parameter_uses_[position].lookup();
-    }
-
-    void metaprogram(std::size_t position) {
-        if (!is_active()) {
-            parameter_uses_[position].set_escape("M");
-        }
-        parameter_uses_[position].metaprogram();
-    }
-
-    void set_parameter_mode(std::size_t position, parameter_mode_t mode) {
-        parameter_uses_[position].set_parameter_mode(mode);
-    }
-
-    const std::vector<ParameterUse> &get_parameter_uses() const {
-        return parameter_uses_;
-    }
-
-    const std::string &get_order() const { return order_; }
-
-    const std::string &get_intrinsic_order() const { return intrinsic_order_; }
-
-    void set_argument_execution_time_(std::size_t position, double execution_time) {
-        parameter_uses_[position].set_execution_time(execution_time);
+    void add_to_force_order(int formal_parameter_position) {
+        force_order_.append(" | ").append(std::to_string(formal_parameter_position));
     }
 
 private:
-    call_id_t call_id_;
-    function_id_t fn_id_;
-    std::string function_type_;
-    std::string function_name_;
+    const call_id_t id_;
+    const function_id_t function_id_;
+    const sexptype_t function_type_;
+    const std::string function_name_;
     int formal_parameter_count_;
-    std::vector<ParameterUse> parameter_uses_;
-    std::string order_;
+    int actual_argument_count_;
     const SEXP environment_;
-    bool byte_compiled_;
-    std::string intrinsic_order_;
+    Function* function_;
     sexptype_t return_value_type_;
-    bool leaf_;
-    bool active_;
-    double execution_time_;
+    // TODO - change this to wrapper type - bool leaf_;
+    std::vector<PromiseState*> arguments_;
+    std::string force_order_;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const CallState &call_state) {
     os << "CallState(" << call_state.get_function_id() << ","
-       << call_state.get_call_id() << ","
+       << call_state.get_id() << ","
        << call_state.get_formal_parameter_count() << ")";
     return os;
 }
 
-#endif /* PROMISE_DYTRACER_CALL_STATE_H */
+#endif /* PROMISEDYTRACER_CALL_STATE_H */

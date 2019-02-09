@@ -68,7 +68,7 @@ void Analyzer::inspect_function_caller_(const std::string &name) {
 //     if (call_stack_.empty())
 //         return;
 //     call_graph_data_table_->write_row(
-//         static_cast<double>(call_stack_.back()->get_call_id()),
+//         static_cast<double>(call_stack_.back()->get_id()),
 //         static_cast<double>(callee_id));
 // }
 

@@ -1,22 +1,15 @@
 #include "PromiseState.h"
+#include "CallState.h"
 
-std::string to_string(PromiseState::SlotMutation slot_mutation) {
-    switch (slot_mutation) {
-        case PromiseState::SlotMutation::ENVIRONMENT_LOOKUP:
-            return "ENVIRONMENT_LOOKUP";
-        case PromiseState::SlotMutation::ENVIRONMENT_ASSIGN:
-            return "ENVIRONMENT_ASSIGN";
-        case PromiseState::SlotMutation::EXPRESSION_LOOKUP:
-            return "EXPRESSION_LOOKUP";
-        case PromiseState::SlotMutation::EXPRESSION_ASSIGN:
-            return "EXPRESSION_ASSIGN";
-        case PromiseState::SlotMutation::VALUE_LOOKUP:
-            return "VALUE_LOOKUP";
-        case PromiseState::SlotMutation::VALUE_ASSIGN:
-            return "VALUE_ASSIGN";
-        case PromiseState::SlotMutation::COUNT:
-            return "COUNT";
-        default:
-            return "UNKNOWN_SLOT_MUTATION";
+/* this function is defined here instead of .h file to break circular dependency
+   issues that arise due to accessing get_environment method of call_state */
+void PromiseState::make_argument(CallState *call_state, int formal_parameter_position,
+                                 int actual_argument_position) {
+
+    call_ = call_state;
+    formal_parameter_position_ = formal_parameter_position;
+    actual_argument_position_ = actual_argument_position;
+    if (is_promise()) {
+        default_ = call_state->get_environment() == get_environment();
     }
 }

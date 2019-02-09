@@ -10,14 +10,15 @@
 class Context {
   public:
     Context(std::string trace_filepath, bool truncate, bool enable_trace,
-            bool verbose, std::string output_dir, bool binary,
+            bool verbose, std::string output_dirpath, bool binary,
             int compression_level, AnalysisSwitch analysis_switch)
-        : state_(new tracer_state_t()), analysis_switch_(analysis_switch),
+        : state_(new tracer_state_t(output_dirpath, truncate, binary, compression_level)),
+          analysis_switch_(analysis_switch),
           serializer_(
               new TraceSerializer(trace_filepath, truncate, enable_trace)),
-          analyzer_(new Analyzer(*state_, output_dir, truncate,
+          analyzer_(new Analyzer(*state_, output_dirpath, truncate,
                                  binary, compression_level)),
-          output_dir_(output_dir),
+          output_dirpath_(output_dirpath),
           binary_{binary}, verbose_{verbose}, truncate_{truncate},
           compression_level_{compression_level} {}
 
@@ -27,7 +28,7 @@ class Context {
 
     Analyzer &get_analyzer() { return *analyzer_; }
 
-    const std::string &get_output_dir() const { return output_dir_; }
+    const std::string &get_output_dirpath() const { return output_dirpath_; }
 
     int get_compression_level() const { return compression_level_; }
 
@@ -55,7 +56,7 @@ class Context {
     AnalysisSwitch analysis_switch_;
     TraceSerializer *serializer_;
     Analyzer *analyzer_;
-    std::string output_dir_;
+    std::string output_dirpath_;
     bool binary_;
     bool verbose_;
     bool truncate_;
@@ -78,7 +79,7 @@ inline Analyzer &tracer_analyzer(dyntracer_t *dyntracer) {
     return (static_cast<Context *>(dyntracer->state))->get_analyzer();
 }
 
-inline const std::string &tracer_output_dir(dyntracer_t *dyntracer) {
-    return (static_cast<Context *>(dyntracer->state))->get_output_dir();
+inline const std::string &tracer_output_dirpath(dyntracer_t *dyntracer) {
+    return (static_cast<Context *>(dyntracer->state))->get_output_dirpath();
 }
 #endif /* PROMISEDYNTRACER_CONTEXT_H */

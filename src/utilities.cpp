@@ -13,6 +13,7 @@ const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH = {-1, -1, -1};
 
 const size_t PROMISE_MAPPING_BUCKET_COUNT = 1000000;
 const size_t FUNCTION_MAPPING_BUCKET_SIZE = 20000;
+const promise_id_t UNASSIGNED_DENOTED_VALUE_ID = -1;
 
 const timestamp_t UNDEFINED_TIMESTAMP = -1;
 
@@ -57,7 +58,7 @@ std::string sexp_to_string(SEXP value) {
     return std::string(CHAR(STRING_ELT(value, 0)));
 }
 
-const char *get_name(SEXP sexp) {
+const char* get_name(SEXP sexp) {
     const char *s = NULL;
 
     switch (TYPEOF(sexp)) {
@@ -76,7 +77,7 @@ const char *get_name(SEXP sexp) {
             break;
     }
 
-    return s;
+    return s == NULL ? "" : s;
 }
 
 std::string symbol_to_string(const SEXP symbol) {
@@ -230,23 +231,7 @@ uint64_t timestamp() {
     return t;
 }
 
-const char *get_ns_name(SEXP op) {
-    SEXP env = CLOENV(op);
-    void (*probe)(dyntracer_t *, SEXP, SEXP, SEXP);
-    probe = dyntrace_active_dyntracer->probe_environment_variable_lookup;
-    dyntrace_active_dyntracer->probe_environment_variable_lookup = NULL;
-    SEXP spec = R_NamespaceEnvSpec(env);
-    dyntrace_active_dyntracer->probe_environment_variable_lookup = probe;
-    if (spec != R_NilValue) {
-        if (TYPEOF(spec) == STRSXP && LENGTH(spec) > 0) {
-            return CHAR(STRING_ELT(spec, 0));
-        } else if (TYPEOF(spec) == CHARSXP) {
-            return CHAR(spec);
-        }
-    }
 
-    return NULL;
-}
 
 std::string compute_hash(const char *data) {
     const EVP_MD *md = EVP_md5();

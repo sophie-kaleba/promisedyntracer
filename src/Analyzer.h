@@ -1,9 +1,7 @@
 #ifndef PROMISEDYNTRACER_ANALYZER_H
 #define PROMISEDYNTRACER_ANALYZER_H
 
-#include "CallState.h"
-#include "FunctionState.h"
-#include "PromiseMapper.h"
+//#include "FunctionState.h"
 #include "State.h"
 #include "table.h"
 #include <algorithm>
@@ -20,8 +18,8 @@ class Analyzer {
         : tracer_state_(tracer_state), output_dir_(output_dir),
           // truncate_{truncate}, binary_{binary},
           // compression_level_{compression_level},
-          functions_(std::unordered_map<function_id_t, FunctionState>(
-              FUNCTION_MAPPING_BUCKET_SIZE)),
+          //functions_(std::unordered_map<function_id_t, FunctionState>(
+          //    FUNCTION_MAPPING_BUCKET_SIZE)),
           closure_type_(sexptype_to_string(CLOSXP)),
           builtin_type_(sexptype_to_string(BUILTINSXP)),
           special_type_(sexptype_to_string(SPECIALSXP)),
@@ -29,17 +27,11 @@ class Analyzer {
 
         argument_data_table_ = create_data_table(
             output_dir + "/" + "arguments",
-            {"call_id", "function_id", "parameter_position", "argument_mode",
-             "expression_type", "value_type", "escape", "call_depth",
+            {"call_id", "function_id", "formal_parameter_position",
+             "actual_argument_position", "argument_type", "expression_type",
+             "value_type", "default", "escape", "call_depth",
              "promise_depth", "nested_promise_depth", "force_count",
              "lookup_count", "metaprogram_count", "execution_time"},
-            truncate, binary, compression_level);
-
-        call_data_table_ = create_data_table(
-            output_dir + "/" + "calls",
-            {"call_id", "function_id", "function_type",
-             "formal_parameter_count", "function_name", "return_value_type",
-             "force_order", "intrinsic_force_order", "execution_time"},
             truncate, binary, compression_level);
 
         call_graph_data_table_ = create_data_table(
@@ -108,36 +100,21 @@ class Analyzer {
         // write the caller callee edge to file
         //add_call_graph_edge_(call_id);
 
-        // TODO - do this in the end?
-        // write function body to file
-        //write_function_body_(fn_id, definition);
-
 
         /* this checks the caller of functions we are interested in
            and adds them to a table */
         // TODO fix this
         //inspect_function_caller_(closure_);
-
-        // TODO - do this when the summarizing call info,
-        // its better to add this when deleting the call object
-        // auto fn_iter = functions_.insert(std::make_pair(
-        //     fn_id, FunctionState(closure_info.formal_parameter_count)));
-        // fn_iter.first->second.increment_call();
-
     }
 
     void closure_exit(CallState *call_state) {
-        serialize_call_(call_state);
+        serialize_arguments_(call_state);
     }
 
     void special_entry(CallState *call_state) {
         // TODO - remove this
         // write the caller callee edge to file
         //add_call_graph_edge_(call_id);
-
-        // TODO - do this in the end?
-        // write function body to file
-        // write_function_body_(fn_id, definition);
     }
 
     void special_exit(CallState *call_state) {
@@ -148,10 +125,6 @@ class Analyzer {
         // TODO - remove this
         // write the caller callee edge to file
         //add_call_graph_edge_(call_id);
-
-        // TODO - do this in the end?
-        // write function body to file
-        // write_function_body_(fn_id, definition);
     }
 
     void builtin_exit(CallState *call_state) {
@@ -163,81 +136,82 @@ class Analyzer {
         // TODO check the source of creation of this promise?
     }
 
-    void promise_force_entry(PromiseState *promise_state, const SEXP promise) {
+    void promise_force_entry(ExecutionContextStack& stack,
+                             PromiseState* promise_state,
+                             const SEXP promise) {
+        /* TODO - this is the place to deal with escaped promises */
         /* if promise is not an argument, then don't process it. */
-        if (!promise_state->argument) {
+        if (!promise_state->is_argument()) {
             return;
         }
 
-        auto *call_state = tracer_state_.get_call_state(promise_state->call_id);
-        eval_depth_t eval_depth = get_evaluation_depth_(promise_state->call_id);
-        call_state->force_entry(
-            promise, promise_state->formal_parameter_position, eval_depth);
-    }
+        /* we know that the call state is valid because this is an argument promise */
+        auto *call_state = promise_state -> get_call();
 
-    void promise_force_exit(PromiseState *promise_state, const SEXP promise) {
+        /* At this point we should store expression type because this is the
+           expression that yields the value obtained on promise exit */
+        if(promise_state -> is_forced()) {
 
-        /* if promise is not an argument, then don't process it. */
-        if (!promise_state->argument) {
-            return;
         }
-
-        auto *call_state = tracer_state_.get_call_state(promise_state->call_id);
-
-        call_state->force_exit(promise,
-                               promise_state->formal_parameter_position,
-                               tracer_state_.full_stack.back().execution_time);
+        else {
+            eval_depth_t eval_depth = get_evaluation_depth_(stack, call_state->get_id());
+            promise_state -> set_evaluation_depth(eval_depth);
+            promise_state -> force();
+            /* TODO - do we care about actual argument position? */
+            int formal_parameter_position = promise_state->get_formal_parameter_position();
+            call_state->add_to_force_order(formal_parameter_position);
+        }
     }
 
     // TODO remove promise argument from all of these cases
-    void promise_value_lookup(PromiseState *promise_state,
+    void promise_value_lookup(PromiseState* promise_state,
                               const SEXP promise) {
 
         /* if promise is not an argument, then don't process it. */
-        if (!promise_state->argument) {
+        if (!promise_state -> is_argument()) {
             return;
         }
 
-        auto *call_state = tracer_state_.get_call_state(promise_state->call_id);
-
-        call_state->lookup(promise_state->formal_parameter_position);
+        promise_state -> lookup();
     }
 
-    void promise_value_assign(PromiseState *promise_state, const SEXP promise) {
+    void promise_value_assign(PromiseState* promise_state,
+                              const SEXP promise) {
         metaprogram_(promise_state, promise);
     }
 
-    void promise_environment_lookup(PromiseState *promise_state,
+    void promise_environment_lookup(PromiseState* promise_state,
                                     const SEXP promise) {
         metaprogram_(promise_state, promise);
     }
 
-    void promise_environment_assign(PromiseState *promise_state,
+    void promise_environment_assign(PromiseState* promise_state,
                                     const SEXP promise) {
 
         metaprogram_(promise_state, promise);
     }
 
-    void promise_expression_lookup(PromiseState *promise_state,
+    void promise_expression_lookup(PromiseState* promise_state,
                                    const SEXP promise) {
         metaprogram_(promise_state, promise);
     }
 
-    void promise_expression_assign(PromiseState *promise_state,
+    void promise_expression_assign(PromiseState* promise_state,
                                    const SEXP promise) {
         metaprogram_(promise_state, promise);
     }
 
-    void context_jump(const unwind_info_t &info) {
-        for (auto &element : info.unwound_frames) {
-            if (element.type == stack_type::CALL) {
-                // TODO - serialize calls which have been unwound and write their type
-                //        as JUMPSXP
-            }
-        }
+    void context_jump(execution_contexts_t &exec_ctxts) {
+        // TODO - serialize calls which have been unwound and write their type
+        // for (auto &element : info.unwound_frames) {
+        //     if (element.type == stack_type::CALL) {
+        //
+        //         //        as JUMPSXP
+        //     }
+        // }
     }
 
-    void gc_promise_unmarked(PromiseState * promise_state,
+    void gc_promise_unmarked(PromiseState*  promise_state,
                              const SEXP promise) {
         // side_effecting_promises_data_table_ -> write_row(
         //     promise_state -> fn_id, promise_state.formal_parameter_position,
@@ -250,11 +224,12 @@ class Analyzer {
         inspect_symbol_caller_(var);
     }
 
-    void environment_variable_assign(const Variable &var) {
+    void environment_variable_assign(ExecutionContextStack& stack,
+                                     const Variable &var) {
 
         inspect_symbol_caller_(var);
 
-        identify_side_effect_creators_(var);
+        identify_side_effect_creators_(stack, var);
     }
 
     void environment_variable_remove(const Variable &var) {
@@ -262,14 +237,16 @@ class Analyzer {
         inspect_symbol_caller_(var);
     }
 
-    void environment_variable_lookup(const Variable& var) {
+    void environment_variable_lookup(ExecutionContextStack& stack,
+                                     const Variable& var) {
 
         inspect_symbol_caller_(var);
 
-        identify_side_effect_observers_(var);
+        identify_side_effect_observers_(stack, var);
     }
 
-    void identify_side_effect_creators_(const Variable& var) {
+    void identify_side_effect_creators_(ExecutionContextStack& stack,
+                                        const Variable& var) {
 
         const timestamp_t var_timestamp = var.get_modification_timestamp();
 
@@ -280,17 +257,15 @@ class Analyzer {
             return;
         }
 
-        size_t stack_size = tracer_state_.full_stack.size();
-
         bool direct = true;
 
-        for (int i = stack_size - 1; i >= 0; --i) {
+        for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
 
-            stack_event_t exec_context = tracer_state_.full_stack[i];
+            ExecutionContext& exec_ctxt = *iter;
 
-            if (exec_context.type == stack_type::PROMISE) {
+            if (exec_ctxt.is_promise()) {
 
-                PromiseState *promise_state = exec_context.promise_state;
+                PromiseState* promise_state = exec_ctxt.get_promise();
 
                 /* if promise is created after the variable it is currently
                    assigning to, then its a side effect creator. */
@@ -311,7 +286,8 @@ class Analyzer {
         }
     }
 
-    void identify_side_effect_observers_(const Variable& var) {
+    void identify_side_effect_observers_(ExecutionContextStack& stack,
+                                         const Variable& var) {
 
         const timestamp_t var_timestamp = var.get_modification_timestamp();
 
@@ -326,11 +302,11 @@ class Analyzer {
            greater than the creation timestamp of the promise,
            then, that promise has identified a side effect */
 
-        size_t stack_size = tracer_state_.full_stack.size();
         bool direct = true;
 
-        for (int i = stack_size - 1; i >= 0; --i) {
-            stack_event_t exec_context = tracer_state_.full_stack[i];
+        for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
+
+            ExecutionContext& exec_ctxt = *iter;
 
             // /* If the most recent context that is responsible for this
             //    side effect is a closure, then return. Currently, we only
@@ -345,9 +321,9 @@ class Analyzer {
             //     return;
             // }
 
-            if (exec_context.type == stack_type::PROMISE) {
+            if (exec_ctxt.is_promise()) {
 
-                PromiseState *promise_state = exec_context.promise_state;
+                PromiseState* promise_state = exec_ctxt.get_promise();
 
                 /* if promise is created before the variable it is looking at
                    is modified, then it is a side effect observer. In other
@@ -391,7 +367,6 @@ class Analyzer {
 
     ~Analyzer() {
         delete argument_data_table_;
-        delete call_data_table_;
         delete call_graph_data_table_;
         delete function_caller_data_table_;
         delete symbol_user_data_table_;
@@ -399,63 +374,44 @@ class Analyzer {
 
   private:
     void serialize_call_(const CallState *call_state) {
-        call_data_table_->write_row(static_cast<double>(call_state -> get_call_id()),
-                                    call_state -> get_function_id(),
-                                    call_state -> get_function_type(),
-                                    call_state -> get_formal_parameter_count(),
-                                    call_state -> get_function_name(),
-                                    sexptype_to_string(call_state -> get_return_value_type()),
-                                    call_state -> get_order(),
-                                    call_state -> get_intrinsic_order(),
-                                    call_state -> get_execution_time());
+        // call_data_table_->write_row(static_cast<double>(call_state -> get_id()),
+        //                             call_state -> get_function_id(),
+        //                             sexptype_to_string(call_state -> get_function_type()),
+        //                             call_state -> get_formal_parameter_count(),
+        //                             call_state -> get_function_name(),
+        //                             sexptype_to_string(call_state -> get_return_value_type()),
+        //                             call_state -> get_force_order());
     }
 
-    void serialize_arguments_(const CallState &call_state) {
-            const auto &parameter_uses{call_state.get_parameter_uses()};
+    void serialize_arguments_(CallState *call_state) {
 
-            for (int position = 0;
-                 position < call_state.get_formal_parameter_count();
-                 ++position) {
-
-                const auto &parameter{parameter_uses[position]};
-
+            for (PromiseState* argument : call_state -> get_arguments()) {
                 argument_data_table_->write_row(
-                    static_cast<double>(call_state.get_call_id()),
-                    call_state.get_function_id(), position,
-                    parameter_mode_to_string(parameter.get_parameter_mode()),
-                    sexptype_to_string(parameter.get_expression_type()),
-                    sexptype_to_string(parameter.get_value_type()),
-                    parameter.get_escape(),
-                    parameter.get_evaluation_depth().call_depth,
-                    parameter.get_evaluation_depth().promise_depth,
-                    parameter.get_evaluation_depth().nested_promise_depth,
-                    parameter.get_force(), parameter.get_lookup(),
-                    parameter.get_metaprogram(),
-                    parameter.get_execution_time());
+                    static_cast<double>(call_state->get_id()),
+                    call_state->get_function_id(),
+                    argument->get_formal_parameter_position(),
+                    argument->get_actual_argument_position(),
+                    sexptype_to_string(argument->get_type()),
+                    sexptype_to_string(argument->get_expression_type()),
+                    sexptype_to_string(argument->get_value_type()),
+                    argument -> is_default(),
+                    argument->get_escape(),
+                    argument->get_evaluation_depth().call_depth,
+                    argument->get_evaluation_depth().promise_depth,
+                    argument->get_evaluation_depth().nested_promise_depth,
+                    argument->get_force(), argument->get_lookup(),
+                    argument->get_metaprogram(),
+                    argument->get_execution_time());
             }
     }
 
-    void metaprogram_(const PromiseState* promise_state,
+    void metaprogram_(PromiseState* promise_state,
                       const SEXP promise) {
+        /* this is the point to check for escaped promises */
         /* if promise is not an argument, then don't process it. */
-        if (!promise_state -> argument) {
-            return;
-        }
-
-        auto *call_state = tracer_state_.get_call_state(promise_state -> call_id);
-
-        call_state->metaprogram(promise_state -> formal_parameter_position);
+        promise_state -> metaprogram();
     }
 
-    // void write_function_body_(const function_id_t &fn_id,
-    //                           const std::string &definition) {
-    //     auto result = handled_functions_.insert(fn_id);
-    //     if (!result.second)
-    //         return;
-    //     std::ofstream fout(output_dir_ + "/functions/" + fn_id, std::ios::trunc);
-    //     fout << definition;
-    //     fout.close();
-    // }
 
     void function_entry_(call_id_t call_id, function_id_t fn_id,
                          const std::string &fn_type, const std::string &name,
@@ -512,28 +468,26 @@ class Analyzer {
         return timestamp == undefined_timestamp_;
     }
 
-    eval_depth_t get_evaluation_depth_(call_id_t call_id) {
+    eval_depth_t get_evaluation_depth_(ExecutionContextStack& stack, call_id_t call_id) {
         eval_depth_t eval_depth = {0, 0, 0};
         bool nesting = true;
-        size_t stack_size = tracer_state_.full_stack.size();
-        int i;
-        /* we start from last - 1 element because the promise context
-           in question will itself be the last element. It does not make
-           sense to count the promise itself in the computation of its own
-           evaluation depth */
-        for (i = stack_size - 2; i >= 0; --i) {
+        ExecutionContextStack::reverse_iterator iter;
 
-            stack_event_t exec_context = tracer_state_.full_stack[i];
+        // TODO - should we ignore builtins and specials?
+        for (iter = stack.rbegin(); iter != stack.rend(); ++iter) {
+            ExecutionContext& exec_ctxt = *iter;
 
-            if (exec_context.type == stack_type::CALL &&
-                exec_context.call_state -> get_function_type() == "Closure") {
+            if(exec_ctxt.is_closure()) {
+                const CallState * call_state = exec_ctxt.get_closure();
                 nesting = false;
-                if(exec_context.call_state -> get_call_id() == call_id) break;
+                if(call_state -> get_id() == call_id) break;
                 ++eval_depth.call_depth;
-            } else if (exec_context.type == stack_type::PROMISE) {
+            }
+            else if(exec_ctxt.is_promise()) {
                 ++eval_depth.promise_depth;
                 if(nesting) ++eval_depth.nested_promise_depth;
-            } else {
+            }
+            else {
                 // nesting should be made false for other cases as well.
                 nesting = false;
             }
@@ -541,7 +495,7 @@ class Analyzer {
 
         // if this happens, it means we could not locate the call from which
         // this promise originated. This means that this is an escaped promise.
-        if(i < 0) {
+        if(iter == stack.rend()) {
             return ESCAPED_PROMISE_EVAL_DEPTH;
         }
 
@@ -554,14 +508,13 @@ class Analyzer {
     // bool truncate_;
     // bool binary_;
     // int compression_level_;
-    std::unordered_map<function_id_t, FunctionState> functions_;
+    //std::unordered_map<function_id_t, FunctionState> functions_;
     std::vector<std::string> interesting_function_names_;
     const std::string closure_type_;
     const std::string builtin_type_;
     const std::string special_type_;
     const timestamp_t undefined_timestamp_;
     DataTableStream *argument_data_table_;
-    DataTableStream *call_data_table_;
     DataTableStream *call_graph_data_table_;
     DataTableStream *function_caller_data_table_;
     DataTableStream *symbol_user_data_table_;

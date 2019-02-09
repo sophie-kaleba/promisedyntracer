@@ -294,7 +294,7 @@ static SEXP read_compressed_binary_data_table(const std::string &filepath,
     data_frame_t data_frame{read_header(input_buffer, &input_buffer_current)};
 
     ZSTD_inBuffer input{input_buffer_current,
-                        input_buffer_end - input_buffer_current,
+                        static_cast<std::size_t>(input_buffer_end - input_buffer_current),
                         0};
 
     std::size_t character_size = 1024 * 1024;
