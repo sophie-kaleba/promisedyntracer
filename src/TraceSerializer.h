@@ -1,7 +1,7 @@
 #ifndef __TRACE_SERIALIZER_H__
 #define __TRACE_SERIALIZER_H__
 
-#include "State.h"
+#include "TracerState.h"
 #include "stdlibs.h"
 #include "utilities.h"
 

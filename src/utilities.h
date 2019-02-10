@@ -1,39 +1,10 @@
-#ifndef __UTILITIES_H__
-#define __UTILITIES_H__
+#ifndef PROMISEDYNTRACER_UTILITIES_H
+#define PROMISEDYNTRACER_UTILITIES_H
 
-#include "AnalysisSwitch.h"
 #include "stdlibs.h"
 #include <openssl/evp.h>
-
-// typedef rsid_t promise_id_t;  // hexadecimal
-typedef long int call_id_t;
-typedef std::string function_id_t;
-
-typedef int env_id_t;
-typedef int var_id_t;
-
-typedef long long int timestamp_t;
-typedef long int promise_id_t;
-
-extern const timestamp_t UNDEFINED_TIMESTAMP;
-
-extern const promise_id_t UNASSIGNED_DENOTED_VALUE_ID;
-
-extern const char UNIT_SEPARATOR;
-extern const char RECORD_SEPARATOR;
-
-struct eval_depth_t {
-    int call_depth;
-    int promise_depth;
-    int nested_promise_depth;
-};
-
-extern const eval_depth_t ESCAPED_PROMISE_EVAL_DEPTH;
-extern const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH;
-
-extern const size_t PROMISE_MAPPING_BUCKET_COUNT;
-extern const size_t FUNCTION_MAPPING_BUCKET_SIZE;
-
+#include "constants.h"
+#include "definitions.h"
 
 #define failwith(format, ...)                                                  \
     failwith_impl(__FILE__, __LINE__, format, __VA_ARGS__)
@@ -74,7 +45,6 @@ std::string get_expression(SEXP e);
 std::string escape(const std::string &s);
 const char *remove_null(const char *value);
 std::string clock_ticks_to_string(clock_t ticks);
-AnalysisSwitch to_analysis_switch(SEXP env);
 std::string to_string(const char *str);
 
 inline std::string check_string(const char *s) {
@@ -112,4 +82,4 @@ inline bool timestamp_is_undefined(const timestamp_t timestamp) {
     return timestamp == UNDEFINED_TIMESTAMP;
 }
 
-#endif /* __UTILITIES_H__ */
+#endif /* PROMISEDYNTRACER__UTILITIES_H */

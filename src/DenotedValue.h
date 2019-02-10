@@ -1,15 +1,15 @@
-#ifndef PROMISEDYNTRACER_PROMISE_STATE_H
-#define PROMISEDYNTRACER_PROMISE_STATE_H
+#ifndef PROMISEDYNTRACER_DENOTED_VALUE_H
+#define PROMISEDYNTRACER_DENOTED_VALUE_H
 
 #include "sexptypes.h"
 #include "utilities.h"
 
-/* forward declaration of CallState to prevent cyclic dependency */
-class CallState;
+/* forward declaration of Call to prevent cyclic dependency */
+class Call;
 
-class PromiseState {
+class DenotedValue {
   public:
-    PromiseState(SEXP object, bool local): PromiseState(local) {
+    DenotedValue(SEXP object, bool local): DenotedValue(local) {
         type_ = type_of_sexp(object);
         if(type_ == PROMSXP) {
             SEXP expr = dyntrace_get_promise_expression(object);
@@ -45,7 +45,7 @@ class PromiseState {
         active_ = false;
     }
 
-    CallState* get_call() {
+    Call* get_call() {
         return call_;
     }
 
@@ -59,7 +59,7 @@ class PromiseState {
     }
 
     // TODO check if parameter_mode can be computed here instead
-    void make_argument(CallState* call_state,
+    void make_argument(Call* call,
                        int formal_parameter_position,
                        int actual_argument_position);
 
@@ -210,7 +210,7 @@ class PromiseState {
     }
 
 private:
-  PromiseState(bool local)
+  DenotedValue(bool local)
       : id_(UNASSIGNED_DENOTED_VALUE_ID), type_(UNASSIGNEDSXP),
         expression_type_(UNASSIGNEDSXP), value_type_(UNASSIGNEDSXP),
         environment_(nullptr), local_(false), active_(false), call_(nullptr),
@@ -235,7 +235,7 @@ private:
     SEXP environment_;
     bool local_;
     bool active_;
-    CallState *call_;
+    Call *call_;
     int formal_parameter_position_;
     int actual_argument_position_;
     bool default_;
@@ -258,4 +258,4 @@ private:
 };
 
 
-#endif /* PROMISEDYNTRACER_PROMISE_STATE_H */
+#endif /* PROMISEDYNTRACER_DENOTED_VALUE_H */

@@ -1,12 +1,12 @@
-#ifndef __PROBES_H__
-#define __PROBES_H__
+#ifndef PROMISEDYNTRACER_PROBES_H
+#define PROMISEDYNTRACER_PROBES_H
 
-#include "Context.h"
-#include "recorder.h"
+#include "TracerState.h"
 #include "utilities.h"
 
 #define R_USE_SIGNALS 1
 #include "Defn.h"
+
 
 extern "C" {
 
@@ -38,9 +38,6 @@ void promise_expression_assign(dyntracer_t *dyntracer, const SEXP promise,
 void promise_environment_assign(dyntracer_t *dyntracer, const SEXP promise,
                                 const SEXP environment);
 void gc_unmark(dyntracer_t *dyntracer, const SEXP expression);
-void gc_promise_unmark(tracer_state_t & state, Analyzer& analyzer, const SEXP promise);
-void gc_closure_unmark(tracer_state_t& state, const SEXP closure);
-void gc_environment_unmark(tracer_state_t& state, const SEXP expression);
 void gc_entry(dyntracer_t *dyntracer, R_size_t size_needed);
 void gc_exit(dyntracer_t *dyntracer, int gc_count);
 void context_entry(dyntracer_t *dyntracer, const RCNTXT *);

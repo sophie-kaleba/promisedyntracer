@@ -3,20 +3,6 @@
 #include "lookup.h"
 #include <algorithm>
 
-/* https://stackoverflow.com/questions/8206387/using-non-printable-characters-as-a-delimiter-in-php
- */
-const char RECORD_SEPARATOR = 0x1e;
-const char UNIT_SEPARATOR = 0x1f;
-
-const eval_depth_t ESCAPED_PROMISE_EVAL_DEPTH = {-2, -2, -2};
-const eval_depth_t UNASSIGNED_PROMISE_EVAL_DEPTH = {-1, -1, -1};
-
-const size_t PROMISE_MAPPING_BUCKET_COUNT = 1000000;
-const size_t FUNCTION_MAPPING_BUCKET_SIZE = 20000;
-const promise_id_t UNASSIGNED_DENOTED_VALUE_ID = -1;
-
-const timestamp_t UNDEFINED_TIMESTAMP = -1;
-
 int get_file_size(std::ifstream &file) {
     int position = file.tellg();
     file.seekg(0, std::ios_base::end);
@@ -267,25 +253,6 @@ const char *remove_null(const char *value) { return value ? value : ""; }
 
 std::string clock_ticks_to_string(clock_t ticks) {
     return std::to_string((double)ticks / CLOCKS_PER_SEC);
-}
-
-AnalysisSwitch to_analysis_switch(SEXP env) {
-
-    auto get_switch = [&](const std::string analysis_name) {
-        SEXP name =
-            Rf_install(("enable_" + analysis_name + "_analysis").c_str());
-        SEXP value = Rf_findVar(name, env);
-        return (value == R_UnboundValue) ? true : sexp_to_bool(value);
-    };
-
-    AnalysisSwitch analysis_switch;
-
-    analysis_switch.metadata = get_switch("metadata");
-    analysis_switch.function = get_switch("function");
-    analysis_switch.strictness = get_switch("strictness");
-    analysis_switch.side_effect = get_switch("side_effect");
-
-    return analysis_switch;
 }
 
 std::string to_string(const char *str) {

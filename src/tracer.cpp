@@ -4,13 +4,13 @@
 extern "C" {
 
 SEXP create_dyntracer(SEXP trace_filepath, SEXP truncate, SEXP enable_trace,
-                      SEXP verbose, SEXP output_dir, SEXP binary,
-                      SEXP compression_level, SEXP analysis_switch) {
-    void *context = new Context(
-        sexp_to_string(trace_filepath), sexp_to_bool(truncate),
-        sexp_to_bool(enable_trace), sexp_to_bool(verbose),
-        sexp_to_string(output_dir), sexp_to_bool(binary),
-        sexp_to_int(compression_level), to_analysis_switch(analysis_switch));
+                      SEXP verbose, SEXP output_dirpath, SEXP binary,
+                      SEXP compression_level) {
+    void *state = new TracerState(
+        sexp_to_string(output_dirpath), sexp_to_string(trace_filepath),
+        sexp_to_bool(enable_trace), sexp_to_bool(truncate),
+        sexp_to_bool(verbose), sexp_to_bool(binary),
+        sexp_to_int(compression_level));
 
     /* calloc initializes the memory to zero. This ensures that probes not
        attached will be NULL. Replacing calloc with malloc will cause
@@ -43,7 +43,7 @@ SEXP create_dyntracer(SEXP trace_filepath, SEXP truncate, SEXP enable_trace,
     dyntracer->probe_environment_variable_assign = environment_variable_assign;
     dyntracer->probe_environment_variable_remove = environment_variable_remove;
     dyntracer->probe_environment_variable_lookup = environment_variable_lookup;
-    dyntracer->state = context;
+    dyntracer->state = state;
     return dyntracer_to_sexp(dyntracer, "dyntracer.promise");
 }
 
@@ -52,7 +52,7 @@ static void destroy_promise_dyntracer(dyntracer_t *dyntracer) {
        this check ensures that multiple calls to destroy_dyntracer on the same
        object do not crash the process. */
     if (dyntracer) {
-        delete (static_cast<Context *>(dyntracer->state));
+        delete (static_cast<TracerState *>(dyntracer->state));
         free(dyntracer);
     }
 }

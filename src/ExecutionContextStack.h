@@ -2,7 +2,6 @@
 #define PROMISEDYNTRACER_EXECUTION_CONTEXT_STACK_H
 
 #include "ExecutionContext.h"
-#include "TopLevelExecutionContext.h"
 #include <vector>
 
 using execution_contexts_t = std::vector<ExecutionContext>;
@@ -15,6 +14,24 @@ public:
     using const_reverse_iterator = execution_contexts_t::const_reverse_iterator;
 
     explicit ExecutionContextStack() : stack_() {}
+
+    size_t size() const { return stack_.size(); }
+
+    iterator begin() { return stack_.begin(); }
+
+    iterator end() { return stack_.end(); }
+
+    reverse_iterator rbegin() { return stack_.rbegin(); }
+
+    reverse_iterator rend() { return stack_.rend(); }
+
+    const_iterator cbegin() const { return stack_.cbegin(); }
+
+    const_iterator cend() const { return stack_.cend(); }
+
+    const_reverse_iterator crbegin() const { return stack_.crbegin(); }
+
+    const_reverse_iterator crend() const { return stack_.crend(); }
 
     template <typename T> void push(T* context) {
         stack_.push_back(ExecutionContext(context));
@@ -47,24 +64,6 @@ public:
         }
         dyntrace_log_error("cannot find matching context while unwinding\n");
     }
-
-    size_t size() const { return stack_.size(); }
-
-    iterator begin() { return stack_.begin(); }
-
-    iterator end() { return stack_.end(); }
-
-    reverse_iterator rbegin() { return stack_.rbegin(); }
-
-    reverse_iterator rend() { return stack_.rend(); }
-
-    const_iterator cbegin() const { return stack_.cbegin(); }
-
-    const_iterator cend() const { return stack_.cend(); }
-
-    const_reverse_iterator crbegin() const { return stack_.crbegin(); }
-
-    const_reverse_iterator crend() const { return stack_.crend(); }
 
   private:
     execution_contexts_t stack_;

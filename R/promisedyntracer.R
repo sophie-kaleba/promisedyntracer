@@ -1,12 +1,10 @@
 create_dyntracer <- function(trace_filepath, output_dir,
                              truncate=FALSE, enable_trace=TRUE,
                              verbose=FALSE, binary=TRUE,
-                             compression_level=1,
-                             analysis_switch = emptyenv()) {
+                             compression_level=1) {
     .Call(C_create_dyntracer, trace_filepath,
           truncate, enable_trace, verbose,
-          output_dir, binary, compression_level,
-          analysis_switch)
+          output_dir, binary, compression_level)
 }
 
 destroy_dyntracer <- function(dyntracer)
@@ -15,14 +13,13 @@ destroy_dyntracer <- function(dyntracer)
 dyntrace_promises <- function(expr, trace_filepath, output_dir,
                               truncate=FALSE, enable_trace = TRUE,
                               verbose=FALSE, binary=TRUE,
-                              compression_level=1,
-                              analysis_switch = emptyenv()) {
+                              compression_level=1) {
   write(Sys.time(), file.path(output_dir, "BEGIN"))
   dyntracer <- create_dyntracer(trace_filepath, output_dir,
                                 truncate, enable_trace,
                                 verbose, binary,
-                                compression_level,
-                                analysis_switch)
+                                compression_level)
+
   result <- dyntrace(dyntracer, expr)
   destroy_dyntracer(dyntracer)
   write(Sys.time(), file.path(output_dir, "FINISH"))

@@ -39,7 +39,32 @@ public:
         return env_id_;
     }
 
-private:
+    bool is_dot_dot() const {
+        const std::string &name = get_name();
+        if (name.size() < 2) {
+            return false;
+        }
+
+        /* first we check that the variable starts with .. */
+        if (name[0] != '.' || name[1] != '.')
+            return false;
+        /* now we check that the variable ends with
+           a sequence of digits. */
+        for (int i = 2; i < name.size(); ++i) {
+            if (name[i] > '9' || name[i] < '0') {
+                return false;
+            }
+        }
+
+        /* if we reach here, its because the variable name has the form
+           ..n where n is a number >= 0. Because indexing in R starts
+           from 1, ..0 will never occur but the code above will still let
+           ..0 pass to this point. This should not be a problem in practice.
+        */
+        return true;
+    }
+
+  private:
     const std::string name_;
     const var_id_t id_;
     timestamp_t modification_timestamp_;

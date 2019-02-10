@@ -1,26 +1,24 @@
-#ifndef PROMISEDYNTRACER_CALL_STATE_H
-#define PROMISEDYNTRACER_CALL_STATE_H
+#ifndef PROMISEDYNTRACER_CALL_H
+#define PROMISEDYNTRACER_CALL_H
 
 #include "Rdyntrace.h"
 #include "table.h"
 #include "utilities.h"
 #include "Rinternals.h"
-#include "PromiseState.h"
+#include "DenotedValue.h"
 
 class Function;
 
-class CallState {
+class Call {
   public:
-    explicit CallState(const call_id_t id,
-                       const function_id_t& function_id,
-                       const sexptype_t function_type,
-                       const std::string &function_name,
-                       const int formal_parameter_count,
-                       const int actual_argument_count,
-                       const SEXP environment,
-                       Function * function)
-        : id_(id), function_id_(function_id),
-          function_type_(function_type), function_name_(function_name),
+    explicit Call(const call_id_t id, const function_id_t &function_id,
+                  const sexptype_t function_type,
+                  const std::string &function_name,
+                  const int formal_parameter_count,
+                  const int actual_argument_count, const SEXP environment,
+                  Function *function)
+        : id_(id), function_id_(function_id), function_type_(function_type),
+          function_name_(function_name),
           formal_parameter_count_(formal_parameter_count),
           actual_argument_count_(actual_argument_count),
           environment_(environment), function_(function),
@@ -35,7 +33,7 @@ class CallState {
         force_order_.reserve(15);
     }
 
-    ~CallState() {
+    ~Call() {
 
         if(get_function_type() != CLOSXP) return;
 
@@ -94,15 +92,15 @@ class CallState {
 
     sexptype_t get_return_value_type() const { return return_value_type_; }
 
-    std::vector<PromiseState *> &get_arguments() {
+    std::vector<DenotedValue *> &get_arguments() {
         return arguments_;
     }
 
-    PromiseState* get_argument(int actual_argument_position) {
+    DenotedValue* get_argument(int actual_argument_position) {
         return arguments_[actual_argument_position];
     }
 
-    void add_argument(PromiseState* argument) {
+    void add_argument(DenotedValue* argument) {
         arguments_.push_back(argument);
         ++actual_argument_count_;
     }
@@ -126,15 +124,9 @@ private:
     Function* function_;
     sexptype_t return_value_type_;
     // TODO - change this to wrapper type - bool leaf_;
-    std::vector<PromiseState*> arguments_;
+    std::vector<DenotedValue*> arguments_;
     std::string force_order_;
 };
 
-inline std::ostream &operator<<(std::ostream &os, const CallState &call_state) {
-    os << "CallState(" << call_state.get_function_id() << ","
-       << call_state.get_id() << ","
-       << call_state.get_formal_parameter_count() << ")";
-    return os;
-}
 
-#endif /* PROMISEDYTRACER_CALL_STATE_H */
+#endif /* PROMISEDYTRACER_CALL_H */

@@ -5,20 +5,20 @@
 #include <Rinternals.h>
 
 /* forward declarations to prevent cyclic dependencies */
-class PromiseState;
-class CallState;
+class DenotedValue;
+class Call;
 
 class ExecutionContext {
   public:
-    explicit ExecutionContext(PromiseState* promise_state):
+    explicit ExecutionContext(DenotedValue* promise_state):
         type_(PROMSXP), promise_state_(promise_state) {}
 
     explicit ExecutionContext(const RCNTXT* r_context)
         : type_(CONTEXTSXP), r_context_(r_context) {}
 
-    explicit ExecutionContext(CallState * call_state)
-        : type_(call_state -> get_function_type()),
-          call_state_(call_state) {}
+    explicit ExecutionContext(Call * call)
+        : type_(call -> get_function_type()),
+          call_(call) {}
 
     bool is_promise() const { return (type_ == PROMSXP); }
 
@@ -32,23 +32,23 @@ class ExecutionContext {
 
     bool is_r_context() const { return (type_ == CONTEXTSXP); }
 
-    PromiseState *get_promise() { return promise_state_; }
+    DenotedValue *get_promise() { return promise_state_; }
 
-    CallState *get_builtin() { return call_state_; }
+    Call *get_builtin() { return call_; }
 
-    CallState *get_special() { return call_state_; }
+    Call *get_special() { return call_; }
 
-    CallState *get_closure() { return call_state_; }
+    Call *get_closure() { return call_; }
 
-    CallState *get_call() { return call_state_; }
+    Call *get_call() { return call_; }
 
     const RCNTXT *get_r_context() const { return r_context_; }
 
   private:
     sexptype_t type_;
     union {
-        PromiseState *promise_state_;
-        CallState *call_state_;
+        DenotedValue *promise_state_;
+        Call *call_;
         const RCNTXT *r_context_;
     };
 };

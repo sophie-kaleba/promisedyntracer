@@ -2,7 +2,7 @@
 #define PROMISEDYNTRACER_FUNCTION_H
 
 #include "utilities.h"
-#include "CallState.h"
+#include "Call.h"
 #include "sexptypes.h"
 #include <fstream>
 #include "Rinternals.h"
@@ -31,7 +31,7 @@ public:
         namespace_ = find_namespace_();
     }
 
-    bool is_byte_compiled() {
+    bool is_byte_compiled() const {
         return TYPEOF(BODY(op_)) == BCODESXP;
     }
 
@@ -51,11 +51,27 @@ public:
         return namespace_;
     }
 
+    std::size_t get_summary_count() const {
+        return force_orders_.size();
+    }
+
+    const std::string& get_force_order(std::size_t summary_index) const {
+        return force_orders_[summary_index];
+    }
+
+    sexptype_t get_return_value_type(std::size_t summary_index) const {
+        return return_value_types_[summary_index];
+    }
+
+    int get_call_count(std::size_t summary_index) const {
+        return call_counts_[summary_index];
+    }
+
     const std::vector<std::string>& get_names() const {
         return names_;
     }
 
-    void add_summary(CallState* call) {
+    void add_summary(Call* call) {
 
         int i;
 
@@ -83,37 +99,6 @@ public:
         force_orders_.push_back(force_order);
         return_value_types_.push_back(return_value_type);
         call_counts_.push_back(1);
-    }
-
-    void serialize_definition(std::string& output_dirpath) {
-        std::ofstream fout(output_dirpath + "/functions/" + get_id(),
-                           std::ios::trunc);
-        fout << get_definition();
-        fout.close();
-    }
-
-    void serialize_call_summary(DataTableStream* table) {
-
-        std::string all_names = "";
-
-        if(names_.size() >= 1) {
-            all_names = namespace_ + "::" + names_[0];
-        }
-
-        for(int i = 1; i < names_.size(); ++i) {
-            all_names += " | " + namespace_ + "::" + names_[i];
-        }
-
-        for (int i = 0; i < force_orders_.size(); ++i) {
-            table->write_row(get_id(),
-                             sexptype_to_string(get_type()),
-                             is_byte_compiled(),
-                             get_formal_parameter_count(),
-                             all_names,
-                             force_orders_[i],
-                             sexptype_to_string(return_value_types_[i]),
-                             call_counts_[i]);
-        }
     }
 
   private:
