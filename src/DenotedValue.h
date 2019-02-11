@@ -9,7 +9,8 @@ class Call;
 
 class DenotedValue {
   public:
-    DenotedValue(SEXP object, bool local): DenotedValue(local) {
+    DenotedValue(denoted_value_id_t id, SEXP object, bool local)
+        : DenotedValue(id, local) {
         type_ = type_of_sexp(object);
         if(type_ == PROMSXP) {
             SEXP expr = dyntrace_get_promise_expression(object);
@@ -21,9 +22,7 @@ class DenotedValue {
         }
     }
 
-    promise_id_t get_id() const {
-        return id_;
-    }
+    denoted_value_id_t get_id() const { return id_; }
 
     bool is_promise() const { return get_type() == PROMSXP; }
 
@@ -58,6 +57,10 @@ class DenotedValue {
         return (call_ != nullptr);
     }
 
+    bool was_argument() const {
+        return was_argument_;
+    }
+
     // TODO check if parameter_mode can be computed here instead
     void make_argument(Call* call,
                        int formal_parameter_position,
@@ -72,7 +75,33 @@ class DenotedValue {
         call_ = nullptr;
         formal_parameter_position_ = -1;
         actual_argument_position_ = -1;
+        was_argument_ = true;
+        dispatchee_ = false;
     }
+
+    const function_id_t& get_scope() const {
+        return scope_;
+    }
+
+    void set_scope(const function_id_t& scope) {
+        scope_ = scope;
+    }
+
+    const std::string& get_class_name() const {
+        return class_name_;
+    }
+
+    void set_class_name(const std::string& class_name) {
+        class_name_ = class_name;
+    }
+
+    bool is_dispatchee() const { return dispatchee_; }
+
+    void set_dispatchee() {
+        dispatchee_ = true;
+    }
+
+    void unset_dispatchee() { dispatchee_ = false; }
 
     int get_formal_parameter_position() const {
         return formal_parameter_position_;
@@ -209,26 +238,27 @@ class DenotedValue {
         return eval_depth_;
     }
 
-private:
-  DenotedValue(bool local)
-      : id_(UNASSIGNED_DENOTED_VALUE_ID), type_(UNASSIGNEDSXP),
-        expression_type_(UNASSIGNEDSXP), value_type_(UNASSIGNEDSXP),
-        environment_(nullptr), local_(false), active_(false), call_(nullptr),
-        formal_parameter_position_(-1), actual_argument_position_(-1),
-        default_(false), evaluated_(false),
-        transitive_side_effect_observer_(false),
-        direct_side_effect_observer_(false),
-        transitive_side_effect_creator_(false),
-        direct_side_effect_creator_(false),
-        transitive_lexical_scope_mutator_(false),
-        direct_lexical_scope_mutator_(false),
-        transitive_non_lexical_scope_mutator_(false),
-        direct_non_lexical_scope_mutator_(false),
-        creation_timestamp_(UNDEFINED_TIMESTAMP), execution_time_(0.0),
-        force_(0), lookup_(0), metaprogram_(0),
-        escape_mode_("X"), eval_depth_{UNASSIGNED_PROMISE_EVAL_DEPTH} {}
+  private:
+    DenotedValue(denoted_value_id_t id, bool local)
+        : id_(id), type_(UNASSIGNEDSXP), expression_type_(UNASSIGNEDSXP),
+          value_type_(UNASSIGNEDSXP), environment_(nullptr), local_(false),
+          active_(false), call_(nullptr), formal_parameter_position_(-1),
+          actual_argument_position_(-1), default_(false), evaluated_(false),
+          was_argument_(false), scope_(UNASSIGNED_FUNCTION_ID),
+          class_name_(UNASSIGNED_CLASS_NAME), dispatchee_(false),
+          transitive_side_effect_observer_(false),
+          direct_side_effect_observer_(false),
+          transitive_side_effect_creator_(false),
+          direct_side_effect_creator_(false),
+          transitive_lexical_scope_mutator_(false),
+          direct_lexical_scope_mutator_(false),
+          transitive_non_lexical_scope_mutator_(false),
+          direct_non_lexical_scope_mutator_(false),
+          creation_timestamp_(UNDEFINED_TIMESTAMP), execution_time_(0.0),
+          force_(0), lookup_(0), metaprogram_(0),
+          escape_mode_("X"), eval_depth_{UNASSIGNED_PROMISE_EVAL_DEPTH} {}
 
-    promise_id_t id_;
+    denoted_value_id_t id_;
     sexptype_t type_;
     sexptype_t expression_type_;
     sexptype_t value_type_;
@@ -240,6 +270,10 @@ private:
     int actual_argument_position_;
     bool default_;
     bool evaluated_;
+    bool was_argument_;
+    function_id_t scope_;
+    std::string class_name_;
+    bool dispatchee_;
     timestamp_t creation_timestamp_;
     bool transitive_side_effect_observer_;
     bool direct_side_effect_observer_;
@@ -256,6 +290,5 @@ private:
     std::string escape_mode_;
     eval_depth_t eval_depth_;
 };
-
 
 #endif /* PROMISEDYNTRACER_DENOTED_VALUE_H */

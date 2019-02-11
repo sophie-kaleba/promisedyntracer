@@ -25,6 +25,12 @@ void builtin_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP retval);
 void special_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP retval);
+void S3_dispatch_entry(dyntracer_t *dyntracer, const char *generic,
+                       const SEXP cls, SEXP generic_method,
+                       SEXP specific_method, SEXP objects);
+void S3_dispatch_exit(dyntracer_t *dyntracer, const char *generic,
+                       const SEXP cls, SEXP generic_method,
+                       SEXP specific_method, SEXP objects, SEXP return_value);
 void gc_allocate(dyntracer_t *dyntracer, const SEXP object);
 void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise);
 void promise_force_exit(dyntracer_t *dyntracer, const SEXP promise);

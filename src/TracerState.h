@@ -41,12 +41,13 @@ class TracerState {
           enable_trace_(enable_trace), truncate_(truncate), verbose_(verbose),
           binary_(binary), compression_level_(compression_level),
           environment_id_(0), variable_id_(0),
-          timestamp_(0), call_id_counter_(0), promise_id_counter_(0) {
+          timestamp_(0), call_id_counter_(0), denoted_value_id_counter_(0) {
 
         call_summary_data_table_ = create_data_table(
             output_dirpath_ + "/" + "call-summary",
             {"function_id", "function_type", "formal_parameter_count",
-             "function_name", "force_order", "return_value_type",
+             "function_name", "generic_method", "dispatcher",
+             "force_order", "return_value_type",
              "call_count"}, truncate_, binary_, compression_level_);
 
         function_definition_data_table_ = create_data_table(
@@ -57,10 +58,17 @@ class TracerState {
         argument_data_table_ = create_data_table(
             output_dirpath_ + "/" + "arguments",
             {"call_id", "function_id", "formal_parameter_position",
-             "actual_argument_position", "argument_type", "expression_type",
+             "actual_argument_position", "value_id", "class",
+             "dispatchee", "argument_type", "expression_type",
              "value_type", "default", "escape", "call_depth", "promise_depth",
-             "nested_promise_depth", "force_count", "lookup_count",
-             "metaprogram_count", "execution_time"},
+             "nested_promise_depth", "forcing_actual_argument_position",
+             "force_count", "lookup_count", "metaprogram_count", "execution_time"},
+            truncate_, binary_, compression_level_);
+
+        free_promise_data_table_ = create_data_table(
+            output_dirpath_ + "/" + "free-promises",
+            {"value_id", "type", "expression_type", "value_type", "scope", "force_count",
+             "lookup_count", "metaprogram_count", "execution_time"},
             truncate_, binary_, compression_level_);
     }
 
@@ -68,6 +76,7 @@ class TracerState {
         delete call_summary_data_table_;
         delete function_definition_data_table_;
         delete argument_data_table_;
+        delete free_promise_data_table_;
     }
 
     const std::string &get_output_dirpath() const { return output_dirpath_; }
@@ -89,6 +98,10 @@ class TracerState {
     }
 
     void cleanup(int error) {
+
+        for (auto iter = promises_.begin(); iter != promises_.end(); ++iter) {
+            destroy_promise(iter -> second);
+        }
 
         promises_.clear();
 
@@ -135,6 +148,9 @@ class TracerState {
 
 
   private:
+
+    DataTableStream* free_promise_data_table_;
+
     void serialize_configuration_() {
 
         std::ofstream fout(get_output_dirpath() + "/CONFIGURATION", std::ios::trunc);
@@ -164,7 +180,7 @@ public:
         return stack_;
     }
 
-    std::unordered_map<promise_id_t, int> promise_lookup_gc_trigger_counter;
+    std::unordered_map<denoted_value_id_t, int> promise_lookup_gc_trigger_counter;
 
     int gc_trigger_counter; // Incremented each time there is a gc_entry
 
@@ -290,6 +306,7 @@ public:
         return promise_state;
     }
 
+
     DenotedValue* lookup_promise(const SEXP promise,
                                  bool create = false,
                                  bool local = false) {
@@ -312,7 +329,12 @@ public:
         return iter->second;
     }
 
-    void destroy_promise(const SEXP promise, DenotedValue* promise_state) {
+    void remove_promise(const SEXP promise, DenotedValue *promise_state) {
+        promises_.erase(promise);
+        destroy_promise(promise_state);
+    }
+
+    void destroy_promise(DenotedValue *promise_state) {
 
         /* here we delete a promise iff we are the only one holding a
            reference to it. A promise can be simultaneously held by
@@ -326,30 +348,61 @@ public:
            argument flag is set, it means the promise is held by a call
            and when that call gets deleted, it will delete this promise */
         promise_state -> set_inactive();
-        promises_.erase(promise);
         if (!promise_state -> is_argument()) {
+            if(!promise_state -> was_argument()){
+                serialize_free_promise_(promise_state);
+            }
             delete promise_state;
         }
     }
 
 private:
-    promise_id_t get_next_promise_id_() {
-        return promise_id_counter_++;
+    denoted_value_id_t get_next_denoted_value_id_() {
+        return denoted_value_id_counter_++;
+    }
+
+    void serialize_free_promise_(DenotedValue* promise) {
+        free_promise_data_table_->write_row(
+            promise->get_id(),
+            sexptype_to_string(promise->get_type()),
+            sexptype_to_string(promise->get_expression_type()),
+            sexptype_to_string(promise->get_value_type()), promise->get_scope(),
+            promise->get_force(), promise->get_lookup(),
+            promise->get_metaprogram(), promise->get_execution_time());
     }
 
     DenotedValue * create_raw_promise_(const SEXP promise, bool local) {
         const SEXP rho = dyntrace_get_promise_environment(promise);
         env_id_t env_id = lookup_environment(rho).get_id();
-        DenotedValue* promise_state = new DenotedValue(promise, local);
+        DenotedValue* promise_state = new DenotedValue(get_next_denoted_value_id_(),
+                                                       promise,
+                                                       local);
+
+        set_scope_(promise_state);
+
         /* Setting this bit tells us that the promise is currently in the promises
            table. As long as this is set, the call holding a reference to it will not
-           garbage collect it. */
+           delete it. */
         promise_state -> set_active();
         return promise_state;
     }
 
-    std::unordered_map<SEXP, DenotedValue*> promises_;
-    promise_id_t promise_id_counter_;
+    void set_scope_(DenotedValue *denoted_value) {
+        auto &stack = get_stack();
+        for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
+            /* we do not stop at first call because in all cases it turns out to be
+               '{' function. We want to keep going back until we find a closure */
+            if (iter->is_call()) {
+                denoted_value -> set_scope(iter->get_call()->get_function_id());
+            }
+            if(iter -> is_closure()) {
+                break;
+            }
+        }
+    }
+
+    std::unordered_map<SEXP, DenotedValue *> promises_;
+    denoted_value_id_t denoted_value_id_counter_;
 
 private:
     timestamp_t get_current_timestamp_() const {
@@ -422,7 +475,9 @@ public:
            promise_state = lookup_promise(argument, true);
         }
         else {
-            promise_state = new DenotedValue(argument, false);
+            promise_state = new DenotedValue(get_next_denoted_value_id_(),
+                                             argument, false);
+            set_scope_(promise_state);
         }
 
         promise_state -> make_argument(call, formal_parameter_position,
@@ -488,9 +543,10 @@ public:
     void serialize_arguments_(Call* call) {
         for (DenotedValue *argument : call -> get_arguments()) {
             argument_data_table_->write_row(
-                static_cast<double>(call -> get_id()), call -> get_function_id(),
-                argument -> get_formal_parameter_position(),
-                argument -> get_actual_argument_position(),
+                call->get_id(), call->get_function_id(),
+                argument->get_formal_parameter_position(),
+                argument->get_actual_argument_position(), argument->get_id(),
+                argument->get_class_name(), argument->is_dispatchee(),
                 sexptype_to_string(argument->get_type()),
                 sexptype_to_string(argument->get_expression_type()),
                 sexptype_to_string(argument->get_value_type()),
@@ -498,6 +554,8 @@ public:
                 argument->get_evaluation_depth().call_depth,
                 argument->get_evaluation_depth().promise_depth,
                 argument->get_evaluation_depth().nested_promise_depth,
+                argument->get_evaluation_depth()
+                    .forcing_actual_argument_position,
                 argument->get_force(), argument->get_lookup(),
                 argument->get_metaprogram(), argument->get_execution_time());
         }
@@ -559,6 +617,8 @@ private:
             call_summary_data_table_->write_row(
                 function.get_id(), sexptype_to_string(function.get_type()),
                 function.get_formal_parameter_count(), all_names,
+                function.get_generic_method_name(),
+                function.is_dispatcher(),
                 function.get_force_order(i),
                 sexptype_to_string(function.get_return_value_type(i)),
                 function.get_call_count(i));
@@ -684,7 +744,7 @@ public:
 
         ExecutionContextStack& stack = get_stack();
         ExecutionContextStack::reverse_iterator iter;
-        eval_depth_t eval_depth = {0, 0, 0};
+        eval_depth_t eval_depth = {0, 0, 0, -1};
         bool nesting = true;
 
         // TODO - should we ignore builtins and specials?
@@ -700,6 +760,13 @@ public:
                 ++eval_depth.promise_depth;
                 if (nesting)
                     ++eval_depth.nested_promise_depth;
+                DenotedValue * promise = exec_ctxt.get_promise();
+                if(eval_depth.forcing_actual_argument_position == -1 &&
+                   promise -> is_argument() &&
+                   promise -> get_call() == call) {
+                    eval_depth.forcing_actual_argument_position =
+                        promise -> get_actual_argument_position();
+                }
             }
         }
 

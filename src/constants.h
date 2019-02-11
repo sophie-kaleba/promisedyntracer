@@ -18,8 +18,11 @@ extern const std::vector<std::string> ENVIRONMENT_VARIABLES;
 
 extern const timestamp_t UNDEFINED_TIMESTAMP;
 
-extern const promise_id_t UNASSIGNED_DENOTED_VALUE_ID;
+extern const denoted_value_id_t UNASSIGNED_DENOTED_VALUE_ID;
 
+extern const function_id_t UNASSIGNED_FUNCTION_ID;
+
+extern const std::string UNASSIGNED_CLASS_NAME;
 
 #endif /* PROMISEDYNTRACER_CONSTANTS_H */
 

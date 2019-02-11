@@ -186,6 +186,42 @@ void special_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 }
 
 
+void S3_dispatch_entry(dyntracer_t *dyntracer, const char* generic, const SEXP cls,
+                       SEXP generic_method, SEXP specific_method, SEXP objects) {
+    TracerState &state = tracer_state(dyntracer);
+
+    state.enter_probe();
+
+    std::string class_name(UNASSIGNED_CLASS_NAME);
+    if (LENGTH(cls) != 0) {
+        class_name = CHAR(STRING_ELT(cls, 0));
+    }
+
+    DenotedValue * value = state.lookup_promise(CAR(objects), true);
+    value -> set_class_name(class_name);
+    value -> set_dispatchee();
+
+    state.lookup_function(specific_method) -> set_generic_method_name(generic);
+    state.lookup_function(generic_method)->set_dispatcher();
+
+    state.exit_probe();
+}
+
+
+void S3_dispatch_exit(dyntracer_t *dyntracer, const char *generic,
+                      const SEXP cls, SEXP generic_method,
+                      SEXP specific_method, SEXP objects, SEXP return_value) {
+    TracerState &state = tracer_state(dyntracer);
+
+    state.enter_probe();
+
+    DenotedValue *value = state.lookup_promise(CAR(objects), false);
+    value->set_class_name(UNASSIGNED_CLASS_NAME);
+    value->unset_dispatchee();
+
+    state.exit_probe();
+}
+
 void context_entry(dyntracer_t *dyntracer, const RCNTXT *cptr) {
     TracerState& state = tracer_state(dyntracer);
 
@@ -303,6 +339,9 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
 
     DenotedValue*  promise_state = state.lookup_promise(promise);
 
+    // TODO - correctly handle these cases for other details related to promises.
+    // TODO - it may be useful to know the source of creation of non argument promises
+    promise_state->force();
     /* TODO - this is the place to deal with escaped promises */
     /* if promise is not an argument, then don't process it. */
     if (promise_state->is_argument()) {
@@ -317,7 +356,6 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
         } else {
             eval_depth_t eval_depth = state.get_evaluation_depth(call);
             promise_state->set_evaluation_depth(eval_depth);
-            promise_state->force();
             /* TODO - do we care about actual argument position? */
             int formal_parameter_position =
                 promise_state->get_formal_parameter_position();
@@ -493,7 +531,7 @@ static void gc_promise_unmark(TracerState & state,
     //     promise_state -> is_direct_side_effect_observer(),
     //     promise_state -> is_transitive_side_effect_observer());
 
-    state.destroy_promise(promise, promise_state);
+    state.remove_promise(promise, promise_state);
 }
 
 

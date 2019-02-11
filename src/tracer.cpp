@@ -24,6 +24,8 @@ SEXP create_dyntracer(SEXP trace_filepath, SEXP truncate, SEXP enable_trace,
     dyntracer->probe_builtin_exit = builtin_exit;
     dyntracer->probe_special_entry = special_entry;
     dyntracer->probe_special_exit = special_exit;
+    dyntracer->probe_S3_dispatch_entry = S3_dispatch_entry;
+    dyntracer->probe_S3_dispatch_exit = S3_dispatch_exit;
     dyntracer->probe_gc_unmark = gc_unmark;
     dyntracer->probe_promise_force_entry = promise_force_entry;
     dyntracer->probe_promise_force_exit = promise_force_exit;

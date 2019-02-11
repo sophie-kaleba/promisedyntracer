@@ -11,7 +11,7 @@
 class Function {
 
 public:
-    Function(const SEXP op) : op_(op), formal_parameter_count_(0) {
+    Function(const SEXP op) : op_(op), formal_parameter_count_(0), method_name_(""), dispatcher_(false){
 
         type_ = type_of_sexp(op);
 
@@ -71,6 +71,22 @@ public:
         return names_;
     }
 
+    void set_generic_method_name(const std::string& method_name) {
+        method_name_ = method_name;
+    }
+
+    const std::string& get_generic_method_name() const {
+        return method_name_;
+    }
+
+    bool is_dispatcher() const {
+        return dispatcher_;
+    }
+
+    void set_dispatcher() {
+        dispatcher_ = true;
+    }
+
     void add_summary(Call* call) {
 
         int i;
@@ -105,6 +121,8 @@ public:
     const SEXP op_;
     sexptype_t type_;
     std::size_t formal_parameter_count_;
+    std::string method_name_;
+    bool dispatcher_;
     std::string definition_;
     function_id_t id_;
     std::string namespace_;
