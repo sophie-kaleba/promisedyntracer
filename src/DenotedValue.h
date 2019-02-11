@@ -101,6 +101,14 @@ class DenotedValue {
         dispatchee_ = true;
     }
 
+    void set_non_local_return() {
+        non_local_return_ = true;
+    }
+
+    bool does_non_local_return() const {
+        return non_local_return_;
+    }
+
     void unset_dispatchee() { dispatchee_ = false; }
 
     int get_formal_parameter_position() const {
@@ -245,7 +253,7 @@ class DenotedValue {
           active_(false), call_(nullptr), formal_parameter_position_(-1),
           actual_argument_position_(-1), default_(false), evaluated_(false),
           was_argument_(false), scope_(UNASSIGNED_FUNCTION_ID),
-          class_name_(UNASSIGNED_CLASS_NAME), dispatchee_(false),
+          class_name_(UNASSIGNED_CLASS_NAME), dispatchee_(false), non_local_return_(false),
           transitive_side_effect_observer_(false),
           direct_side_effect_observer_(false),
           transitive_side_effect_creator_(false),
@@ -274,6 +282,7 @@ class DenotedValue {
     function_id_t scope_;
     std::string class_name_;
     bool dispatchee_;
+    bool non_local_return_;
     timestamp_t creation_timestamp_;
     bool transitive_side_effect_observer_;
     bool direct_side_effect_observer_;

@@ -146,6 +146,43 @@ void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
     Call * function_call = state.create_call(call, op, args, rho);
 
+
+    /* Identify promises that do non local return. First, check if
+       this special is a 'return', then check if the return happens
+       right after a promise is forced, then walk back in the stack
+       to the promise with the same environment as the return. This
+       promise is the one that does non local return. Note that the
+       loop breaks after the first such promise is found. This is
+       because only one promise can be held responsible for non local
+       return, the one that invokes the return function. */
+    if(is_return_primitive(op)) {
+
+        ExecutionContextStack& stack = state.get_stack();
+
+        ExecutionContext last_exec_ctxt = stack.peek(1);
+
+        if(last_exec_ctxt.is_promise()) {
+
+            for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
+
+                ExecutionContext &exec_ctxt = *iter;
+
+                if (exec_ctxt.is_promise()) {
+
+                    DenotedValue *promise = exec_ctxt.get_promise();
+
+                    if (promise -> is_argument() &&
+                        promise->get_environment() == rho) {
+
+                        promise->set_non_local_return();
+                        break;
+
+                    }
+                }
+            }
+        }
+    }
+
     state.get_stack().push(function_call);
 
     // tracer_serializer(dyntracer).serialize(

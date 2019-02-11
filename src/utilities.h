@@ -82,4 +82,7 @@ inline bool timestamp_is_undefined(const timestamp_t timestamp) {
     return timestamp == UNDEFINED_TIMESTAMP;
 }
 
+inline bool is_return_primitive(const SEXP op) {
+    return dyntrace_get_primitive_offset(op) == PRIMITIVE_RETURN_OFFSET;
+}
 #endif /* PROMISEDYNTRACER__UTILITIES_H */

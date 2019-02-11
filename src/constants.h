@@ -24,5 +24,7 @@ extern const function_id_t UNASSIGNED_FUNCTION_ID;
 
 extern const std::string UNASSIGNED_CLASS_NAME;
 
+extern const int PRIMITIVE_RETURN_OFFSET;
+
 #endif /* PROMISEDYNTRACER_CONSTANTS_H */
 

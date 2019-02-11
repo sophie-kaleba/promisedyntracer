@@ -20,6 +20,8 @@ const timestamp_t UNDEFINED_TIMESTAMP = -1;
 
 const denoted_value_id_t UNASSIGNED_DENOTED_VALUE_ID = -1;
 
-extern const function_id_t UNASSIGNED_FUNCTION_ID = "";
+const function_id_t UNASSIGNED_FUNCTION_ID = "";
 
-extern const std::string UNASSIGNED_CLASS_NAME = "";
+const std::string UNASSIGNED_CLASS_NAME = "";
+
+const int PRIMITIVE_RETURN_OFFSET = 6;
