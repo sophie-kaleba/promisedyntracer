@@ -55,21 +55,79 @@ class TracerState {
             {"function_id", "byte_compiled", "definition"},
             truncate_, binary_, compression_level_);
 
-        argument_data_table_ = create_data_table(
-            output_dirpath_ + "/" + "arguments",
-            {"call_id", "function_id", "formal_parameter_position",
-             "actual_argument_position", "value_id", "class",
-             "dispatchee", "argument_type", "expression_type",
-             "value_type", "default", "non_local_return",
-             "escape", "call_depth", "promise_depth",
-             "nested_promise_depth", "forcing_actual_argument_position",
-             "force_count", "lookup_count", "metaprogram_count", "execution_time"},
-            truncate_, binary_, compression_level_);
+        argument_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "arguments",
+                              {"call_id",
+                               "function_id",
+                               "formal_parameter_position",
+                               "actual_argument_position",
+                               "value_id",
+                               "class",
+                               "dispatchee",
+                               "argument_type",
+                               "expression_type",
+                               "value_type",
+                               "default",
+                               "non_local_return",
+                               "escape",
+                               "call_depth",
+                               "promise_depth",
+                               "nested_promise_depth",
+                               "forcing_actual_argument_position",
+                               "force_count",
+                               "value_lookup_count",
+                               "value_assign_count",
+                               "expression_lookup_count",
+                               "expression_assign_count",
+                               "environment_lookup_count",
+                               "environment_assign_count",
+                               "execution_time"},
+                              truncate_, binary_, compression_level_);
+
+        escaped_argument_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "escaped-arguments",
+                              {"call_id",
+                               "function_id",
+                               "return_value_type",
+                               "formal_parameter_position",
+                               "actual_argument_position",
+                               "value_id",
+                               "class",
+                               "dispatchee",
+                               "argument_type",
+                               "expression_type",
+                               "value_type",
+                               "default",
+                               "non_local_return",
+                               "escape",
+                               "call_depth",
+                               "promise_depth",
+                               "nested_promise_depth",
+                               "forcing_actual_argument_position",
+                               "before_escape_force_count",
+                               "before_escape_value_lookup_count",
+                               "before_escape_value_assign_count",
+                               "before_escape_expression_lookup_count",
+                               "before_escape_expression_assign_count",
+                               "before_escape_environment_lookup_count",
+                               "before_escape_environment_assign_count",
+                               "after_escape_force_count",
+                               "after_escape_value_lookup_count",
+                               "after_escape_value_assign_count",
+                               "after_escape_expression_lookup_count",
+                               "after_escape_expression_assign_count",
+                               "after_escape_environment_lookup_count",
+                               "after_escape_environment_assign_count",
+                               "execution_time"},
+                              truncate_, binary_, compression_level_);
 
         free_promise_data_table_ = create_data_table(
             output_dirpath_ + "/" + "free-promises",
-            {"value_id", "type", "expression_type", "value_type", "scope", "force_count",
-             "lookup_count", "metaprogram_count", "execution_time"},
+            {"value_id", "type", "expression_type", "value_type", "scope",
+             "force_count", "value_lookup_count", "value_assign_count",
+             "expression_lookup_count", "expression_assign_count",
+             "environment_lookup_count", "environment_assign_count",
+             "execution_time"},
             truncate_, binary_, compression_level_);
     }
 
@@ -77,6 +135,7 @@ class TracerState {
         delete call_summary_data_table_;
         delete function_definition_data_table_;
         delete argument_data_table_;
+        delete escaped_argument_data_table_;
         delete free_promise_data_table_;
     }
 
@@ -349,10 +408,16 @@ public:
            argument flag is set, it means the promise is held by a call
            and when that call gets deleted, it will delete this promise */
         promise_state -> set_inactive();
+
+        if (promise_state -> is_free()){
+            serialize_free_promise_(promise_state);
+        }
+
+        if (promise_state -> has_escaped()) {
+            serialize_escaped_promise_(promise_state);
+        }
+
         if (!promise_state -> is_argument()) {
-            if(!promise_state -> was_argument()){
-                serialize_free_promise_(promise_state);
-            }
             delete promise_state;
         }
     }
@@ -364,12 +429,51 @@ private:
 
     void serialize_free_promise_(DenotedValue* promise) {
         free_promise_data_table_->write_row(
-            promise->get_id(),
-            sexptype_to_string(promise->get_type()),
+            promise->get_id(), sexptype_to_string(promise->get_type()),
             sexptype_to_string(promise->get_expression_type()),
             sexptype_to_string(promise->get_value_type()), promise->get_scope(),
-            promise->get_force(), promise->get_lookup(),
-            promise->get_metaprogram(), promise->get_execution_time());
+            promise->get_force_count(),
+            promise->get_value_lookup_count(),
+            promise->get_value_assign_count(),
+            promise->get_expression_lookup_count(),
+            promise->get_expression_assign_count(),
+            promise->get_environment_lookup_count(),
+            promise->get_environment_assign_count(),
+            promise->get_execution_time());
+    }
+
+    void serialize_escaped_promise_(DenotedValue* argument) {
+        escaped_argument_data_table_->write_row(
+            argument->get_previous_call_id(),
+            argument->get_previous_function_id(),
+            sexptype_to_string(argument->get_previous_call_return_value_type()),
+            argument->get_previous_formal_parameter_position(),
+            argument->get_previous_actual_argument_position(),
+            argument->get_id(), argument->get_class_name(),
+            argument->is_dispatchee(), sexptype_to_string(argument->get_type()),
+            sexptype_to_string(argument->get_expression_type()),
+            sexptype_to_string(argument->get_value_type()),
+            argument->is_default(), argument->does_non_local_return(),
+            argument->has_escaped(),
+            argument->get_evaluation_depth().call_depth,
+            argument->get_evaluation_depth().promise_depth,
+            argument->get_evaluation_depth().nested_promise_depth,
+            argument->get_evaluation_depth().forcing_actual_argument_position,
+            argument->get_force_count_before_escape(),
+            argument->get_value_lookup_count_before_escape(),
+            argument->get_value_assign_count_before_escape(),
+            argument->get_expression_lookup_count_before_escape(),
+            argument->get_expression_assign_count_before_escape(),
+            argument->get_environment_lookup_count_before_escape(),
+            argument->get_environment_assign_count_before_escape(),
+            argument->get_force_count_after_escape(),
+            argument->get_value_lookup_count_after_escape(),
+            argument->get_value_assign_count_after_escape(),
+            argument->get_expression_lookup_count_after_escape(),
+            argument->get_expression_assign_count_after_escape(),
+            argument->get_environment_lookup_count_after_escape(),
+            argument->get_environment_assign_count_after_escape(),
+            argument->get_execution_time());
     }
 
     DenotedValue * create_raw_promise_(const SEXP promise, bool local) {
@@ -437,6 +541,8 @@ public:
         const std::string function_name = get_name(call);
         int eval = 0;
 
+        /* TODO - remove actual argument count, we get that from length of
+           argument list. */
         function_call = new Call(call_id, function_id, TYPEOF(op),
                                  function_name, 0, 0, rho, function);
 
@@ -489,6 +595,12 @@ public:
 
     void process_closure_arguments_(Call* call,
                                     const SEXP op) {
+
+        // if(call -> get_function_id() == "wSMeLAgaVDGacrtPDtpjCQ==") {
+        //     std::cerr << "here\n";
+        //     static int loopy = 1;
+        //     while(loopy);
+        // }
         SEXP formal = nullptr;
         SEXP name = nullptr;
         SEXP argument = nullptr;
@@ -551,20 +663,25 @@ public:
                 sexptype_to_string(argument->get_type()),
                 sexptype_to_string(argument->get_expression_type()),
                 sexptype_to_string(argument->get_value_type()),
-                argument->is_default(),
-                argument -> does_non_local_return(),
-                argument->get_escape(),
+                argument->is_default(), argument->does_non_local_return(),
+                argument->has_escaped(),
                 argument->get_evaluation_depth().call_depth,
                 argument->get_evaluation_depth().promise_depth,
                 argument->get_evaluation_depth().nested_promise_depth,
-                argument->get_evaluation_depth()
-                    .forcing_actual_argument_position,
-                argument->get_force(), argument->get_lookup(),
-                argument->get_metaprogram(), argument->get_execution_time());
+                argument->get_evaluation_depth().forcing_actual_argument_position,
+                argument->get_force_count(),
+                argument->get_value_lookup_count(),
+                argument->get_value_assign_count(),
+                argument->get_expression_lookup_count(),
+                argument->get_expression_assign_count(),
+                argument->get_environment_lookup_count(),
+                argument->get_environment_assign_count(),
+                argument->get_execution_time());
         }
     }
 
     DataTableStream* argument_data_table_;
+    DataTableStream *escaped_argument_data_table_;
 
     /***************************************************************************
      * Function API

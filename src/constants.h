@@ -24,7 +24,14 @@ extern const function_id_t UNASSIGNED_FUNCTION_ID;
 
 extern const std::string UNASSIGNED_CLASS_NAME;
 
+extern const call_id_t UNASSIGNED_CALL_ID;
+
+extern const int UNASSIGNED_FORMAL_PARAMETER_POSITION;
+
+extern const int UNASSIGNED_ACTUAL_ARGUMENT_POSITION;
+
 extern const int PRIMITIVE_RETURN_OFFSET;
+
 
 #endif /* PROMISEDYNTRACER_CONSTANTS_H */
 

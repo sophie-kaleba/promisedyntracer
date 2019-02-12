@@ -6,10 +6,26 @@
 void DenotedValue::make_argument(Call *call, int formal_parameter_position,
                                  int actual_argument_position) {
 
-    call_ = call;
-    formal_parameter_position_ = formal_parameter_position;
-    actual_argument_position_ = actual_argument_position;
-    if (is_promise()) {
-        default_ = call->get_environment() == get_environment();
-    }
+    bool def = is_promise() ? (call->get_environment() == get_environment()) : false;
+
+    argument_stack_.push_back(Argument(call,
+                                       formal_parameter_position,
+                                       actual_argument_position,
+                                       def));
+}
+
+void DenotedValue::free_argument(call_id_t call_id,
+                                 function_id_t function_id,
+                                 sexptype_t return_value_type) {
+
+    /* TODO - this information should be put in a separate function */
+    previous_call_id_ = call_id;
+    previous_function_id_ = function_id;
+    previous_call_return_value_type_ = return_value_type;
+    previous_formal_parameter_position_ = get_formal_parameter_position();
+    previous_actual_argument_position_ = get_actual_argument_position();
+
+    argument_stack_.pop_back();
+    was_argument_ = true;
+    dispatchee_ = false;
 }

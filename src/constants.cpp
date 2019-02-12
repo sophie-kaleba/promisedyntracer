@@ -24,4 +24,10 @@ const function_id_t UNASSIGNED_FUNCTION_ID = "";
 
 const std::string UNASSIGNED_CLASS_NAME = "";
 
+const call_id_t UNASSIGNED_CALL_ID = -1;
+
+const int UNASSIGNED_FORMAL_PARAMETER_POSITION = -1;
+
+const int UNASSIGNED_ACTUAL_ARGUMENT_POSITION = -1;
+
 const int PRIMITIVE_RETURN_OFFSET = 6;

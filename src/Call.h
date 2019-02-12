@@ -44,7 +44,9 @@ class Call {
             if(!arguments_[i] -> is_active()) {
                 delete arguments_[i];
             } else {
-                arguments_[i] -> free_argument();
+                arguments_[i] -> free_argument(get_id(),
+                                               get_function_id(),
+                                               get_return_value_type());
             }
             arguments_[i] = nullptr;
         }

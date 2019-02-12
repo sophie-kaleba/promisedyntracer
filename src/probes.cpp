@@ -452,7 +452,7 @@ void promise_value_lookup(dyntracer_t *dyntracer, const SEXP promise) {
 
     DenotedValue* promise_state = state.lookup_promise(promise, true);
 
-    promise_state->lookup();
+    promise_state->lookup_value();
 
     // std::string val_id = std::string("val ") + std::to_string(promise_state -> get_id());
 
@@ -472,7 +472,7 @@ void promise_expression_lookup(dyntracer_t *dyntracer, const SEXP promise) {
 
     DenotedValue* promise_state = state.lookup_promise(promise, true);
 
-    promise_state->metaprogram();
+    promise_state->lookup_expression();
 
     // tracer_serializer(dyntracer).serialize(
     //     TraceSerializer::OPCODE_PROMISE_EXPRESSION_LOOKUP,
@@ -490,7 +490,7 @@ void promise_environment_lookup(dyntracer_t *dyntracer, const SEXP promise) {
 
     DenotedValue *promise_state = state.lookup_promise(promise, true);
 
-    promise_state->metaprogram();
+    promise_state->lookup_environment();
 
     // tracer_serializer(dyntracer).serialize(
     //     TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_LOOKUP,
@@ -509,7 +509,7 @@ void promise_expression_assign(dyntracer_t *dyntracer, const SEXP promise,
 
     DenotedValue* promise_state = state.lookup_promise(promise, true);
 
-    promise_state->metaprogram();
+    promise_state->assign_expression();
 
     // tracer_serializer(dyntracer).serialize(
     //     TraceSerializer::OPCODE_PROMISE_EXPRESSION_ASSIGN,
@@ -528,7 +528,7 @@ void promise_value_assign(dyntracer_t *dyntracer, const SEXP promise,
 
     DenotedValue*  promise_state = state.lookup_promise(promise, true);
 
-    promise_state->metaprogram();
+    promise_state->assign_value();
 
     // tracer_serializer(dyntracer).serialize(
     //     TraceSerializer::OPCODE_PROMISE_VALUE_ASSIGN,
@@ -547,7 +547,7 @@ void promise_environment_assign(dyntracer_t *dyntracer, const SEXP promise,
 
     DenotedValue*  promise_state = state.lookup_promise(promise, true);
 
-    promise_state->metaprogram();
+    promise_state->assign_environment();
 
     // tracer_serializer(dyntracer).serialize(
     //     TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_ASSIGN,
