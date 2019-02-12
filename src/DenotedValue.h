@@ -56,11 +56,6 @@ class DenotedValue {
         return argument_stack_.back().get_actual_argument_position();
     }
 
-    std::string get_expression() const {
-        // TODO
-        return "UNIMPLEMENTED";
-    }
-
     bool is_argument() const {
         return argument_stack_.size() > 1;
     }
@@ -77,7 +72,6 @@ class DenotedValue {
         return get_force_count();
     }
 
-    // TODO check if parameter_mode can be computed here instead
     void make_argument(Call* call,
                        int formal_parameter_position,
                        int actual_argument_position);

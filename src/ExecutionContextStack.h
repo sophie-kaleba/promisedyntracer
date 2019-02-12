@@ -17,6 +17,8 @@ public:
 
     size_t size() const { return stack_.size(); }
 
+    bool empty() const { return stack_.empty(); }
+
     iterator begin() { return stack_.begin(); }
 
     iterator end() { return stack_.end(); }

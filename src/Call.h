@@ -15,12 +15,12 @@ class Call {
                   const sexptype_t function_type,
                   const std::string &function_name,
                   const int formal_parameter_count,
-                  const int actual_argument_count, const SEXP environment,
+                  const SEXP environment,
                   Function *function)
         : id_(id), function_id_(function_id), function_type_(function_type),
           function_name_(function_name),
           formal_parameter_count_(formal_parameter_count),
-          actual_argument_count_(actual_argument_count),
+          actual_argument_count_(0),
           environment_(environment), function_(function),
           return_value_type_(UNASSIGNEDSXP) {
 

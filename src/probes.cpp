@@ -306,8 +306,8 @@ void context_jump(dyntracer_t *dyntracer, const RCNTXT *context,
 
         } else if (exec_ctxt.is_promise()) {
 
+            // TODO - delegate to promise_force_exit
             exec_ctxt.get_promise()->set_value_type(JUMPSXP);
-            //TODO - check code of promise force exit;
         }
     }
 
@@ -339,8 +339,6 @@ void gc_allocate(dyntracer_t *dyntracer, const SEXP object) {
     if(TYPEOF(object) == PROMSXP) {
 
         DenotedValue* promise_state = state.create_promise(object);
-
-        // TODO check the source of creation of this promise?
 
         //std::string cre_id = std::string("cre ") + std::to_string(promise_state -> get_id());
 
@@ -376,10 +374,6 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
 
     DenotedValue*  promise_state = state.lookup_promise(promise);
 
-    // TODO - correctly handle these cases for other details related to promises.
-    // TODO - it may be useful to know the source of creation of non argument promises
-    promise_state->force();
-    /* TODO - this is the place to deal with escaped promises */
     /* if promise is not an argument, then don't process it. */
     if (promise_state->is_argument()) {
         /* we know that the call is valid because this is an argument promise
@@ -400,6 +394,10 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
         }
     }
 
+    /* Force promise in the end. This is important to get correct force order
+       from the call object. */
+    promise_state->force();
+
     state.get_stack().push(promise_state);
 
     // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_PROMISE_BEGIN,
@@ -414,24 +412,17 @@ void promise_force_exit(dyntracer_t *dyntracer, const SEXP promise) {
 
     state.enter_probe();
 
-    /* lookup_promise will internally throw error if promise does not exist */
-    DenotedValue*  promise_state = state.lookup_promise(promise);
+    ExecutionContext exec_ctxt = state.get_stack().pop();
 
-    // TODO - check that promise exists at this point in the mapper
-    //        throw an error if it does not
-    // state.insert_promise(info.prom_id, promise);
+    if (!exec_ctxt.is_promise()) {
+        dyntrace_log_error("unable to find matching promise on stack");
+    }
 
-    // this should happen after popping out the promise
+    DenotedValue *promise_state = exec_ctxt.get_promise();
 
     const SEXP value = dyntrace_get_promise_value(promise);
 
     promise_state->set_value_type(type_of_sexp(value));
-
-    ExecutionContext exec_ctxt = state.get_stack().pop();
-
-    if(!exec_ctxt.is_promise()) {
-        dyntrace_log_error("unable to find matching promise on stack");
-    }
 
     // std::string ext_id =
     //     std::string("ext ") + std::to_string(promise_state->get_id());
@@ -561,12 +552,6 @@ static void gc_promise_unmark(TracerState & state,
                               const SEXP promise) {
 
     DenotedValue* promise_state = state.lookup_promise(promise, true);
-
-    // TODO - identify escaped promise
-    // side_effecting_promises_data_table_ -> write_row(
-    //     promise_state -> fn_id, promise_state.formal_parameter_position,
-    //     promise_state -> is_direct_side_effect_observer(),
-    //     promise_state -> is_transitive_side_effect_observer());
 
     state.remove_promise(promise, promise_state);
 }

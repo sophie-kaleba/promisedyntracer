@@ -94,10 +94,11 @@ class BinaryDataTableStream : public DataTableStream {
         write(&size, sizeof(size));
         write(value, size);
     }
-    /* TODO - first compress the stream, then write the size in the beginning.
-              Do not compress the size as well. This is very important.
-              The size value is updated in the end with the correct size,
-              if it is compressed, then it can't be updated. */
+
+    /* First compress the stream, then write the size in the beginning.
+       Do not compress the size as well.
+       The size value is updated in the end with the correct size,
+       if it is compressed, then it can't be updated. */
     void write_header_() {
         finalize();
         seek(0, SEEK_SET);

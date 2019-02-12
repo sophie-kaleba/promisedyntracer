@@ -166,34 +166,14 @@ class TracerState {
         promises_.clear();
 
         for(auto iter = functions_.begin(); iter != functions_.end(); ++iter) {
-            serialize_function_(iter -> second);
-            delete iter -> second;
+            destroy_function_(iter -> second);
         }
 
         functions_.clear();
 
-        // TODO - check if stack only has top level element
-        // if (!full_stack.empty()) {
-        //     dyntrace_log_warning(
-        //         "Function/promise stack is not balanced: %d remaining",
-        //         full_stack.size());
-        //     full_stack.clear();
-        // }
-
-        // TODO - serialize functions on exit. This should be done later on
-        // when the function state mappings are fully there.
-        // the function state will summarize results from call state.
-        // serializing it will result in a few entries in the functions table
-        // and its definition file.
-
-        // TODO check if this is non empty on exit.
-        // it should not be.
-        // for (const auto &key_value : call_map_) {
-        //     const Call &call = *key_value.second;
-        //     if(call.get_function_type() == "Closure") {
-        //         serialize_arguments_(call);
-        //     }
-        // }
+        if(!get_stack().empty()) {
+            dyntrace_log_error("stack not empty on tracer exit.")
+        }
 
         if (error) {
             std::ofstream error_file(get_output_dirpath() + "/ERROR");
@@ -541,10 +521,9 @@ public:
         const std::string function_name = get_name(call);
         int eval = 0;
 
-        /* TODO - remove actual argument count, we get that from length of
-           argument list. */
         function_call = new Call(call_id, function_id, TYPEOF(op),
-                                 function_name, 0, 0, rho, function);
+                                 function_name, function -> get_formal_parameter_count(),
+                                 rho, function);
 
         if(TYPEOF(op) == CLOSXP) {
             process_closure_arguments_(function_call, op);
@@ -552,8 +531,6 @@ public:
             int eval = dyntrace_get_c_function_argument_evaluation(op);
             function_call -> set_force_order(std::to_string(eval));
         }
-
-        // TODO - use PRIMARITY(op) to compute arity of SPECIAL and BUILTIN;
 
         return function_call;
     }
@@ -596,11 +573,6 @@ public:
     void process_closure_arguments_(Call* call,
                                     const SEXP op) {
 
-        // if(call -> get_function_id() == "wSMeLAgaVDGacrtPDtpjCQ==") {
-        //     std::cerr << "here\n";
-        //     static int loopy = 1;
-        //     while(loopy);
-        // }
         SEXP formal = nullptr;
         SEXP name = nullptr;
         SEXP argument = nullptr;
@@ -648,8 +620,6 @@ public:
                 break;
             }
         }
-
-        call -> set_formal_parameter_count(formal_parameter_position + 1);
     }
 
 
@@ -701,14 +671,19 @@ public:
         auto it = functions_.find(op);
 
         if (it != functions_.end()) {
-            serialize_function_(it->second);
-            delete it->second;
+            destroy_function_(it -> second);
             functions_.erase(it);
         }
     }
 
 private:
-  DataTableStream *call_summary_data_table_;
+
+    void destroy_function_(Function * function) {
+        serialize_function_(function);
+        delete function;
+    }
+
+    DataTableStream *call_summary_data_table_;
   DataTableStream *function_definition_data_table_;
   std::unordered_set<function_id_t> serialized_functions_;
   std::unordered_map<SEXP, Function *> functions_;
@@ -867,7 +842,7 @@ public:
         eval_depth_t eval_depth = {0, 0, 0, -1};
         bool nesting = true;
 
-        // TODO - should we ignore builtins and specials?
+        // TODO - should builtins and specials be ignored ?
         for (iter = stack.rbegin(); iter != stack.rend(); ++iter) {
             ExecutionContext &exec_ctxt = *iter;
 
