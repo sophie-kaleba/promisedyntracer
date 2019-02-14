@@ -1,14 +1,12 @@
 #include "probes.h"
 #include "TracerState.h"
 
-
-inline TracerState& tracer_state(dyntracer_t *dyntracer) {
+inline TracerState &tracer_state(dyntracer_t *dyntracer) {
     return *(static_cast<TracerState *>(dyntracer->state));
 }
 
-
 void dyntrace_entry(dyntracer_t *dyntracer, SEXP expression, SEXP environment) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     /* we do not do state.enter_probe() in this function because this is a
        pseudo probe that executes before the tracing actually starts. this is
@@ -16,14 +14,14 @@ void dyntrace_entry(dyntracer_t *dyntracer, SEXP expression, SEXP environment) {
 
     state.initialize();
 
-    /* probe_exit here ensures we start the timer for timing argument execution. */
+    /* probe_exit here ensures we start the timer for timing argument execution.
+     */
     state.exit_probe();
 }
 
-
 void dyntrace_exit(dyntracer_t *dyntracer, SEXP expression, SEXP environment,
                    SEXP result, int error) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -33,14 +31,15 @@ void dyntrace_exit(dyntracer_t *dyntracer, SEXP expression, SEXP environment,
        executing and we don't need to resume the timer. */
 }
 
-
 void closure_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                    const SEXP args, const SEXP rho) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
     Call *function_call = state.create_call(call, op, args, rho);
+
+    state.update_wrapper_state(function_call);
 
     state.get_stack().push(function_call);
 
@@ -64,19 +63,17 @@ void closure_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
         state.lookup_variable(rho, argument.name).get_id(), argument.name,
         promise_state->get_id());
     */
-
 }
-
 
 void closure_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP return_value) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
     ExecutionContext exec_ctxt = state.get_stack().pop();
 
-    if(!exec_ctxt.is_closure()) {
+    if (!exec_ctxt.is_closure()) {
         dyntrace_log_error("Not found matching closure on stack");
     }
 
@@ -92,14 +89,15 @@ void closure_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     state.exit_probe();
 }
 
-
 void builtin_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                    const SEXP args, const SEXP rho) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
     Call *function_call = state.create_call(call, op, args, rho);
+
+    state.update_wrapper_state(function_call);
 
     state.get_stack().push(function_call);
 
@@ -111,10 +109,9 @@ void builtin_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     state.exit_probe();
 }
 
-
 void builtin_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP return_value) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -137,15 +134,15 @@ void builtin_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     state.exit_probe();
 }
 
-
 void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                    const SEXP args, const SEXP rho) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    Call * function_call = state.create_call(call, op, args, rho);
+    Call *function_call = state.create_call(call, op, args, rho);
 
+    state.update_wrapper_state(function_call);
 
     /* Identify promises that do non local return. First, check if
        this special is a 'return', then check if the return happens
@@ -155,13 +152,13 @@ void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
        loop breaks after the first such promise is found. This is
        because only one promise can be held responsible for non local
        return, the one that invokes the return function. */
-    if(is_return_primitive(op)) {
+    if (is_return_primitive(op)) {
 
-        ExecutionContextStack& stack = state.get_stack();
+        ExecutionContextStack &stack = state.get_stack();
 
         ExecutionContext last_exec_ctxt = stack.peek(1);
 
-        if(last_exec_ctxt.is_promise()) {
+        if (last_exec_ctxt.is_promise()) {
 
             for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
 
@@ -171,12 +168,11 @@ void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
                     DenotedValue *promise = exec_ctxt.get_promise();
 
-                    if (promise -> is_argument() &&
+                    if (promise->is_argument() &&
                         promise->get_environment() == rho) {
 
                         promise->set_non_local_return();
                         break;
-
                     }
                 }
             }
@@ -195,11 +191,10 @@ void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     state.exit_probe();
 }
 
-
 void special_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
                   const SEXP args, const SEXP rho, const SEXP return_value) {
 
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -222,9 +217,9 @@ void special_exit(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
     state.exit_probe();
 }
 
-
-void S3_dispatch_entry(dyntracer_t *dyntracer, const char* generic, const SEXP cls,
-                       SEXP generic_method, SEXP specific_method, SEXP objects) {
+void S3_dispatch_entry(dyntracer_t *dyntracer, const char *generic,
+                       const SEXP cls, SEXP generic_method,
+                       SEXP specific_method, SEXP objects) {
     TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -234,20 +229,19 @@ void S3_dispatch_entry(dyntracer_t *dyntracer, const char* generic, const SEXP c
         class_name = CHAR(STRING_ELT(cls, 0));
     }
 
-    DenotedValue * value = state.lookup_promise(CAR(objects), true);
-    value -> set_class_name(class_name);
-    value -> set_dispatchee();
+    DenotedValue *value = state.lookup_promise(CAR(objects), true);
+    value->set_class_name(class_name);
+    value->set_dispatchee();
 
-    state.lookup_function(specific_method) -> set_generic_method_name(generic);
+    state.lookup_function(specific_method)->set_generic_method_name(generic);
     state.lookup_function(generic_method)->set_dispatcher();
 
     state.exit_probe();
 }
 
-
 void S3_dispatch_exit(dyntracer_t *dyntracer, const char *generic,
-                      const SEXP cls, SEXP generic_method,
-                      SEXP specific_method, SEXP objects, SEXP return_value) {
+                      const SEXP cls, SEXP generic_method, SEXP specific_method,
+                      SEXP objects, SEXP return_value) {
     TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -260,7 +254,7 @@ void S3_dispatch_exit(dyntracer_t *dyntracer, const char *generic,
 }
 
 void context_entry(dyntracer_t *dyntracer, const RCNTXT *cptr) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -269,10 +263,9 @@ void context_entry(dyntracer_t *dyntracer, const RCNTXT *cptr) {
     state.exit_probe();
 }
 
-
 void context_jump(dyntracer_t *dyntracer, const RCNTXT *context,
                   const SEXP return_value, int restart) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -292,7 +285,8 @@ void context_jump(dyntracer_t *dyntracer, const RCNTXT *context,
        true);
     */
 
-    execution_contexts_t exec_ctxts = state.get_stack().unwind(ExecutionContext(context));
+    execution_contexts_t exec_ctxts =
+        state.get_stack().unwind(ExecutionContext(context));
 
     for (auto &exec_ctxt : exec_ctxts) {
 
@@ -314,9 +308,8 @@ void context_jump(dyntracer_t *dyntracer, const RCNTXT *context,
     state.exit_probe();
 }
 
-
 void context_exit(dyntracer_t *dyntracer, const RCNTXT *cptr) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -329,34 +322,35 @@ void context_exit(dyntracer_t *dyntracer, const RCNTXT *cptr) {
     state.exit_probe();
 }
 
-
 void gc_allocate(dyntracer_t *dyntracer, const SEXP object) {
 
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    if(TYPEOF(object) == PROMSXP) {
+    state.increment_object_count(type_of_sexp(object));
 
-        DenotedValue* promise_state = state.create_promise(object);
+    if (TYPEOF(object) == PROMSXP) {
 
-        //std::string cre_id = std::string("cre ") + std::to_string(promise_state -> get_id());
+        DenotedValue *promise_state = state.create_promise(object);
+
+        // std::string cre_id = std::string("cre ") +
+        // std::to_string(promise_state -> get_id());
 
         // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_PROMISE_CREATE,
         //                                        promise_state -> get_id(),
-        //                                        promise_state -> get_environment(),
-        //                                        promise_state -> get_expression());
-    }
-    else if(TYPEOF(object) == ENVSXP) {
+        //                                        promise_state ->
+        //                                        get_environment(),
+        //                                        promise_state ->
+        //                                        get_expression());
+    } else if (TYPEOF(object) == ENVSXP) {
         env_id_t env_id = state.create_environment(object).get_id();
 
         // tracer_serializer(dyntracer).serialize(
         //     TraceSerializer::OPCODE_ENVIRONMENT_CREATE, env_id);
-    }
-    else if(isVector(object)) {
+    } else if (isVector(object)) {
 
-        type_gc_info_t info{state.get_gc_trigger_counter(),
-                            TYPEOF(object),
+        type_gc_info_t info{state.get_gc_trigger_counter(), TYPEOF(object),
                             (unsigned long)xlength(object),
                             (unsigned long)BYTE2VEC(xlength(object))};
 
@@ -366,13 +360,12 @@ void gc_allocate(dyntracer_t *dyntracer, const SEXP object) {
     state.exit_probe();
 }
 
-
 void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    DenotedValue*  promise_state = state.lookup_promise(promise);
+    DenotedValue *promise_state = state.lookup_promise(promise);
 
     /* if promise is not an argument, then don't process it. */
     if (promise_state->is_argument()) {
@@ -406,9 +399,8 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
     state.exit_probe();
 }
 
-
 void promise_force_exit(dyntracer_t *dyntracer, const SEXP promise) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -435,17 +427,17 @@ void promise_force_exit(dyntracer_t *dyntracer, const SEXP promise) {
     state.exit_probe();
 }
 
-
 void promise_value_lookup(dyntracer_t *dyntracer, const SEXP promise) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    DenotedValue* promise_state = state.lookup_promise(promise, true);
+    DenotedValue *promise_state = state.lookup_promise(promise, true);
 
     promise_state->lookup_value();
 
-    // std::string val_id = std::string("val ") + std::to_string(promise_state -> get_id());
+    // std::string val_id = std::string("val ") + std::to_string(promise_state
+    // -> get_id());
 
     // tracer_serializer(dyntracer).serialize(
     //     TraceSerializer::OPCODE_PROMISE_VALUE_LOOKUP,
@@ -455,13 +447,12 @@ void promise_value_lookup(dyntracer_t *dyntracer, const SEXP promise) {
     state.exit_probe();
 }
 
-
 void promise_expression_lookup(dyntracer_t *dyntracer, const SEXP promise) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    DenotedValue* promise_state = state.lookup_promise(promise, true);
+    DenotedValue *promise_state = state.lookup_promise(promise, true);
 
     promise_state->lookup_expression();
 
@@ -473,9 +464,8 @@ void promise_expression_lookup(dyntracer_t *dyntracer, const SEXP promise) {
     state.exit_probe();
 }
 
-
 void promise_environment_lookup(dyntracer_t *dyntracer, const SEXP promise) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -491,14 +481,13 @@ void promise_environment_lookup(dyntracer_t *dyntracer, const SEXP promise) {
     state.exit_probe();
 }
 
-
 void promise_expression_assign(dyntracer_t *dyntracer, const SEXP promise,
                                const SEXP expression) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    DenotedValue* promise_state = state.lookup_promise(promise, true);
+    DenotedValue *promise_state = state.lookup_promise(promise, true);
 
     promise_state->assign_expression();
 
@@ -510,14 +499,13 @@ void promise_expression_assign(dyntracer_t *dyntracer, const SEXP promise,
     state.exit_probe();
 }
 
-
 void promise_value_assign(dyntracer_t *dyntracer, const SEXP promise,
                           const SEXP value) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    DenotedValue*  promise_state = state.lookup_promise(promise, true);
+    DenotedValue *promise_state = state.lookup_promise(promise, true);
 
     promise_state->assign_value();
 
@@ -529,14 +517,13 @@ void promise_value_assign(dyntracer_t *dyntracer, const SEXP promise,
     state.exit_probe();
 }
 
-
 void promise_environment_assign(dyntracer_t *dyntracer, const SEXP promise,
                                 const SEXP environment) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    DenotedValue*  promise_state = state.lookup_promise(promise, true);
+    DenotedValue *promise_state = state.lookup_promise(promise, true);
 
     promise_state->assign_environment();
 
@@ -548,26 +535,23 @@ void promise_environment_assign(dyntracer_t *dyntracer, const SEXP promise,
     state.exit_probe();
 }
 
-static void gc_promise_unmark(TracerState & state,
-                              const SEXP promise) {
+static void gc_promise_unmark(TracerState &state, const SEXP promise) {
 
-    DenotedValue* promise_state = state.lookup_promise(promise, true);
+    DenotedValue *promise_state = state.lookup_promise(promise, true);
 
     state.remove_promise(promise, promise_state);
 }
 
-
-static void gc_closure_unmark(TracerState& state, const SEXP function) {
+static void gc_closure_unmark(TracerState &state, const SEXP function) {
     state.remove_function(function);
 }
 
-
-static void gc_environment_unmark(TracerState& state, const SEXP environment) {
+static void gc_environment_unmark(TracerState &state, const SEXP environment) {
     state.remove_environment(environment);
 }
 
 void gc_unmark(dyntracer_t *dyntracer, const SEXP object) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
     switch (TYPEOF(object)) {
@@ -587,9 +571,8 @@ void gc_unmark(dyntracer_t *dyntracer, const SEXP object) {
     state.exit_probe();
 }
 
-
 void gc_entry(dyntracer_t *dyntracer, R_size_t size_needed) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -598,9 +581,8 @@ void gc_entry(dyntracer_t *dyntracer, R_size_t size_needed) {
     state.exit_probe();
 }
 
-
 void gc_exit(dyntracer_t *dyntracer, int gc_counts) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -609,10 +591,9 @@ void gc_exit(dyntracer_t *dyntracer, int gc_counts) {
     state.exit_probe();
 }
 
-
 void environment_variable_define(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP value, const SEXP rho) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
     state.enter_probe();
 
     Variable &var = state.define_variable(rho, symbol);
@@ -628,11 +609,11 @@ void environment_variable_define(dyntracer_t *dyntracer, const SEXP symbol,
 
 void environment_variable_assign(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP value, const SEXP rho) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    Variable& var = state.update_variable(rho, symbol);
+    Variable &var = state.update_variable(rho, symbol);
 
     // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_ENVIRONMENT_ASSIGN,
     //                                        var.get_environment_id(),
@@ -640,6 +621,14 @@ void environment_variable_assign(dyntracer_t *dyntracer, const SEXP symbol,
     //                                        var.get_name(),
     //                                        value_type_to_string(value));
 
+    /* When a variable is assigned, then a promise might be doing a side-effect.
+       A promise writing to its own environment is not considered a side effect
+       unless it writes to a variable that is created after it.
+       There are effectively three kinds of effects:
+       - A promise modifying a variable which was created after the promise was
+       created.. Whether this happens in lexical or non lexical scope, its
+       - A promise writing to a variable in its parent function's lexical scope.
+       - A promise writing to a variable outside of its lexical scope. */
     state.identify_side_effect_creators(var);
 
     state.exit_probe();
@@ -647,7 +636,7 @@ void environment_variable_assign(dyntracer_t *dyntracer, const SEXP symbol,
 
 void environment_variable_remove(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP rho) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
@@ -663,15 +652,15 @@ void environment_variable_remove(dyntracer_t *dyntracer, const SEXP symbol,
 
 void environment_variable_lookup(dyntracer_t *dyntracer, const SEXP symbol,
                                  const SEXP value, const SEXP rho) {
-    TracerState& state = tracer_state(dyntracer);
+    TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
 
-    Variable& var = state.lookup_variable(rho, symbol);
+    Variable &var = state.lookup_variable(rho, symbol);
 
     // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_ENVIRONMENT_LOOKUP, var.get_environment_id(), var.get_id(),
-    //     var.get_name(), value_type_to_string(value));
+    //     TraceSerializer::OPCODE_ENVIRONMENT_LOOKUP, var.get_environment_id(),
+    //     var.get_id(), var.get_name(), value_type_to_string(value));
 
     state.identify_side_effect_observers(var);
 

@@ -32,6 +32,7 @@ extern const int UNASSIGNED_ACTUAL_ARGUMENT_POSITION;
 
 extern const int PRIMITIVE_RETURN_OFFSET;
 
+extern const unsigned int OBJECT_TYPE_TABLE_COUNT;
 
 #endif /* PROMISEDYNTRACER_CONSTANTS_H */
 

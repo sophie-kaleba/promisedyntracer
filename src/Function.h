@@ -11,7 +11,7 @@
 class Function {
 
 public:
-    Function(const SEXP op) : op_(op), formal_parameter_count_(0), method_name_(""), dispatcher_(false){
+    Function(const SEXP op) : op_(op), formal_parameter_count_(0), method_name_(""), dispatcher_(false), wrapper_assigned_(false) {
 
         type_ = type_of_sexp(op);
 
@@ -24,8 +24,13 @@ public:
                  formal = CDR(formal)) {
                 ++formal_parameter_count_;
             }
+            /* All closures are assumed to be wrappers to begin with. */
+            wrapper_ = true;
         } else {
             formal_parameter_count_ = dyntrace_get_c_function_arity(op);
+            /* non closures are never wrappers.
+               being a wrapper is a property of closures. */
+            wrapper_ = false;
         }
 
         namespace_ = find_namespace_();
@@ -41,6 +46,20 @@ public:
 
     sexptype_t get_type() const {
         return type_;
+    }
+
+    bool is_closure() const {
+        return type_ == CLOSXP;
+    }
+
+    // TODO - make global variable
+    bool is_internal() const {
+        return (!is_closure() && dyntrace_get_primitive_offset(op_) == 26);
+    }
+
+    // TODO - make global variable
+    bool is_primitive() const {
+        return (!is_closure() && dyntrace_get_primitive_offset(op_) == 27);
     }
 
     const function_id_t& get_id() const { return id_; }
@@ -87,6 +106,24 @@ public:
         dispatcher_ = true;
     }
 
+    bool is_wrapper() const {
+        /* wrapper is never assigned for builtins, specials and closures that are never called.
+           this means that this path will not be taked for them.*/
+        if(wrapper_assigned_)
+            return wrapper_;
+        return false;
+    }
+
+    void update_wrapper(bool callee_is_internal_or_primitive) {
+        if(wrapper_assigned_) {
+            wrapper_ = wrapper_ && callee_is_internal_or_primitive;
+        }
+        else {
+            wrapper_ = callee_is_internal_or_primitive;
+            wrapper_assigned_ = true;
+        }
+    }
+
     void add_summary(Call* call) {
 
         int i;
@@ -123,6 +160,8 @@ public:
     std::size_t formal_parameter_count_;
     std::string method_name_;
     bool dispatcher_;
+    bool wrapper_;
+    bool wrapper_assigned_;
     std::string definition_;
     function_id_t id_;
     std::string namespace_;

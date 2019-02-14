@@ -17,7 +17,7 @@ public:
 
     size_t size() const { return stack_.size(); }
 
-    bool empty() const { return stack_.empty(); }
+    bool is_empty() const { return stack_.empty(); }
 
     iterator begin() { return stack_.begin(); }
 
@@ -45,6 +45,7 @@ public:
         return context;
     }
 
+    //TODO - should this return by reference?
     ExecutionContext peek(size_t n = 1) const {
         n = stack_.size() - std::min(n, stack_.size());
         return stack_[n];
