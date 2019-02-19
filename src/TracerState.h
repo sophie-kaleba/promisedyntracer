@@ -44,18 +44,19 @@ class TracerState {
           object_count_(OBJECT_TYPE_TABLE_COUNT, 0) {
 
         object_count_data_table_ = create_data_table(
-            output_dirpath_ + "/" + "object-count", {"type", "count"},
+            output_dirpath_ + "/" + "object_count", {"type", "count"},
             truncate_, binary_, compression_level_);
 
         call_summary_data_table_ = create_data_table(
-            output_dirpath_ + "/" + "call-summary",
-            {"function_id", "function_type", "formal_parameter_count", "wrapper",
-             "function_name", "generic_method", "dispatcher", "force_order",
-             "return_value_type", "call_count"},
+            output_dirpath_ + "/" + "call_summary",
+            {"function_id", "function_type", "formal_parameter_count",
+             "wrapper", "function_name", "generic_method", "dispatcher",
+             "force_order", "missing_arguments", "return_value_type",
+             "call_count"},
             truncate_, binary_, compression_level_);
 
         function_definition_data_table_ =
-            create_data_table(output_dirpath_ + "/" + "function-definition",
+            create_data_table(output_dirpath_ + "/" + "function_definition",
                               {"function_id", "byte_compiled", "definition"},
                               truncate_, binary_, compression_level_);
 
@@ -65,9 +66,11 @@ class TracerState {
                                "function_id",
                                "formal_parameter_position",
                                "actual_argument_position",
+                               "dot_dot",
                                "value_id",
                                "class",
-                               "dispatchee",
+                               "S3_dispatch",
+                               "S4_dispatch",
                                "argument_type",
                                "expression_type",
                                "value_type",
@@ -78,61 +81,106 @@ class TracerState {
                                "promise_depth",
                                "nested_promise_depth",
                                "forcing_actual_argument_position",
+                               "preforce",
                                "force_count",
+                               "metaprogram_count",
                                "value_lookup_count",
                                "value_assign_count",
                                "expression_lookup_count",
                                "expression_assign_count",
                                "environment_lookup_count",
                                "environment_assign_count",
+                               "direct_self_scope_mutation_count",
+                               "indirect_self_scope_mutation_count",
+                               "direct_lexical_scope_mutation_count",
+                               "indirect_lexical_scope_mutation_count",
+                               "direct_non_lexical_scope_mutation_count",
+                               "indirect_non_lexical_scope_mutation_count",
+                               "direct_self_scope_observation_count",
+                               "indirect_self_scope_observation_count",
+                               "direct_lexical_scope_observation_count",
+                               "indirect_lexical_scope_observation_count",
+                               "direct_non_lexical_scope_observation_count",
+                               "indirect_non_lexical_scope_observation_count",
                                "execution_time"},
                               truncate_, binary_, compression_level_);
 
-        escaped_argument_data_table_ =
-            create_data_table(output_dirpath_ + "/" + "escaped-arguments",
-                              {"call_id",
-                               "function_id",
-                               "return_value_type",
-                               "formal_parameter_position",
-                               "actual_argument_position",
-                               "value_id",
-                               "class",
-                               "dispatchee",
-                               "argument_type",
-                               "expression_type",
-                               "value_type",
-                               "default",
-                               "non_local_return",
-                               "escape",
-                               "call_depth",
-                               "promise_depth",
-                               "nested_promise_depth",
-                               "forcing_actual_argument_position",
-                               "before_escape_force_count",
-                               "before_escape_value_lookup_count",
-                               "before_escape_value_assign_count",
-                               "before_escape_expression_lookup_count",
-                               "before_escape_expression_assign_count",
-                               "before_escape_environment_lookup_count",
-                               "before_escape_environment_assign_count",
-                               "after_escape_force_count",
-                               "after_escape_value_lookup_count",
-                               "after_escape_value_assign_count",
-                               "after_escape_expression_lookup_count",
-                               "after_escape_expression_assign_count",
-                               "after_escape_environment_lookup_count",
-                               "after_escape_environment_assign_count",
-                               "execution_time"},
-                              truncate_, binary_, compression_level_);
+        escaped_argument_data_table_ = create_data_table(
+            output_dirpath_ + "/" + "escaped_arguments",
+            {"call_id",
+             "function_id",
+             "return_value_type",
+             "formal_parameter_count",
+             "formal_parameter_position",
+             "actual_argument_position",
+             "value_id",
+             "class",
+             "S3_dispatch",
+             "S4_dispatch",
+             "argument_type",
+             "expression_type",
+             "value_type",
+             "default",
+             "non_local_return",
+             "escape",
+             "call_depth",
+             "promise_depth",
+             "nested_promise_depth",
+             "forcing_actual_argument_position",
+             "preforce",
+             "before_escape_force_count",
+             "before_escape_metaprogram_count",
+             "before_escape_value_lookup_count",
+             "before_escape_value_assign_count",
+             "before_escape_expression_lookup_count",
+             "before_escape_expression_assign_count",
+             "before_escape_environment_lookup_count",
+             "before_escape_environment_assign_count",
+             "after_escape_force_count",
+             "after_escape_metaprogram_count",
+             "after_escape_value_lookup_count",
+             "after_escape_value_assign_count",
+             "after_escape_expression_lookup_count",
+             "after_escape_expression_assign_count",
+             "after_escape_environment_lookup_count",
+             "after_escape_environment_assign_count",
+             "before_escape_direct_self_scope_mutation_count",
+             "before_escape_indirect_self_scope_mutation_count",
+             "before_escape_direct_lexical_scope_mutation_count",
+             "before_escape_indirect_lexical_scope_mutation_count",
+             "before_escape_direct_non_lexical_scope_mutation_count",
+             "before_escape_indirect_non_lexical_scope_mutation_count",
+             "before_escape_direct_self_scope_observation_count",
+             "before_escape_indirect_self_scope_observation_count",
+             "before_escape_direct_lexical_scope_observation_count",
+             "before_escape_indirect_lexical_scope_observation_count",
+             "before_escape_direct_non_lexical_scope_observation_count",
+             "before_escape_indirect_non_lexical_scope_observation_count",
+             "after_escape_direct_self_scope_mutation_count",
+             "after_escape_indirect_self_scope_mutation_count",
+             "after_escape_direct_lexical_scope_mutation_count",
+             "after_escape_indirect_lexical_scope_mutation_count",
+             "after_escape_direct_non_lexical_scope_mutation_count",
+             "after_escape_indirect_non_lexical_scope_mutation_count",
+             "after_escape_direct_self_scope_observation_count",
+             "after_escape_indirect_self_scope_observation_count",
+             "after_escape_direct_lexical_scope_observation_count",
+             "after_escape_indirect_lexical_scope_observation_count",
+             "after_escape_direct_non_lexical_scope_observation_count",
+             "after_escape_indirect_non_lexical_scope_observation_count",
+             "execution_time"},
+            truncate_, binary_, compression_level_);
 
-        free_promise_data_table_ =
-            create_data_table(output_dirpath_ + "/" + "free-promises",
+        non_argument_promise_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "non_argument_promises",
                               {"value_id",
                                "type",
                                "expression_type",
                                "value_type",
                                "scope",
+                               "preforce",
                                "force_count",
+                               "metaprogram_count",
                                "value_lookup_count",
                                "value_assign_count",
                                "expression_lookup_count",
@@ -149,7 +197,7 @@ class TracerState {
         delete function_definition_data_table_;
         delete argument_data_table_;
         delete escaped_argument_data_table_;
-        delete free_promise_data_table_;
+        delete non_argument_promise_data_table_;
     }
 
     const std::string &get_output_dirpath() const { return output_dirpath_; }
@@ -203,7 +251,7 @@ class TracerState {
 
   private:
     DataTableStream *object_count_data_table_;
-    DataTableStream *free_promise_data_table_;
+    DataTableStream *non_argument_promise_data_table_;
 
     void serialize_configuration_() {
 
@@ -401,8 +449,8 @@ class TracerState {
            and when that call gets deleted, it will delete this promise */
         promise_state->set_inactive();
 
-        if (promise_state->is_free()) {
-            serialize_free_promise_(promise_state);
+        if (promise_state->is_non_argument()) {
+            serialize_non_argument_promise_(promise_state);
         }
 
         if (promise_state->has_escaped()) {
@@ -419,12 +467,14 @@ class TracerState {
         return denoted_value_id_counter_++;
     }
 
-    void serialize_free_promise_(DenotedValue *promise) {
-        free_promise_data_table_->write_row(
+    void serialize_non_argument_promise_(DenotedValue *promise) {
+        non_argument_promise_data_table_->write_row(
             promise->get_id(), sexptype_to_string(promise->get_type()),
             sexptype_to_string(promise->get_expression_type()),
             sexptype_to_string(promise->get_value_type()), promise->get_scope(),
-            promise->get_force_count(), promise->get_value_lookup_count(),
+            promise -> is_preforced(), promise->get_force_count(),
+            promise -> get_metaprogram_count(),
+            promise->get_value_lookup_count(),
             promise->get_value_assign_count(),
             promise->get_expression_lookup_count(),
             promise->get_expression_assign_count(),
@@ -438,10 +488,13 @@ class TracerState {
             argument->get_previous_call_id(),
             argument->get_previous_function_id(),
             sexptype_to_string(argument->get_previous_call_return_value_type()),
+            argument->get_previous_formal_parameter_count(),
             argument->get_previous_formal_parameter_position(),
             argument->get_previous_actual_argument_position(),
             argument->get_id(), argument->get_class_name(),
-            argument->is_dispatchee(), sexptype_to_string(argument->get_type()),
+            argument->is_used_for_S3_dispatch(),
+            argument->is_used_for_S4_dispatch(),
+            sexptype_to_string(argument->get_type()),
             sexptype_to_string(argument->get_expression_type()),
             sexptype_to_string(argument->get_value_type()),
             argument->is_default(), argument->does_non_local_return(),
@@ -450,7 +503,8 @@ class TracerState {
             argument->get_evaluation_depth().promise_depth,
             argument->get_evaluation_depth().nested_promise_depth,
             argument->get_evaluation_depth().forcing_actual_argument_position,
-            argument->get_force_count_before_escape(),
+            argument->is_preforced(), argument->get_force_count_before_escape(),
+            argument->get_metaprogram_count_before_escape(),
             argument->get_value_lookup_count_before_escape(),
             argument->get_value_assign_count_before_escape(),
             argument->get_expression_lookup_count_before_escape(),
@@ -458,12 +512,41 @@ class TracerState {
             argument->get_environment_lookup_count_before_escape(),
             argument->get_environment_assign_count_before_escape(),
             argument->get_force_count_after_escape(),
+            argument->get_metaprogram_count_after_escape(),
             argument->get_value_lookup_count_after_escape(),
             argument->get_value_assign_count_after_escape(),
             argument->get_expression_lookup_count_after_escape(),
             argument->get_expression_assign_count_after_escape(),
             argument->get_environment_lookup_count_after_escape(),
             argument->get_environment_assign_count_after_escape(),
+            argument->get_self_scope_mutation_count_before_escape(true),
+            argument->get_self_scope_mutation_count_before_escape(false),
+            argument->get_lexical_scope_mutation_count_before_escape(true),
+            argument->get_lexical_scope_mutation_count_before_escape(false),
+            argument->get_non_lexical_scope_mutation_count_before_escape(true),
+            argument->get_non_lexical_scope_mutation_count_before_escape(false),
+            argument->get_self_scope_observation_count_before_escape(true),
+            argument->get_self_scope_observation_count_before_escape(false),
+            argument->get_lexical_scope_observation_count_before_escape(true),
+            argument->get_lexical_scope_observation_count_before_escape(false),
+            argument->get_non_lexical_scope_observation_count_before_escape(
+                true),
+            argument->get_non_lexical_scope_observation_count_before_escape(
+                false),
+            argument->get_self_scope_mutation_count_after_escape(true),
+            argument->get_self_scope_mutation_count_after_escape(false),
+            argument->get_lexical_scope_mutation_count_after_escape(true),
+            argument->get_lexical_scope_mutation_count_after_escape(false),
+            argument->get_non_lexical_scope_mutation_count_after_escape(true),
+            argument->get_non_lexical_scope_mutation_count_after_escape(false),
+            argument->get_self_scope_observation_count_after_escape(true),
+            argument->get_self_scope_observation_count_after_escape(false),
+            argument->get_lexical_scope_observation_count_after_escape(true),
+            argument->get_lexical_scope_observation_count_after_escape(false),
+            argument->get_non_lexical_scope_observation_count_after_escape(
+                true),
+            argument->get_non_lexical_scope_observation_count_after_escape(
+                false),
             argument->get_execution_time());
     }
 
@@ -535,7 +618,7 @@ class TracerState {
             process_closure_arguments_(function_call, op);
         } else {
             int eval = dyntrace_get_c_function_argument_evaluation(op);
-            function_call->set_force_order(std::to_string(eval));
+            function_call->set_force_order(eval);
         }
 
         return function_call;
@@ -553,7 +636,7 @@ class TracerState {
 
     void process_closure_argument_(Call *call, int formal_parameter_position,
                                    int actual_argument_position,
-                                   const SEXP name, const SEXP argument) {
+                                   const SEXP name, const SEXP argument, bool dot_dot) {
         DenotedValue *promise_state = nullptr;
         /* only add to promise map if the argument is a promise */
         if (type_of_sexp(argument) == PROMSXP) {
@@ -565,7 +648,7 @@ class TracerState {
         }
 
         promise_state->make_argument(call, formal_parameter_position,
-                                     actual_argument_position);
+                                     actual_argument_position, dot_dot);
 
         call->add_argument(promise_state);
     }
@@ -602,7 +685,7 @@ class TracerState {
 
                         process_closure_argument_(
                             call, formal_parameter_position,
-                            actual_argument_position, name, dot_dot_argument);
+                            actual_argument_position, name, dot_dot_argument, true);
                     }
                     break;
 
@@ -610,7 +693,7 @@ class TracerState {
                     ++actual_argument_position;
                     process_closure_argument_(call, formal_parameter_position,
                                               actual_argument_position, name,
-                                              argument);
+                                              argument, false);
                     break;
             }
         }
@@ -621,8 +704,10 @@ class TracerState {
             argument_data_table_->write_row(
                 call->get_id(), call->get_function_id(),
                 argument->get_formal_parameter_position(),
-                argument->get_actual_argument_position(), argument->get_id(),
-                argument->get_class_name(), argument->is_dispatchee(),
+                argument->get_actual_argument_position(),
+                argument->is_dot_dot(), argument->get_id(),
+                argument->get_class_name(), argument->is_used_for_S3_dispatch(),
+                argument->is_used_for_S4_dispatch(),
                 sexptype_to_string(argument->get_type()),
                 sexptype_to_string(argument->get_expression_type()),
                 sexptype_to_string(argument->get_value_type()),
@@ -633,12 +718,26 @@ class TracerState {
                 argument->get_evaluation_depth().nested_promise_depth,
                 argument->get_evaluation_depth()
                     .forcing_actual_argument_position,
-                argument->get_force_count(), argument->get_value_lookup_count(),
+                argument -> is_preforced(),
+                argument->get_force_count(), argument->get_metaprogram_count(),
+                argument->get_value_lookup_count(),
                 argument->get_value_assign_count(),
                 argument->get_expression_lookup_count(),
                 argument->get_expression_assign_count(),
                 argument->get_environment_lookup_count(),
                 argument->get_environment_assign_count(),
+                argument->get_self_scope_mutation_count(true),
+                argument->get_self_scope_mutation_count(false),
+                argument->get_lexical_scope_mutation_count(true),
+                argument->get_lexical_scope_mutation_count(false),
+                argument->get_non_lexical_scope_mutation_count(true),
+                argument->get_non_lexical_scope_mutation_count(false),
+                argument->get_self_scope_observation_count(true),
+                argument->get_self_scope_observation_count(false),
+                argument->get_lexical_scope_observation_count(true),
+                argument->get_lexical_scope_observation_count(false),
+                argument->get_non_lexical_scope_observation_count(true),
+                argument->get_non_lexical_scope_observation_count(false),
                 argument->get_execution_time());
         }
     }
@@ -704,9 +803,10 @@ class TracerState {
             call_summary_data_table_->write_row(
                 function.get_id(), sexptype_to_string(function.get_type()),
                 function.get_formal_parameter_count(), function.is_wrapper(),
-                all_names,
-                function.get_generic_method_name(), function.is_dispatcher(),
-                function.get_force_order(i),
+                all_names, function.get_generic_method_name(),
+                function.is_dispatcher(),
+                pos_seq_to_string(function.get_force_order(i)),
+                pos_seq_to_string(function.get_missing_arguments(i)),
                 sexptype_to_string(function.get_return_value_type(i)),
                 function.get_call_count(i));
         }
@@ -725,49 +825,58 @@ class TracerState {
     }
 
   public:
-    void identify_side_effect_creators(const Variable &var) {
-
-        const timestamp_t var_timestamp = var.get_modification_timestamp();
-
-        /* this implies we have not seen the variable before.
-           TODO - see when this case is triggered and ensure
-           there is no bug */
-        if (timestamp_is_undefined(var_timestamp)) {
-            return;
-        }
+    void identify_side_effect_creators(const Variable &var,
+                                       const SEXP env) {
 
         bool direct = true;
-
         ExecutionContextStack &stack = get_stack();
+
 
         for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
 
             ExecutionContext &exec_ctxt = *iter;
 
+            if (exec_ctxt.is_closure()) {
+
+                if (exec_ctxt.get_closure()->get_environment() == env) {
+                    /* its normal for a function to mutate variables in its
+                       own environment. this case is not interesting. */
+                    return;
+                }
+
+            }
+
             if (exec_ctxt.is_promise()) {
 
-                DenotedValue *promise_state = exec_ctxt.get_promise();
+                DenotedValue *promise = exec_ctxt.get_promise();
 
-                /* if promise is created after the variable it is currently
-                   assigning to, then its a side effect creator. */
-                if (promise_state->get_creation_timestamp() > var_timestamp) {
+                const SEXP prom_env = promise->get_environment();
 
-                    if (direct)
-                        promise_state->set_direct_side_effect_creator();
-                    else
-                        promise_state->set_transitive_side_effect_creator();
-
-                    /* after the first promise is encountered, all promises
-                       are
-                       only indirectly responsible for this side effect */
-
+                if (prom_env == env) {
+                    const timestamp_t var_timestamp = var.get_modification_timestamp();
+                    if (promise -> get_creation_timestamp() > var_timestamp) {
+                        promise -> set_self_scope_mutation(direct);
+                        direct = false;
+                        return;
+                    }
+                }
+                else if (is_parent_environment(env, prom_env)) {
+                    /* if this happens, promise is causing side effect
+                       in its lexically scoped environment. */
+                    promise->set_lexical_scope_mutation(direct);
+                    direct = false;
+                }
+                else {
+                    /* if this happens, promise is causing side effect
+                       in non lexically scoped environment */
+                    promise->set_non_lexical_scope_mutation(direct);
                     direct = false;
                 }
             }
         }
     }
 
-    void identify_side_effect_observers(const Variable &var) {
+    void identify_side_effect_observers(const Variable &var, const SEXP env) {
 
         const timestamp_t var_timestamp = var.get_modification_timestamp();
 
@@ -790,40 +899,65 @@ class TracerState {
 
             ExecutionContext &exec_ctxt = *iter;
 
-            // /* If the most recent context that is responsible for this
-            //    side effect is a closure, then return. Currently, we only
-            //    care about promises directly responsible for side effects.
-            //    We don't return in case of specials and builtins because
-            //    they are more like operators in a programming language and
-            //    everything ultimately happens in them and returning on
-            //    encountering them will make it look like no promise has
-            //    caused a side effect. */
-            // if (exec_context.type == stack_type::CALL &&
-            //     exec_context.function_info.type == function_type::CLOSURE) {
-            //     return;
-            // }
+            /* If the most recent context that is responsible for this
+               side effect is a closure, then return. Currently, we only
+               care about promises directly responsible for side effects.
+               We don't return in case of specials and builtins because
+               they are more like operators in a programming language and
+               everything ultimately happens in them and returning on
+               encountering them will make it look like no promise has
+               caused a side effect. */
+
+            if (exec_ctxt.is_closure()) {
+
+                if (exec_ctxt.get_closure()->get_environment() == env) {
+                    /* its normal for a function to mutate variables in its
+                       own environment. this case is not interesting. */
+                    return;
+                }
+            }
 
             if (exec_ctxt.is_promise()) {
 
-                DenotedValue *promise_state = exec_ctxt.get_promise();
+                DenotedValue *promise = exec_ctxt.get_promise();
 
-                /* if promise is created before the variable it is looking at
-                   is modified, then it is a side effect observer. In other
-                   words, if this promise is forced at its point of creation,
-                   it will lookup a different value bound to this variable.*/
-                if (var_timestamp > promise_state->get_creation_timestamp()) {
-                    if (direct)
-                        promise_state->set_direct_side_effect_observer();
-                    else
-                        promise_state->set_transitive_side_effect_observer();
+                const SEXP prom_env = promise->get_environment();
 
-                    /* after the first promise is encountered, all promises are
-                       only indirectly responsible for this side effect */
-
+                if (prom_env == env) {
+                    const timestamp_t var_timestamp = var.get_modification_timestamp();
+                    if (promise -> get_creation_timestamp() < var_timestamp) {
+                        promise -> set_self_scope_observation(direct);
+                        direct = false;
+                        return;
+                    }
+                }
+                else if (is_parent_environment(env, prom_env)) {
+                    /* if this happens, promise is causing side effect
+                       in its lexically scoped environment. */
+                    promise->set_lexical_scope_observation(direct);
+                    direct = false;
+                }
+                else {
+                    /* if this happens, promise is observing side effect
+                       in non lexically scoped environment */
+                    promise->set_non_lexical_scope_observation(direct);
                     direct = false;
                 }
             }
         }
+    }
+
+    /* is env_a parent of env_b? */
+    bool is_parent_environment(SEXP env_a, SEXP env_b) {
+        SEXP env_cur = R_NilValue;
+        if (env_a == env_b)
+            return false;
+        for (env_cur = ENCLOS(env_b); env_cur != R_NilValue;
+             env_cur = ENCLOS(env_cur)) {
+            if (env_cur == env_a)
+                return true;
+        }
+        return false;
     }
 
     void update_wrapper_state(Call *call) {

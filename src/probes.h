@@ -31,6 +31,7 @@ void S3_dispatch_entry(dyntracer_t *dyntracer, const char *generic,
 void S3_dispatch_exit(dyntracer_t *dyntracer, const char *generic,
                        const SEXP cls, SEXP generic_method,
                        SEXP specific_method, SEXP objects, SEXP return_value);
+void S4_dispatch_argument(dyntracer_t *dyntracer, const SEXP argument);
 void gc_allocate(dyntracer_t *dyntracer, const SEXP object);
 void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise);
 void promise_force_exit(dyntracer_t *dyntracer, const SEXP promise);
@@ -43,6 +44,7 @@ void promise_expression_assign(dyntracer_t *dyntracer, const SEXP promise,
                                const SEXP expression);
 void promise_environment_assign(dyntracer_t *dyntracer, const SEXP promise,
                                 const SEXP environment);
+void promise_substitute(dyntracer_t *dyntracer, const SEXP promise);
 void gc_unmark(dyntracer_t *dyntracer, const SEXP expression);
 void gc_entry(dyntracer_t *dyntracer, R_size_t size_needed);
 void gc_exit(dyntracer_t *dyntracer, int gc_count);

@@ -74,8 +74,12 @@ public:
         return force_orders_.size();
     }
 
-    const std::string& get_force_order(std::size_t summary_index) const {
+    const pos_seq_t& get_force_order(std::size_t summary_index) const {
         return force_orders_[summary_index];
+    }
+
+    const pos_seq_t &get_missing_arguments(std::size_t summary_index) const {
+        return missing_arguments_[summary_index];
     }
 
     sexptype_t get_return_value_type(std::size_t summary_index) const {
@@ -138,18 +142,23 @@ public:
             names_.push_back(call -> get_function_name());
         }
 
-        std::string force_order = call -> get_force_order();
+        const pos_seq_t& force_order = call -> get_force_order();
+
+        const pos_seq_t &missing_arguments = call->get_missing_argument_positions();
+
         sexptype_t return_value_type = call -> get_return_value_type();
 
         for(i = 0; i < force_orders_.size(); ++i) {
-            if(force_orders_[i] == force_order &&
-               return_value_types_[i] == return_value_type) {
+            if (force_orders_[i] == force_order &&
+                missing_arguments_[i] == missing_arguments &&
+                return_value_types_[i] == return_value_type) {
                 ++call_counts_[i];
                 return;
             }
         }
 
         force_orders_.push_back(force_order);
+        missing_arguments_.push_back(missing_arguments);
         return_value_types_.push_back(return_value_type);
         call_counts_.push_back(1);
     }
@@ -166,7 +175,8 @@ public:
     function_id_t id_;
     std::string namespace_;
     std::vector<std::string> names_;
-    std::vector<std::string> force_orders_;
+    std::vector<pos_seq_t> force_orders_;
+    std::vector<pos_seq_t> missing_arguments_;
     std::vector<sexptype_t> return_value_types_;
     std::vector<int> call_counts_;
 

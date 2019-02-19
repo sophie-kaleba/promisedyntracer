@@ -19,6 +19,9 @@ class DenotedValue {
             set_expression_type(type_of_sexp(expr));
             set_value_type(type_of_sexp(val));
             set_environment(rho);
+            if(val != R_UnboundValue) {
+                preforced_ = true;
+            }
         }
     }
 
@@ -56,6 +59,10 @@ class DenotedValue {
         return argument_stack_.back().get_actual_argument_position();
     }
 
+    bool is_dot_dot() const {
+        return argument_stack_.back().is_dot_dot();
+    }
+
     bool is_argument() const {
         return argument_stack_.size() > 1;
     }
@@ -64,20 +71,25 @@ class DenotedValue {
         return was_argument_;
     }
 
-    bool is_free() const {
+    bool is_non_argument() const {
         return !(is_argument() || was_argument());
     }
+
+    bool is_preforced() const { return preforced_; }
 
     bool is_forced() const {
         return get_force_count();
     }
 
+    bool is_missing() const { return get_type() == MISSINGSXP; }
+
     void make_argument(Call* call,
                        int formal_parameter_position,
-                       int actual_argument_position);
+                       int actual_argument_position,
+                       bool dot_dot);
 
     void free_argument(call_id_t call_id, function_id_t function_id,
-                       sexptype_t return_value_type);
+                       int formal_parameter_count, sexptype_t return_value_type);
 
     bool is_default() const {
         return argument_stack_.back().is_default();
@@ -99,11 +111,17 @@ class DenotedValue {
         class_name_ = class_name;
     }
 
-    bool is_dispatchee() const { return dispatchee_; }
+    bool is_used_for_S3_dispatch() const { return used_for_S3_dispatch_; }
 
-    void set_dispatchee() {
-        dispatchee_ = true;
-    }
+    void set_used_for_S3_dispatch() { used_for_S3_dispatch_ = true; }
+
+    void unset_used_for_S3_dispatch() { used_for_S3_dispatch_ = false; }
+
+    bool is_used_for_S4_dispatch() const { return used_for_S4_dispatch_; }
+
+    void set_used_for_S4_dispatch() { used_for_S4_dispatch_ = true; }
+
+    void unset_used_for_S4_dispatch() { used_for_S4_dispatch_ = false; }
 
     void set_non_local_return() {
         non_local_return_ = true;
@@ -111,72 +129,6 @@ class DenotedValue {
 
     bool does_non_local_return() const {
         return non_local_return_;
-    }
-
-    void unset_dispatchee() { dispatchee_ = false; }
-
-    bool is_transitive_side_effect_observer() const {
-        return transitive_side_effect_observer_;
-    }
-
-    bool is_direct_side_effect_observer() const {
-        return direct_side_effect_observer_;
-    }
-
-    bool is_transitive_side_effect_creator() const {
-        return transitive_side_effect_creator_;
-    }
-
-    bool is_direct_side_effect_creator() const {
-        return direct_side_effect_creator_;
-    }
-
-    bool is_transitive_lexical_scope_mutator() const {
-        return transitive_lexical_scope_mutator_;
-    }
-
-    bool is_direct_lexical_scope_mutator() const {
-        return direct_lexical_scope_mutator_;
-    }
-
-    bool is_transitive_non_lexical_scope_mutator() const {
-        return transitive_non_lexical_scope_mutator_;
-    }
-
-    bool is_direct_non_lexical_scope_mutator() const {
-        return direct_non_lexical_scope_mutator_;
-    }
-
-    void set_transitive_side_effect_observer() {
-        transitive_side_effect_observer_ = true;
-    }
-
-    void set_direct_side_effect_observer() {
-        direct_side_effect_observer_ = true;
-    }
-
-    void set_transitive_side_effect_creator() {
-        transitive_side_effect_creator_ = true;
-    }
-
-    void set_direct_side_effect_creator() {
-        direct_side_effect_creator_ = true;
-    }
-
-    void set_transitive_lexical_scope_mutator() {
-        transitive_lexical_scope_mutator_ = true;
-    }
-
-    void set_direct_lexical_scope_mutator() {
-        direct_lexical_scope_mutator_ = true;
-    }
-
-    void set_transitive_non_lexical_scope_mutator() {
-        transitive_non_lexical_scope_mutator_ = true;
-    }
-
-    void set_direct_non_lexical_scope_mutator() {
-        direct_non_lexical_scope_mutator_ = true;
     }
 
     void set_creation_timestamp(timestamp_t creation_timestamp) {
@@ -230,6 +182,24 @@ class DenotedValue {
 
     std::uint8_t get_value_lookup_count_after_escape() const {
         return value_lookup_count_;
+    }
+
+    void metaprogram() {
+        check_and_set_escape_();
+        ++metaprogram_count_;
+    }
+
+    std::uint8_t get_metaprogram_count() const {
+        return get_metaprogram_count_before_escape() +
+               get_metaprogram_count_after_escape();
+    }
+
+    std::uint8_t get_metaprogram_count_before_escape() const {
+        return before_escape_metaprogram_count_;
+    }
+
+    std::uint8_t get_metaprogram_count_after_escape() const {
+        return metaprogram_count_;
     }
 
     void assign_value() {
@@ -322,6 +292,194 @@ class DenotedValue {
         return environment_assign_count_;
     }
 
+    void set_self_scope_mutation(bool direct) {
+        check_and_set_escape_();
+        if (direct) {
+            ++direct_self_scope_mutation_count_;
+        }
+        else {
+            ++indirect_self_scope_mutation_count_;
+        }
+    }
+
+    std::uint8_t get_self_scope_mutation_count(bool direct) const {
+        return get_self_scope_mutation_count_before_escape(direct) +
+               get_self_scope_mutation_count_after_escape(direct);
+    }
+
+    std::uint8_t get_self_scope_mutation_count_before_escape(bool direct) const {
+        if (direct) {
+            return before_escape_direct_self_scope_mutation_count_;
+        } else {
+            return before_escape_indirect_self_scope_mutation_count_;
+        }
+    }
+
+    std::uint8_t get_self_scope_mutation_count_after_escape(bool direct) const {
+        if (direct) {
+            return direct_self_scope_mutation_count_;
+        }
+        else {
+            return indirect_self_scope_mutation_count_;
+        }
+    }
+
+    void set_lexical_scope_mutation(bool direct) {
+        check_and_set_escape_();
+        if (direct) {
+            ++direct_lexical_scope_mutation_count_;
+        } else {
+            ++indirect_lexical_scope_mutation_count_;
+        }
+    }
+
+    std::uint8_t get_lexical_scope_mutation_count(bool direct) const {
+        return get_lexical_scope_mutation_count_before_escape(direct) +
+               get_lexical_scope_mutation_count_after_escape(direct);
+    }
+
+    std::uint8_t get_lexical_scope_mutation_count_before_escape(bool direct) const {
+        if (direct) {
+            return before_escape_direct_lexical_scope_mutation_count_;
+        } else {
+            return before_escape_indirect_lexical_scope_mutation_count_;
+        }
+    }
+
+    std::uint8_t get_lexical_scope_mutation_count_after_escape(bool direct) const {
+        if (direct) {
+            return direct_lexical_scope_mutation_count_;
+        } else {
+            return indirect_lexical_scope_mutation_count_;
+        }
+    }
+
+    void set_non_lexical_scope_mutation(bool direct) {
+        check_and_set_escape_();
+        if (direct) {
+            ++direct_non_lexical_scope_mutation_count_;
+        } else {
+            ++indirect_non_lexical_scope_mutation_count_;
+        }
+    }
+
+    std::uint8_t get_non_lexical_scope_mutation_count(bool direct) const {
+        return get_non_lexical_scope_mutation_count_before_escape(direct) +
+               get_non_lexical_scope_mutation_count_after_escape(direct);
+    }
+
+    std::uint8_t
+    get_non_lexical_scope_mutation_count_before_escape(bool direct) const {
+        if (direct) {
+            return before_escape_direct_non_lexical_scope_mutation_count_;
+        } else {
+            return before_escape_indirect_non_lexical_scope_mutation_count_;
+        }
+    }
+
+    std::uint8_t
+    get_non_lexical_scope_mutation_count_after_escape(bool direct) const {
+        if (direct) {
+            return direct_non_lexical_scope_mutation_count_;
+        } else {
+            return indirect_non_lexical_scope_mutation_count_;
+        }
+    }
+
+    void set_self_scope_observation(bool direct) {
+        check_and_set_escape_();
+        if (direct) {
+            ++direct_self_scope_observation_count_;
+        }
+        else {
+            ++indirect_self_scope_observation_count_;
+        }
+    }
+
+    std::uint8_t get_self_scope_observation_count(bool direct) const {
+        return get_self_scope_observation_count_before_escape(direct) +
+               get_self_scope_observation_count_after_escape(direct);
+    }
+
+    std::uint8_t get_self_scope_observation_count_before_escape(bool direct) const {
+        if (direct) {
+            return before_escape_direct_self_scope_observation_count_;
+        } else {
+            return before_escape_indirect_self_scope_observation_count_;
+        }
+    }
+
+    std::uint8_t get_self_scope_observation_count_after_escape(bool direct) const {
+        if (direct) {
+            return direct_self_scope_observation_count_;
+        }
+        else {
+            return indirect_self_scope_observation_count_;
+        }
+    }
+
+    void set_lexical_scope_observation(bool direct) {
+        check_and_set_escape_();
+        if (direct) {
+            ++direct_lexical_scope_observation_count_;
+        } else {
+            ++indirect_lexical_scope_observation_count_;
+        }
+    }
+
+    std::uint8_t get_lexical_scope_observation_count(bool direct) const {
+        return get_lexical_scope_observation_count_before_escape(direct) +
+               get_lexical_scope_observation_count_after_escape(direct);
+    }
+
+    std::uint8_t get_lexical_scope_observation_count_before_escape(bool direct) const {
+        if (direct) {
+            return before_escape_direct_lexical_scope_observation_count_;
+        } else {
+            return before_escape_indirect_lexical_scope_observation_count_;
+        }
+    }
+
+    std::uint8_t get_lexical_scope_observation_count_after_escape(bool direct) const {
+        if (direct) {
+            return direct_lexical_scope_observation_count_;
+        } else {
+            return indirect_lexical_scope_observation_count_;
+        }
+    }
+
+    void set_non_lexical_scope_observation(bool direct) {
+        check_and_set_escape_();
+        if (direct) {
+            ++direct_non_lexical_scope_observation_count_;
+        } else {
+            ++indirect_non_lexical_scope_observation_count_;
+        }
+    }
+
+    std::uint8_t get_non_lexical_scope_observation_count(bool direct) const {
+        return get_non_lexical_scope_observation_count_before_escape(direct) +
+               get_non_lexical_scope_observation_count_after_escape(direct);
+    }
+
+    std::uint8_t
+    get_non_lexical_scope_observation_count_before_escape(bool direct) const {
+        if (direct) {
+            return before_escape_direct_non_lexical_scope_observation_count_;
+        } else {
+            return before_escape_indirect_non_lexical_scope_observation_count_;
+        }
+    }
+
+    std::uint8_t
+    get_non_lexical_scope_observation_count_after_escape(bool direct) const {
+        if (direct) {
+            return direct_non_lexical_scope_observation_count_;
+        } else {
+            return indirect_non_lexical_scope_observation_count_;
+        }
+    }
+
     void set_environment(SEXP environment) { environment_ = environment; }
 
     SEXP get_environment() { return environment_; }
@@ -364,6 +522,10 @@ class DenotedValue {
         return previous_actual_argument_position_;
     }
 
+    int get_previous_formal_parameter_count() const {
+        return previous_formal_parameter_count_;
+    }
+
     sexptype_t get_previous_call_return_value_type() const {
         return previous_call_return_value_type_;
     }
@@ -372,11 +534,12 @@ private:
     class Argument {
     public:
         explicit Argument(Call *call, int formal_parameter_position,
-                          int actual_argument_position, bool def)
+                          int actual_argument_position, bool def, bool dot_dot)
             : call_(call),
               formal_parameter_position_(formal_parameter_position),
               actual_argument_position_(actual_argument_position),
-              default_(def) {
+              default_(def),
+              dot_dot_(dot_dot) {
         }
 
         Call* get_call() const { return call_; }
@@ -393,42 +556,43 @@ private:
             return default_;
         }
 
+        bool is_dot_dot() const {
+            return dot_dot_;
+        }
+
     private:
         Call *call_;
         int formal_parameter_position_;
         int actual_argument_position_;
         bool default_;
+        bool dot_dot_;
     };
 
     DenotedValue(denoted_value_id_t id, bool local)
         : id_(id), type_(UNASSIGNEDSXP), expression_type_(UNASSIGNEDSXP),
-          value_type_(UNASSIGNEDSXP), environment_(nullptr), local_(false),
-          active_(false),
+          value_type_(UNASSIGNEDSXP), preforced_(false), environment_(nullptr),
+          local_(false), active_(false),
           argument_stack_(
               {Argument(nullptr, UNASSIGNED_FORMAL_PARAMETER_POSITION,
-                        UNASSIGNED_ACTUAL_ARGUMENT_POSITION, false)}),
+                        UNASSIGNED_ACTUAL_ARGUMENT_POSITION, false, false)}),
           default_(false), evaluated_(false), was_argument_(false),
           scope_(UNASSIGNED_FUNCTION_ID), class_name_(UNASSIGNED_CLASS_NAME),
-          dispatchee_(false), non_local_return_(false),
-          transitive_side_effect_observer_(false),
-          direct_side_effect_observer_(false),
-          transitive_side_effect_creator_(false),
-          direct_side_effect_creator_(false),
-          transitive_lexical_scope_mutator_(false),
-          direct_lexical_scope_mutator_(false),
-          transitive_non_lexical_scope_mutator_(false),
-          direct_non_lexical_scope_mutator_(false),
-          creation_timestamp_(UNDEFINED_TIMESTAMP), execution_time_(0.0),
+          used_for_S3_dispatch_(false), used_for_S4_dispatch_(false),
+          non_local_return_(false), creation_timestamp_(UNDEFINED_TIMESTAMP),
+          execution_time_(0.0),
           escape_(false), eval_depth_{UNASSIGNED_PROMISE_EVAL_DEPTH},
           previous_call_id_(UNASSIGNED_CALL_ID),
           previous_function_id_(UNASSIGNED_FUNCTION_ID),
           previous_formal_parameter_position_(
               UNASSIGNED_FORMAL_PARAMETER_POSITION),
+          previous_formal_parameter_count_(
+              UNASSIGNED_FORMAL_PARAMETER_COUNT),
           previous_actual_argument_position_(
               UNASSIGNED_ACTUAL_ARGUMENT_POSITION),
           previous_call_return_value_type_(UNASSIGNEDSXP),
           before_escape_force_count_(0), force_count_(0),
           before_escape_value_lookup_count_(0), value_lookup_count_(0),
+          before_escape_metaprogram_count_(0), metaprogram_count_(0),
           before_escape_value_assign_count_(0), value_assign_count_(0),
           before_escape_expression_lookup_count_(0),
           expression_lookup_count_(0),
@@ -437,12 +601,40 @@ private:
           before_escape_environment_lookup_count_(0),
           environment_lookup_count_(0),
           before_escape_environment_assign_count_(0),
-          environment_assign_count_(0) {}
+          environment_assign_count_(0),
+          before_escape_direct_self_scope_mutation_count_(0),
+          direct_self_scope_mutation_count_(0),
+          before_escape_indirect_self_scope_mutation_count_(0),
+          indirect_self_scope_mutation_count_(0),
+          before_escape_direct_lexical_scope_mutation_count_(0),
+          direct_lexical_scope_mutation_count_(0),
+          before_escape_indirect_lexical_scope_mutation_count_(0),
+          indirect_lexical_scope_mutation_count_(0),
+          before_escape_direct_non_lexical_scope_mutation_count_(0),
+          direct_non_lexical_scope_mutation_count_(0),
+          before_escape_indirect_non_lexical_scope_mutation_count_(0),
+          indirect_non_lexical_scope_mutation_count_(0),
+          before_escape_direct_self_scope_observation_count_(0),
+          direct_self_scope_observation_count_(0),
+          before_escape_indirect_self_scope_observation_count_(0),
+          indirect_self_scope_observation_count_(0),
+          before_escape_direct_lexical_scope_observation_count_(0),
+          direct_lexical_scope_observation_count_(0),
+          before_escape_indirect_lexical_scope_observation_count_(0),
+          indirect_lexical_scope_observation_count_(0),
+          before_escape_direct_non_lexical_scope_observation_count_(0),
+          direct_non_lexical_scope_observation_count_(0),
+          before_escape_indirect_non_lexical_scope_observation_count_(0),
+          indirect_non_lexical_scope_observation_count_(0) {}
 
-    /* For a promise to escape:
-       - It should not be an argument
-       - It should have been an argument
-       - */
+    void copy_and_reset_(std::uint8_t &left, std::uint8_t &right) {
+        left = right;
+        right = 0;
+    }
+        /* For a promise to escape:
+           - It should not be an argument
+           - It should have been an argument
+           - */
     void check_and_set_escape_() {
         /* if we already ascertained that the promise has escaped,
            then we don't have any need of checking again */
@@ -453,30 +645,70 @@ private:
 
             escape_ = true;
 
-            before_escape_force_count_ = force_count_;
-            force_count_ = 0;
+            copy_and_reset_(before_escape_force_count_, force_count_);
 
-            before_escape_value_lookup_count_ = value_lookup_count_;
-            value_lookup_count_ = 0;
+            copy_and_reset_(before_escape_metaprogram_count_,
+                            metaprogram_count_);
 
-            before_escape_value_assign_count_ = value_assign_count_;
-            value_assign_count_ = 0;
+            copy_and_reset_(before_escape_value_lookup_count_,
+                            value_lookup_count_);
 
-            before_escape_expression_lookup_count_ =
-                expression_lookup_count_;
-            expression_lookup_count_ = 0;
+            copy_and_reset_(before_escape_value_assign_count_,
+                            value_assign_count_);
 
-            before_escape_expression_assign_count_ =
-                expression_assign_count_;
-            expression_assign_count_ = 0;
+            copy_and_reset_(before_escape_expression_lookup_count_,
+                            expression_lookup_count_);
 
-            before_escape_environment_lookup_count_ =
-                environment_lookup_count_;
-            environment_lookup_count_ = 0;
+            copy_and_reset_(before_escape_expression_assign_count_,
+                            expression_assign_count_);
 
-            before_escape_environment_assign_count_ =
-                environment_assign_count_;
-            environment_assign_count_ = 0;
+            copy_and_reset_(before_escape_environment_lookup_count_,
+                            environment_lookup_count_);
+
+            copy_and_reset_(before_escape_environment_assign_count_,
+                            environment_assign_count_);
+
+            copy_and_reset_(before_escape_direct_self_scope_mutation_count_,
+                            direct_self_scope_mutation_count_);
+
+            copy_and_reset_(before_escape_indirect_self_scope_mutation_count_,
+                            indirect_self_scope_mutation_count_);
+
+            copy_and_reset_(before_escape_direct_lexical_scope_mutation_count_,
+                            direct_lexical_scope_mutation_count_);
+
+            copy_and_reset_(
+                before_escape_indirect_lexical_scope_mutation_count_,
+                indirect_lexical_scope_mutation_count_);
+
+            copy_and_reset_(
+                before_escape_direct_non_lexical_scope_mutation_count_,
+                direct_non_lexical_scope_mutation_count_);
+
+            copy_and_reset_(
+                before_escape_indirect_non_lexical_scope_mutation_count_,
+                indirect_non_lexical_scope_mutation_count_);
+
+            copy_and_reset_(before_escape_direct_self_scope_observation_count_,
+                            direct_self_scope_observation_count_);
+
+            copy_and_reset_(before_escape_indirect_self_scope_observation_count_,
+                            indirect_self_scope_observation_count_);
+
+            copy_and_reset_(before_escape_direct_lexical_scope_observation_count_,
+                            direct_lexical_scope_observation_count_);
+
+            copy_and_reset_(
+                before_escape_indirect_lexical_scope_observation_count_,
+                indirect_lexical_scope_observation_count_);
+
+            copy_and_reset_(
+                before_escape_direct_non_lexical_scope_observation_count_,
+                direct_non_lexical_scope_observation_count_);
+
+            copy_and_reset_(
+                before_escape_indirect_non_lexical_scope_observation_count_,
+                indirect_non_lexical_scope_observation_count_);
         }
     }
 
@@ -484,6 +716,7 @@ private:
     sexptype_t type_;
     sexptype_t expression_type_;
     sexptype_t value_type_;
+    bool preforced_;
     SEXP environment_;
     bool local_;
     bool active_;
@@ -493,29 +726,25 @@ private:
     bool was_argument_;
     function_id_t scope_;
     std::string class_name_;
-    bool dispatchee_;
+    bool used_for_S3_dispatch_;
+    bool used_for_S4_dispatch_;
     bool non_local_return_;
     timestamp_t creation_timestamp_;
-    bool transitive_side_effect_observer_;
-    bool direct_side_effect_observer_;
-    bool transitive_side_effect_creator_;
-    bool direct_side_effect_creator_;
-    bool transitive_lexical_scope_mutator_;
-    bool direct_lexical_scope_mutator_;
-    bool transitive_non_lexical_scope_mutator_;
-    bool direct_non_lexical_scope_mutator_;
     double execution_time_;
     bool escape_;
     eval_depth_t eval_depth_;
     call_id_t previous_call_id_;
     function_id_t previous_function_id_;
     int previous_formal_parameter_position_;
+    int previous_formal_parameter_count_;
     int previous_actual_argument_position_;
     sexptype_t previous_call_return_value_type_;
     std::uint8_t before_escape_force_count_;
     std::uint8_t force_count_;
     std::uint8_t before_escape_value_lookup_count_;
     std::uint8_t value_lookup_count_;
+    std::uint8_t before_escape_metaprogram_count_;
+    std::uint8_t metaprogram_count_;
     std::uint8_t before_escape_value_assign_count_;
     std::uint8_t value_assign_count_;
     std::uint8_t before_escape_expression_lookup_count_;
@@ -526,6 +755,30 @@ private:
     std::uint8_t environment_lookup_count_;
     std::uint8_t before_escape_environment_assign_count_;
     std::uint8_t environment_assign_count_;
+    std::uint8_t before_escape_direct_self_scope_mutation_count_;
+    std::uint8_t direct_self_scope_mutation_count_;
+    std::uint8_t before_escape_indirect_self_scope_mutation_count_;
+    std::uint8_t indirect_self_scope_mutation_count_;
+    std::uint8_t before_escape_direct_lexical_scope_mutation_count_;
+    std::uint8_t direct_lexical_scope_mutation_count_;
+    std::uint8_t before_escape_indirect_lexical_scope_mutation_count_;
+    std::uint8_t indirect_lexical_scope_mutation_count_;
+    std::uint8_t before_escape_direct_non_lexical_scope_mutation_count_;
+    std::uint8_t direct_non_lexical_scope_mutation_count_;
+    std::uint8_t before_escape_indirect_non_lexical_scope_mutation_count_;
+    std::uint8_t indirect_non_lexical_scope_mutation_count_;
+    std::uint8_t before_escape_direct_self_scope_observation_count_;
+    std::uint8_t direct_self_scope_observation_count_;
+    std::uint8_t before_escape_indirect_self_scope_observation_count_;
+    std::uint8_t indirect_self_scope_observation_count_;
+    std::uint8_t before_escape_direct_lexical_scope_observation_count_;
+    std::uint8_t direct_lexical_scope_observation_count_;
+    std::uint8_t before_escape_indirect_lexical_scope_observation_count_;
+    std::uint8_t indirect_lexical_scope_observation_count_;
+    std::uint8_t before_escape_direct_non_lexical_scope_observation_count_;
+    std::uint8_t direct_non_lexical_scope_observation_count_;
+    std::uint8_t before_escape_indirect_non_lexical_scope_observation_count_;
+    std::uint8_t indirect_non_lexical_scope_observation_count_;
 };
 
 #endif /* PROMISEDYNTRACER_DENOTED_VALUE_H */

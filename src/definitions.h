@@ -2,6 +2,7 @@
 #define PROMISEDYNTRACER_DEFINITIONS_H
 
 #include <string>
+#include <vector>
 
 typedef int call_id_t;
 typedef std::string function_id_t;
@@ -18,5 +19,8 @@ struct eval_depth_t {
     int nested_promise_depth;
     int forcing_actual_argument_position;
 };
+
+
+typedef std::vector<int> pos_seq_t;
 
 #endif /* PROMISEDYNTRACER_DEFINITIONS_H */

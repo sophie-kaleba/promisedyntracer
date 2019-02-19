@@ -9,6 +9,8 @@
 
 class Function;
 
+typedef std::vector<int> force_order_t;
+
 class Call {
   public:
     explicit Call(const call_id_t id, const function_id_t &function_id,
@@ -46,6 +48,7 @@ class Call {
             } else {
                 arguments_[i] -> free_argument(get_id(),
                                                get_function_id(),
+                                               get_formal_parameter_count(),
                                                get_return_value_type());
             }
             arguments_[i] = nullptr;
@@ -107,12 +110,40 @@ class Call {
         ++actual_argument_count_;
     }
 
-    const std::string &get_force_order() const { return force_order_; }
+    const pos_seq_t& get_force_order() const { return force_order_; }
 
-    void set_force_order(const std::string& force_order) { force_order_ = force_order; }
+    void set_force_order(int force_order) { force_order_ = {force_order}; }
 
     void add_to_force_order(int formal_parameter_position) {
-        force_order_.append(" | ").append(std::to_string(formal_parameter_position));
+        if (std::find(force_order_.begin(), force_order_.end(),
+                      formal_parameter_position) == force_order_.end()) {
+            force_order_.push_back(formal_parameter_position);
+        }
+    }
+
+    pos_seq_t get_missing_argument_positions() const {
+
+        pos_seq_t missing_argument_positions;
+        int position;
+
+        for (auto argument: arguments_) {
+
+            if(argument -> is_missing()) {
+
+                position = argument ->get_formal_parameter_position();
+
+                /* this is true only if we encounter multiple missing values
+                   in dot dot arguments. */
+                if(missing_argument_positions.size() > 0 &&
+                   missing_argument_positions.back() == position) {
+                    break;
+                }
+
+                missing_argument_positions.push_back(position);
+            }
+        }
+
+        return missing_argument_positions;
     }
 
 private:
@@ -125,9 +156,8 @@ private:
     const SEXP environment_;
     Function* function_;
     sexptype_t return_value_type_;
-    // TODO - change this to wrapper type - bool leaf_;
     std::vector<DenotedValue*> arguments_;
-    std::string force_order_;
+    pos_seq_t force_order_;
 };
 
 

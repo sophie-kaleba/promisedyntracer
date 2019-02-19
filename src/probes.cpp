@@ -231,7 +231,7 @@ void S3_dispatch_entry(dyntracer_t *dyntracer, const char *generic,
 
     DenotedValue *value = state.lookup_promise(CAR(objects), true);
     value->set_class_name(class_name);
-    value->set_dispatchee();
+    value->set_used_for_S3_dispatch();
 
     state.lookup_function(specific_method)->set_generic_method_name(generic);
     state.lookup_function(generic_method)->set_dispatcher();
@@ -248,7 +248,23 @@ void S3_dispatch_exit(dyntracer_t *dyntracer, const char *generic,
 
     DenotedValue *value = state.lookup_promise(CAR(objects), false);
     value->set_class_name(UNASSIGNED_CLASS_NAME);
-    value->unset_dispatchee();
+    value->unset_used_for_S3_dispatch();
+
+    state.exit_probe();
+}
+
+
+void S4_dispatch_argument(dyntracer_t* dyntracer, const SEXP argument) {
+    TracerState &state = tracer_state(dyntracer);
+
+    state.enter_probe();
+
+    if (type_of_sexp(argument) == PROMSXP) {
+
+        DenotedValue *value = state.lookup_promise(argument, true);
+
+        value->set_used_for_S4_dispatch();
+    }
 
     state.exit_probe();
 }
@@ -535,6 +551,24 @@ void promise_environment_assign(dyntracer_t *dyntracer, const SEXP promise,
     state.exit_probe();
 }
 
+void promise_substitute(dyntracer_t *dyntracer, const SEXP promise) {
+ 
+    TracerState &state = tracer_state(dyntracer);
+
+    state.enter_probe();
+
+    DenotedValue *promise_state = state.lookup_promise(promise, true);
+
+    promise_state->metaprogram();
+
+    // tracer_serializer(dyntracer).serialize(
+    //     TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_ASSIGN,
+    //     promise_state->get_id(),
+    //     promise_state->get_environment_id());
+
+    state.exit_probe();
+}
+
 static void gc_promise_unmark(TracerState &state, const SEXP promise) {
 
     DenotedValue *promise_state = state.lookup_promise(promise, true);
@@ -628,8 +662,15 @@ void environment_variable_assign(dyntracer_t *dyntracer, const SEXP symbol,
        - A promise modifying a variable which was created after the promise was
        created.. Whether this happens in lexical or non lexical scope, its
        - A promise writing to a variable in its parent function's lexical scope.
-       - A promise writing to a variable outside of its lexical scope. */
-    state.identify_side_effect_creators(var);
+       - A promise writing to a variable outside of its lexical scope.
+
+       There are three cases for side-effects:
+       - Writing to *any* variable in non lexical scope
+       - Writing to *any* variable in lexical scope
+       - Writing to a variable in current scope that is created before the promise
+         is created
+    */
+    state.identify_side_effect_creators(var, rho);
 
     state.exit_probe();
 }
@@ -662,7 +703,7 @@ void environment_variable_lookup(dyntracer_t *dyntracer, const SEXP symbol,
     //     TraceSerializer::OPCODE_ENVIRONMENT_LOOKUP, var.get_environment_id(),
     //     var.get_id(), var.get_name(), value_type_to_string(value));
 
-    state.identify_side_effect_observers(var);
+    state.identify_side_effect_observers(var, rho);
 
     state.exit_probe();
 }

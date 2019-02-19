@@ -32,12 +32,26 @@ write_data_table <- function(df, filepath, truncate = TRUE,
                     binary, compression_level))
 }
 
-read_data_table <- function(filepath) {
+read_data_table <- function(filepath_without_ext, binary = TRUE,
+                            compression_level = 0) {
 
-    compression_level <- if(endsWith(filepath, "zst")) 1 else 0
-    binary <- endsWith(filepath, ".bin") | endsWith(filepath, ".bin.zst")
-    if(!binary & compression_level == 0)
-        read.table(filepath, header = TRUE, sep = "\x1f", comment.char = "", stringsAsFactors = FALSE)
-    else
+    binary = as.logical(binary)
+    compression_level <- as.integer(compression_level)
+    ext <- data_table_extension(binary, compression_level)
+
+    filepath <- paste0(filepath_without_ext, ".", ext)
+
+    if (!binary & compression_level == 0) {
+        read.table(filepath, header = TRUE,
+                   sep = "\x1f", comment.char = "",
+                   stringsAsFactors = FALSE)
+    }
+    else {
         .Call(C_read_data_table, filepath, binary, compression_level)
+    }
+}
+
+data_table_extension <- function(binary = TRUE, compression_level = 0) {
+    ext <- if (binary) "bin" else "csv"
+    if (compression_level == 0) ext else paste0(ext, ".zst")
 }

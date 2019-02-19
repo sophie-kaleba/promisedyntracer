@@ -38,7 +38,7 @@ char *copy_string(char *destination, const char *source, size_t buffer_size) {
 
 bool sexp_to_bool(SEXP value) { return LOGICAL(value)[0] == TRUE; }
 
-int sexp_to_int(SEXP value) { return (int)*REAL(value); }
+int sexp_to_int(SEXP value) { return (int)*INTEGER(value); }
 
 std::string sexp_to_string(SEXP value) {
     return std::string(CHAR(STRING_ELT(value, 0)));
@@ -259,3 +259,17 @@ std::string to_string(const char *str) {
     return str ? std::string(str) : std::string("");
 }
 
+std::string pos_seq_to_string(const pos_seq_t &pos_seq) {
+
+    if(pos_seq.size() == 0) {
+        return "()";
+    }
+
+    std::string str = "(" + std::to_string(pos_seq[0]);
+
+    for(auto i = 1; i < pos_seq.size(); ++i) {
+        str.append(" ").append(std::to_string(pos_seq[i]));
+    }
+
+    return str + ")";
+}
