@@ -25,7 +25,6 @@ SEXP create_dyntracer(SEXP trace_filepath, SEXP truncate, SEXP enable_trace,
     dyntracer->probe_special_entry = special_entry;
     dyntracer->probe_special_exit = special_exit;
     dyntracer->probe_S3_dispatch_entry = S3_dispatch_entry;
-    dyntracer->probe_S3_dispatch_exit = S3_dispatch_exit;
     dyntracer->probe_S4_dispatch_argument = S4_dispatch_argument;
     dyntracer->probe_gc_unmark = gc_unmark;
     dyntracer->probe_promise_force_entry = promise_force_entry;
@@ -38,8 +37,6 @@ SEXP create_dyntracer(SEXP trace_filepath, SEXP truncate, SEXP enable_trace,
     dyntracer->probe_promise_expression_assign = promise_expression_assign;
     dyntracer->probe_promise_environment_assign = promise_environment_assign;
     dyntracer->probe_promise_substitute = promise_substitute;
-    dyntracer->probe_gc_entry = gc_entry;
-    dyntracer->probe_gc_exit = gc_exit;
     dyntracer->probe_context_entry = context_entry;
     dyntracer->probe_context_jump = context_jump;
     dyntracer->probe_context_exit = context_exit;

@@ -66,13 +66,6 @@ const char* get_name(SEXP sexp) {
     return s == NULL ? "" : s;
 }
 
-std::string symbol_to_string(const SEXP symbol) {
-    if(symbol == R_NilValue) {
-        return "PROMISEDYNTRACER::NotAString";
-    }
-    return CHAR(PRINTNAME(symbol));
-}
-
 static int get_lineno(SEXP srcref) {
     if (srcref && srcref != R_NilValue) {
 

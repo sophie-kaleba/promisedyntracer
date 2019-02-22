@@ -33,6 +33,8 @@ extern const int UNASSIGNED_ACTUAL_ARGUMENT_POSITION;
 extern const int UNASSIGNED_FORMAL_PARAMETER_COUNT;
 
 extern const int PRIMITIVE_RETURN_OFFSET;
+extern const int PRIMITIVE_INTERNAL_OFFSET;
+extern const int PRIMITIVE_PRIMITIVE_OFFSET;
 
 extern const unsigned int OBJECT_TYPE_TABLE_COUNT;
 

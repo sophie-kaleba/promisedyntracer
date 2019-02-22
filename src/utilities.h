@@ -88,4 +88,10 @@ inline bool is_return_primitive(const SEXP op) {
 
 std::string pos_seq_to_string(const pos_seq_t& pos_seq);
 
+inline bool is_dots_symbol(const SEXP symbol) { return symbol == R_DotsSymbol; }
+
+inline std::string symbol_to_string(const SEXP symbol) {
+    return CHAR(PRINTNAME(symbol));
+}
+
 #endif /* PROMISEDYNTRACER__UTILITIES_H */

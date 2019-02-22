@@ -5,7 +5,7 @@
 #include "table.h"
 #include "utilities.h"
 #include "Rinternals.h"
-#include "DenotedValue.h"
+#include "Argument.h"
 
 class Function;
 
@@ -24,7 +24,8 @@ class Call {
           formal_parameter_count_(formal_parameter_count),
           actual_argument_count_(0),
           environment_(environment), function_(function),
-          return_value_type_(UNASSIGNEDSXP) {
+          return_value_type_(UNASSIGNEDSXP),
+          jumped_(false) {
 
         /* most calls have only one argument. Argument list of size 5
            covers almost every call */
@@ -33,26 +34,6 @@ class Call {
          * allocations when forced arguments are added. This increases
          * the memory requirement but should speed up the program. */
         force_order_.reserve(15);
-    }
-
-    ~Call() {
-
-        if(get_function_type() != CLOSXP) return;
-
-        for(int i = 0; i < arguments_.size(); ++i) {
-            /* delete a promise iff it is inactive. An active promise
-               is currently not garbage collected by R and is present
-               in the promise mapping managed by the tracer state. */
-            if(!arguments_[i] -> is_active()) {
-                delete arguments_[i];
-            } else {
-                arguments_[i] -> free_argument(get_id(),
-                                               get_function_id(),
-                                               get_formal_parameter_count(),
-                                               get_return_value_type());
-            }
-            arguments_[i] = nullptr;
-        }
     }
 
     call_id_t get_id() const { return id_; }
@@ -97,15 +78,23 @@ class Call {
 
     sexptype_t get_return_value_type() const { return return_value_type_; }
 
-    std::vector<DenotedValue *> &get_arguments() {
+    void set_jumped() {
+        jumped_ = true;
+    }
+
+    bool is_jumped() {
+        return jumped_;
+    }
+
+    std::vector<Argument *> &get_arguments() {
         return arguments_;
     }
 
-    DenotedValue* get_argument(int actual_argument_position) {
+    Argument* get_argument(int actual_argument_position) {
         return arguments_[actual_argument_position];
     }
 
-    void add_argument(DenotedValue* argument) {
+    void add_argument(Argument* argument) {
         arguments_.push_back(argument);
         ++actual_argument_count_;
     }
@@ -128,7 +117,7 @@ class Call {
 
         for (auto argument: arguments_) {
 
-            if(argument -> is_missing()) {
+            if(argument -> get_denoted_value() -> is_missing()) {
 
                 position = argument ->get_formal_parameter_position();
 
@@ -156,7 +145,8 @@ private:
     const SEXP environment_;
     Function* function_;
     sexptype_t return_value_type_;
-    std::vector<DenotedValue*> arguments_;
+    bool jumped_;
+    std::vector<Argument*> arguments_;
     pos_seq_t force_order_;
 };
 

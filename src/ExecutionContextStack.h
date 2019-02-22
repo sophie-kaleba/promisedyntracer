@@ -45,10 +45,8 @@ public:
         return context;
     }
 
-    //TODO - should this return by reference?
-    ExecutionContext peek(size_t n = 1) const {
-        n = stack_.size() - std::min(n, stack_.size());
-        return stack_[n];
+    const ExecutionContext& peek(std::size_t n = 1) const {
+        return stack_.at(stack_.size() - n);
     }
 
     execution_contexts_t unwind(const ExecutionContext &context) {

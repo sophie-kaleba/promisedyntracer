@@ -52,14 +52,20 @@ public:
         return type_ == CLOSXP;
     }
 
-    // TODO - make global variable
-    bool is_internal() const {
-        return (!is_closure() && dyntrace_get_primitive_offset(op_) == 26);
+    bool is_special() const {
+        return type_ == SPECIALSXP;
     }
 
-    // TODO - make global variable
+    bool is_internal() const {
+        return (!is_closure() && dyntrace_get_primitive_offset(op_) == PRIMITIVE_INTERNAL_OFFSET);
+    }
+
     bool is_primitive() const {
-        return (!is_closure() && dyntrace_get_primitive_offset(op_) == 27);
+        return (!is_closure() && dyntrace_get_primitive_offset(op_) == PRIMITIVE_PRIMITIVE_OFFSET);
+    }
+
+    bool is_return() const {
+        return (is_special() && dyntrace_get_primitive_offset(op_) == PRIMITIVE_RETURN_OFFSET);
     }
 
     const function_id_t& get_id() const { return id_; }

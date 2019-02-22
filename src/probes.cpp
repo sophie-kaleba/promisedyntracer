@@ -144,41 +144,6 @@ void special_entry(dyntracer_t *dyntracer, const SEXP call, const SEXP op,
 
     state.update_wrapper_state(function_call);
 
-    /* Identify promises that do non local return. First, check if
-       this special is a 'return', then check if the return happens
-       right after a promise is forced, then walk back in the stack
-       to the promise with the same environment as the return. This
-       promise is the one that does non local return. Note that the
-       loop breaks after the first such promise is found. This is
-       because only one promise can be held responsible for non local
-       return, the one that invokes the return function. */
-    if (is_return_primitive(op)) {
-
-        ExecutionContextStack &stack = state.get_stack();
-
-        ExecutionContext last_exec_ctxt = stack.peek(1);
-
-        if (last_exec_ctxt.is_promise()) {
-
-            for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
-
-                ExecutionContext &exec_ctxt = *iter;
-
-                if (exec_ctxt.is_promise()) {
-
-                    DenotedValue *promise = exec_ctxt.get_promise();
-
-                    if (promise->is_argument() &&
-                        promise->get_environment() == rho) {
-
-                        promise->set_non_local_return();
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     state.get_stack().push(function_call);
 
     // tracer_serializer(dyntracer).serialize(
@@ -231,24 +196,10 @@ void S3_dispatch_entry(dyntracer_t *dyntracer, const char *generic,
 
     DenotedValue *value = state.lookup_promise(CAR(objects), true);
     value->set_class_name(class_name);
-    value->set_used_for_S3_dispatch();
+    value->used_for_S3_dispatch();
 
     state.lookup_function(specific_method)->set_generic_method_name(generic);
     state.lookup_function(generic_method)->set_dispatcher();
-
-    state.exit_probe();
-}
-
-void S3_dispatch_exit(dyntracer_t *dyntracer, const char *generic,
-                      const SEXP cls, SEXP generic_method, SEXP specific_method,
-                      SEXP objects, SEXP return_value) {
-    TracerState &state = tracer_state(dyntracer);
-
-    state.enter_probe();
-
-    DenotedValue *value = state.lookup_promise(CAR(objects), false);
-    value->set_class_name(UNASSIGNED_CLASS_NAME);
-    value->unset_used_for_S3_dispatch();
 
     state.exit_probe();
 }
@@ -263,7 +214,7 @@ void S4_dispatch_argument(dyntracer_t* dyntracer, const SEXP argument) {
 
         DenotedValue *value = state.lookup_promise(argument, true);
 
-        value->set_used_for_S4_dispatch();
+        value->used_for_S4_dispatch();
     }
 
     state.exit_probe();
@@ -278,6 +229,34 @@ void context_entry(dyntracer_t *dyntracer, const RCNTXT *cptr) {
 
     state.exit_probe();
 }
+
+
+void jump_single_context(TracerState& state,
+                         ExecutionContext &exec_ctxt, bool returned,
+                         const sexptype_t return_value_type, const SEXP rho) {
+    if (exec_ctxt.is_call()) {
+
+        Call *call = exec_ctxt.get_call();
+
+        call->set_jumped();
+        call->set_return_value_type(return_value_type);
+
+        state.destroy_call(call);
+    }
+
+    else if (exec_ctxt.is_promise()) {
+
+        DenotedValue *promise = exec_ctxt.get_promise();
+
+        promise->set_value_type(JUMPSXP);
+
+        if (returned && promise->is_argument() &&
+            (promise->get_environment() == rho)) {
+            promise->set_non_local_return();
+        }
+    }
+}
+
 
 void context_jump(dyntracer_t *dyntracer, const RCNTXT *context,
                   const SEXP return_value, int restart) {
@@ -301,28 +280,46 @@ void context_jump(dyntracer_t *dyntracer, const RCNTXT *context,
        true);
     */
 
+    /* Identify promises that do non local return. First, check if
+   this special is a 'return', then check if the return happens
+   right after a promise is forced, then walk back in the stack
+   to the promise with the same environment as the return. This
+   promise is the one that does non local return. Note that the
+   loop breaks after the first such promise is found. This is
+   because only one promise can be held responsible for non local
+   return, the one that invokes the return function. */
+
     execution_contexts_t exec_ctxts =
         state.get_stack().unwind(ExecutionContext(context));
 
-    for (auto &exec_ctxt : exec_ctxts) {
+    const SEXP rho = context -> cloenv;
 
-        if (exec_ctxt.is_call()) {
+    std::size_t context_count = exec_ctxts.size();
 
-            Call *call = exec_ctxt.get_call();
+    if (context_count == 0) {
+    }
+    else if (context_count == 1) {
+        jump_single_context(state, exec_ctxts.front(), false, JUMPSXP, rho);
+    }
+    else {
+        auto begin_iter = exec_ctxts.begin();
+        auto end_iter = --exec_ctxts.end();
 
-            call->set_return_value_type(JUMPSXP);
+        bool returned =
+            (begin_iter->is_special() &&
+             begin_iter->get_special()->get_function()->is_return());
 
-            state.destroy_call(call);
-
-        } else if (exec_ctxt.is_promise()) {
-
-            // TODO - delegate to promise_force_exit
-            exec_ctxt.get_promise()->set_value_type(JUMPSXP);
+        for (auto iter = begin_iter; iter != end_iter; ++iter) {
+            jump_single_context(state, *iter, returned, JUMPSXP, rho);
         }
+
+        jump_single_context(state, *end_iter, returned,
+                            type_of_sexp(return_value), rho);
     }
 
     state.exit_probe();
 }
+
 
 void context_exit(dyntracer_t *dyntracer, const RCNTXT *cptr) {
     TracerState &state = tracer_state(dyntracer);
@@ -366,10 +363,6 @@ void gc_allocate(dyntracer_t *dyntracer, const SEXP object) {
         //     TraceSerializer::OPCODE_ENVIRONMENT_CREATE, env_id);
     } else if (isVector(object)) {
 
-        type_gc_info_t info{state.get_gc_trigger_counter(), TYPEOF(object),
-                            (unsigned long)xlength(object),
-                            (unsigned long)BYTE2VEC(xlength(object))};
-
         // analyzer.vector_alloc(info);
     }
 
@@ -387,19 +380,20 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
     if (promise_state->is_argument()) {
         /* we know that the call is valid because this is an argument promise
          */
-        auto *call = promise_state->get_call();
+        auto *call = promise_state-> get_last_argument() -> get_call();
 
         /* At this point we should store expression type because this is the
            expression that yields the value obtained on promise exit */
         if (promise_state->is_forced()) {
 
-        } else {
+        }
+        else {
             eval_depth_t eval_depth = state.get_evaluation_depth(call);
             promise_state->set_evaluation_depth(eval_depth);
-            /* TODO - do we care about actual argument position? */
-            int formal_parameter_position =
-                promise_state->get_formal_parameter_position();
-            call->add_to_force_order(formal_parameter_position);
+
+            for(Argument* argument: promise_state -> get_arguments()) {
+                argument -> get_call() -> add_to_force_order(argument -> get_formal_parameter_position());
+            }
         }
     }
 
@@ -552,7 +546,7 @@ void promise_environment_assign(dyntracer_t *dyntracer, const SEXP promise,
 }
 
 void promise_substitute(dyntracer_t *dyntracer, const SEXP promise) {
- 
+
     TracerState &state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -601,26 +595,6 @@ void gc_unmark(dyntracer_t *dyntracer, const SEXP object) {
         default:
             break;
     }
-
-    state.exit_probe();
-}
-
-void gc_entry(dyntracer_t *dyntracer, R_size_t size_needed) {
-    TracerState &state = tracer_state(dyntracer);
-
-    state.enter_probe();
-
-    state.increment_gc_trigger_counter();
-
-    state.exit_probe();
-}
-
-void gc_exit(dyntracer_t *dyntracer, int gc_counts) {
-    TracerState &state = tracer_state(dyntracer);
-
-    state.enter_probe();
-
-    gc_info_t info{state.get_gc_trigger_counter()};
 
     state.exit_probe();
 }
