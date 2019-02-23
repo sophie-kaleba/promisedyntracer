@@ -374,7 +374,7 @@ void promise_force_entry(dyntracer_t *dyntracer, const SEXP promise) {
 
     state.enter_probe();
 
-    DenotedValue *promise_state = state.lookup_promise(promise);
+    DenotedValue *promise_state = state.lookup_promise(promise, true);
 
     /* if promise is not an argument, then don't process it. */
     if (promise_state->is_argument()) {

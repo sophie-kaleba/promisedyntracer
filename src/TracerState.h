@@ -176,6 +176,11 @@ class TracerState {
                                "indirect_non_lexical_scope_observation_count",
                                "execution_time"},
                               truncate_, binary_, compression_level_);
+
+        promise_lifecycle_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "promise_lifecycle",
+                              {"action", "count", "promise_count"},
+                              truncate_, binary_, compression_level_);
     }
 
     ~TracerState() {
@@ -185,6 +190,7 @@ class TracerState {
         delete argument_data_table_;
         delete promise_data_table_;
         delete escaped_argument_data_table_;
+        delete promise_lifecycle_data_table_;
     }
 
     const std::string &get_output_dirpath() const { return output_dirpath_; }
@@ -219,6 +225,8 @@ class TracerState {
 
         serialize_object_count_();
 
+        serialize_promise_lifecycle_summary_();
+
         if (!get_stack().is_empty()) {
             dyntrace_log_error("stack not empty on tracer exit.")
         }
@@ -239,6 +247,7 @@ class TracerState {
   private:
     DataTableStream *object_count_data_table_;
     DataTableStream *promise_data_table_;
+    DataTableStream *promise_lifecycle_data_table_;
 
     void serialize_configuration_() {
 
@@ -428,6 +437,8 @@ class TracerState {
         promise_state->set_inactive();
 
         serialize_promise_(promise_state);
+
+        summarize_promise_lifecycle_(promise_state -> get_lifecycle());
 
         if (promise_state->has_escaped()) {
             serialize_escaped_promise_(promise_state);
@@ -1051,9 +1062,29 @@ class TracerState {
         return eval_depth;
     }
 
+    void summarize_promise_lifecycle_(const lifecycle_t& lifecycle) {
+        for(std::size_t i = 0; i < lifecycle_summary_.size(); ++i) {
+            if (lifecycle_summary_[i].first.action == lifecycle.action &&
+                lifecycle_summary_[i].first.count == lifecycle.count) {
+                ++lifecycle_summary_[i].second;
+                return;
+            }
+        }
+        lifecycle_summary_.push_back({lifecycle, 1});
+    }
+
+    void serialize_promise_lifecycle_summary_() {
+        for (const auto &summary: lifecycle_summary_) {
+            promise_lifecycle_data_table_->write_row(summary.first.action,
+                                                     pos_seq_to_string(summary.first.count),
+                                                     summary.second);
+        }
+    }
+
   private:
     call_id_t call_id_counter_;
     std::vector<unsigned int> object_count_;
+    std::vector<std::pair<lifecycle_t, int>> lifecycle_summary_;
 };
 
 #endif /* PROMISEDYNTRACER_TRACER_STATE_H */

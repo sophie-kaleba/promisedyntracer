@@ -23,4 +23,9 @@ struct eval_depth_t {
 
 typedef std::vector<int> pos_seq_t;
 
+struct lifecycle_t {
+    std::string action;
+    std::vector<int> count;
+};
+
 #endif /* PROMISEDYNTRACER_DEFINITIONS_H */

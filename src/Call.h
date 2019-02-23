@@ -29,11 +29,11 @@ class Call {
 
         /* most calls have only one argument. Argument list of size 5
            covers almost every call */
-        arguments_.reserve(std::max(get_actual_argument_count(), 5));
+        arguments_.reserve(std::max(get_formal_parameter_count(), 0));
         /* INFO - Reserve size to 15 bytes to prevent repeated string
          * allocations when forced arguments are added. This increases
          * the memory requirement but should speed up the program. */
-        force_order_.reserve(15);
+        force_order_.reserve(std::max(get_formal_parameter_count(), 0));
     }
 
     call_id_t get_id() const { return id_; }

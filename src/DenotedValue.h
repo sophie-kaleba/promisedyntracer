@@ -13,6 +13,7 @@ class DenotedValue {
         : DenotedValue(id, local) {
         type_ = type_of_sexp(object);
         if(type_ == PROMSXP) {
+            add_lifecycle_action_('A');
             SEXP expr = dyntrace_get_promise_expression(object);
             SEXP val = dyntrace_get_promise_value(object);
             SEXP rho = dyntrace_get_promise_environment(object);
@@ -21,6 +22,7 @@ class DenotedValue {
             set_environment(rho);
             if(val != R_UnboundValue) {
                 preforced_ = true;
+                add_lifecycle_action_('P');
             }
         }
     }
@@ -45,6 +47,7 @@ class DenotedValue {
 
     void set_inactive() {
         active_ = false;
+        add_lifecycle_action_('D');
     }
 
     bool is_argument() const {
@@ -75,6 +78,7 @@ class DenotedValue {
 
     void add_argument(Argument * argument) {
         argument_stack_.push_back(argument);
+        add_lifecycle_action_('B');
     }
 
     void remove_argument(const call_id_t call_id,
@@ -492,7 +496,11 @@ class DenotedValue {
         return previous_default_argument_;
     }
 
-  private:
+    lifecycle_t get_lifecycle() {
+        return lifecycle_;
+    }
+
+private:
     DenotedValue(denoted_value_id_t id, bool local)
         : id_(id), type_(UNASSIGNEDSXP), expression_type_(UNASSIGNEDSXP),
           value_type_(UNASSIGNEDSXP), preforced_(false), environment_(nullptr),
@@ -547,7 +555,12 @@ class DenotedValue {
           before_escape_direct_non_lexical_scope_observation_count_(0),
           direct_non_lexical_scope_observation_count_(0),
           before_escape_indirect_non_lexical_scope_observation_count_(0),
-          indirect_non_lexical_scope_observation_count_(0) {}
+          indirect_non_lexical_scope_observation_count_(0) {
+              /* we are assuming that most promises encounter 4 events in their life.
+                 Creation, Becoming an Argument, Getting Looked up, Getting Destroyed. */
+              lifecycle_.action.reserve(4);
+              lifecycle_.count.reserve(4);
+          }
 
     void copy_and_reset_(std::uint8_t &left, std::uint8_t &right) {
         left = right;
@@ -636,6 +649,17 @@ class DenotedValue {
         }
     }
 
+    void add_lifecycle_action_(const char action) {
+        if (lifecycle_.action.size() == 0 ||
+            lifecycle_.action.back() != action) {
+            lifecycle_.action.push_back(action);
+            lifecycle_.count.push_back(1);
+        }
+        else {
+            ++lifecycle_.count.back();
+        }
+    }
+
     denoted_value_id_t id_;
     sexptype_t type_;
     sexptype_t expression_type_;
@@ -704,6 +728,7 @@ class DenotedValue {
     std::uint8_t direct_non_lexical_scope_observation_count_;
     std::uint8_t before_escape_indirect_non_lexical_scope_observation_count_;
     std::uint8_t indirect_non_lexical_scope_observation_count_;
+    lifecycle_t lifecycle_;
 };
 
 #endif /* PROMISEDYNTRACER_DENOTED_VALUE_H */
