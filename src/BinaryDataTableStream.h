@@ -3,18 +3,20 @@
 
 #include "DataTableStream.h"
 
-class BinaryDataTableStream : public DataTableStream {
+class BinaryDataTableStream: public DataTableStream {
   public:
-    explicit BinaryDataTableStream(const std::string &table_filepath,
-                                   const std::vector<std::string> &column_names,
-                                   bool truncate, int compression_level)
-        : DataTableStream(table_filepath, column_names, truncate,
-                          compression_level),
-          column_types_{column_names.size(), {NILSXP, 0}} {
-
+    explicit BinaryDataTableStream(const std::string& table_filepath,
+                                   const std::vector<std::string>& column_names,
+                                   bool                            truncate,
+                                   int compression_level)
+        : DataTableStream(table_filepath,
+                          column_names,
+                          truncate,
+                          compression_level)
+        , column_types_{column_names.size(), {NILSXP, 0}} {
         std::size_t header_buffer_size = 8;
 
-        for (const auto &column_name : column_names) {
+        for (const auto& column_name: column_names) {
             header_buffer_size += 4 + column_name.size() + 4 + 4;
         }
 
@@ -22,7 +24,7 @@ class BinaryDataTableStream : public DataTableStream {
         flush();
     }
 
-    void store_or_check_column_type(const column_type_t &column_type) {
+    void store_or_check_column_type(const column_type_t& column_type) {
         if (get_current_row_index() == 0) {
             column_types_[get_current_column_index()] = column_type;
         } else if (column_types_[get_current_column_index()] != column_type) {
@@ -31,17 +33,18 @@ class BinaryDataTableStream : public DataTableStream {
                 "column type mismatch: expected %s of %d bytes at column "
                 "%lo of file %s",
                 sexptype_to_string(column_type.first).c_str(),
-                column_type.second, get_current_column_index(),
+                column_type.second,
+                get_current_column_index(),
                 get_filepath().c_str());
             exit(EXIT_FAILURE);
         }
     }
 
-    const std::vector<column_type_t> &get_column_types() const {
+    const std::vector<column_type_t>& get_column_types() const {
         return column_types_;
     }
 
-    const column_type_t &get_column_type(std::size_t column) const {
+    const column_type_t& get_column_type(std::size_t column) const {
         return column_types_.at(column);
     }
 
@@ -79,18 +82,18 @@ class BinaryDataTableStream : public DataTableStream {
     }
 
     /* STRSXP: variable length */
-    void write_column_impl_(const std::string &value) override {
+    void write_column_impl_(const std::string& value) override {
         store_or_check_column_type({STRSXP, 0});
         write_string_column_(value.c_str(), value.size());
     }
 
     /* STRSXP: variable length */
-    void write_column_impl_(const char *value) override {
+    void write_column_impl_(const char* value) override {
         store_or_check_column_type({STRSXP, 0});
         write_string_column_(value, strlen(value));
     }
 
-    void write_string_column_(const char *value, uint32_t size) {
+    void write_string_column_(const char* value, uint32_t size) {
         write(&size, sizeof(size));
         write(value, size);
     }
@@ -109,8 +112,8 @@ class BinaryDataTableStream : public DataTableStream {
         /* write each column name as a variable length string */
         for (auto column_index = 0; column_index < get_column_count();
              ++column_index) {
-            const std::string &column_name{get_column_name(column_index)};
-            const column_type_t &column_type{get_column_type(column_index)};
+            const std::string&   column_name{get_column_name(column_index)};
+            const column_type_t& column_type{get_column_type(column_index)};
             size = column_name.size();
             write(&size, sizeof(size));
             write(column_name.c_str(), size);

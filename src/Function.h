@@ -1,18 +1,21 @@
 #ifndef PROMISEDYNTRACER_FUNCTION_H
 #define PROMISEDYNTRACER_FUNCTION_H
 
-#include "utilities.h"
 #include "Call.h"
-#include "sexptypes.h"
-#include <fstream>
 #include "Rinternals.h"
+#include "sexptypes.h"
+#include "utilities.h"
 
+#include <fstream>
 
 class Function {
-
-public:
-    Function(const SEXP op) : op_(op), formal_parameter_count_(0), method_name_(""), dispatcher_(false), wrapper_assigned_(false) {
-
+  public:
+    Function(const SEXP op)
+        : op_(op)
+        , formal_parameter_count_(0)
+        , method_name_("")
+        , dispatcher_(false)
+        , wrapper_assigned_(false) {
         type_ = type_of_sexp(op);
 
         definition_ = get_expression(op);
@@ -21,7 +24,7 @@ public:
 
         if (type_ == CLOSXP) {
             for (SEXP formal = FORMALS(op); formal != R_NilValue;
-                 formal = CDR(formal)) {
+                 formal      = CDR(formal)) {
                 ++formal_parameter_count_;
             }
             /* All closures are assumed to be wrappers to begin with. */
@@ -57,20 +60,27 @@ public:
     }
 
     bool is_internal() const {
-        return (!is_closure() && dyntrace_get_primitive_offset(op_) == PRIMITIVE_INTERNAL_OFFSET);
+        return (!is_closure() && dyntrace_get_primitive_offset(op_) ==
+                                     PRIMITIVE_INTERNAL_OFFSET);
     }
 
     bool is_primitive() const {
-        return (!is_closure() && dyntrace_get_primitive_offset(op_) == PRIMITIVE_PRIMITIVE_OFFSET);
+        return (!is_closure() && dyntrace_get_primitive_offset(op_) ==
+                                     PRIMITIVE_PRIMITIVE_OFFSET);
     }
 
     bool is_return() const {
-        return (is_special() && dyntrace_get_primitive_offset(op_) == PRIMITIVE_RETURN_OFFSET);
+        return (is_special() &&
+                dyntrace_get_primitive_offset(op_) == PRIMITIVE_RETURN_OFFSET);
     }
 
-    const function_id_t& get_id() const { return id_; }
+    const function_id_t& get_id() const {
+        return id_;
+    }
 
-    const std::string &get_definition() const { return definition_; }
+    const std::string& get_definition() const {
+        return definition_;
+    }
 
     const std::string& get_namespace() const {
         return namespace_;
@@ -84,7 +94,7 @@ public:
         return force_orders_[summary_index];
     }
 
-    const pos_seq_t &get_missing_arguments(std::size_t summary_index) const {
+    const pos_seq_t& get_missing_arguments(std::size_t summary_index) const {
         return missing_arguments_[summary_index];
     }
 
@@ -117,44 +127,44 @@ public:
     }
 
     bool is_wrapper() const {
-        /* wrapper is never assigned for builtins, specials and closures that are never called.
-           this means that this path will not be taked for them.*/
-        if(wrapper_assigned_)
+        /* wrapper is never assigned for builtins, specials and closures that
+           are never called. this means that this path will not be taked for
+           them.*/
+        if (wrapper_assigned_)
             return wrapper_;
         return false;
     }
 
     void update_wrapper(bool callee_is_internal_or_primitive) {
-        if(wrapper_assigned_) {
+        if (wrapper_assigned_) {
             wrapper_ = wrapper_ && callee_is_internal_or_primitive;
-        }
-        else {
-            wrapper_ = callee_is_internal_or_primitive;
+        } else {
+            wrapper_          = callee_is_internal_or_primitive;
             wrapper_assigned_ = true;
         }
     }
 
     void add_summary(Call* call) {
-
         int i;
 
-        for(i = 0; i < names_.size(); ++i) {
-            if(names_[i] == call -> get_function_name()) {
+        for (i = 0; i < names_.size(); ++i) {
+            if (names_[i] == call->get_function_name()) {
                 break;
             }
         }
 
-        if(i == names_.size()) {
-            names_.push_back(call -> get_function_name());
+        if (i == names_.size()) {
+            names_.push_back(call->get_function_name());
         }
 
-        const pos_seq_t& force_order = call -> get_force_order();
+        const pos_seq_t& force_order = call->get_force_order();
 
-        const pos_seq_t &missing_arguments = call->get_missing_argument_positions();
+        const pos_seq_t& missing_arguments =
+            call->get_missing_argument_positions();
 
-        sexptype_t return_value_type = call -> get_return_value_type();
+        sexptype_t return_value_type = call->get_return_value_type();
 
-        for(i = 0; i < force_orders_.size(); ++i) {
+        for (i = 0; i < force_orders_.size(); ++i) {
             if (force_orders_[i] == force_order &&
                 missing_arguments_[i] == missing_arguments &&
                 return_value_types_[i] == return_value_type) {
@@ -170,25 +180,25 @@ public:
     }
 
   private:
-    const SEXP op_;
-    sexptype_t type_;
-    std::size_t formal_parameter_count_;
-    std::string method_name_;
-    bool dispatcher_;
-    bool wrapper_;
-    bool wrapper_assigned_;
-    std::string definition_;
-    function_id_t id_;
-    std::string namespace_;
+    const SEXP               op_;
+    sexptype_t               type_;
+    std::size_t              formal_parameter_count_;
+    std::string              method_name_;
+    bool                     dispatcher_;
+    bool                     wrapper_;
+    bool                     wrapper_assigned_;
+    std::string              definition_;
+    function_id_t            id_;
+    std::string              namespace_;
     std::vector<std::string> names_;
-    std::vector<pos_seq_t> force_orders_;
-    std::vector<pos_seq_t> missing_arguments_;
-    std::vector<sexptype_t> return_value_types_;
-    std::vector<int> call_counts_;
+    std::vector<pos_seq_t>   force_orders_;
+    std::vector<pos_seq_t>   missing_arguments_;
+    std::vector<sexptype_t>  return_value_types_;
+    std::vector<int>         call_counts_;
 
     std::string find_namespace_() {
         SEXP env = CLOENV(op_);
-        void (*probe)(dyntracer_t *, SEXP, SEXP, SEXP);
+        void (*probe)(dyntracer_t*, SEXP, SEXP, SEXP);
         probe = dyntrace_active_dyntracer->probe_environment_variable_lookup;
         dyntrace_active_dyntracer->probe_environment_variable_lookup = NULL;
         SEXP spec = R_NamespaceEnvSpec(env);

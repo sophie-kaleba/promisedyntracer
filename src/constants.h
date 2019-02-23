@@ -2,6 +2,7 @@
 #define PROMISEDYNTRACER_CONSTANTS_H
 
 #include "definitions.h"
+
 #include <string>
 #include <vector>
 
@@ -39,4 +40,3 @@ extern const int PRIMITIVE_PRIMITIVE_OFFSET;
 extern const unsigned int OBJECT_TYPE_TABLE_COUNT;
 
 #endif /* PROMISEDYNTRACER_CONSTANTS_H */
-

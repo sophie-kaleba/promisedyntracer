@@ -2,22 +2,25 @@
 #define PROMISEDYNTRACER_ZSTD_COMPRESSION_STREAM_H
 
 #include "Stream.h"
+
 #include <zstd.h>
 
-class ZstdCompressionStream : public Stream {
+class ZstdCompressionStream: public Stream {
   public:
-    ZstdCompressionStream(Stream *sink, int compression_level)
-        : Stream(sink), compression_level_{compression_level},
-          input_buffer_{nullptr}, input_buffer_size_{0}, input_buffer_index_{0},
-          output_buffer_{nullptr}, output_buffer_size_{0},
-          compression_stream_{nullptr} {
-
+    ZstdCompressionStream(Stream* sink, int compression_level)
+        : Stream(sink)
+        , compression_level_{compression_level}
+        , input_buffer_{nullptr}
+        , input_buffer_size_{0}
+        , input_buffer_index_{0}
+        , output_buffer_{nullptr}
+        , output_buffer_size_{0}
+        , compression_stream_{nullptr} {
         input_buffer_size_ = ZSTD_CStreamInSize();
-        input_buffer_ = static_cast<char *>(malloc_or_die(input_buffer_size_));
+        input_buffer_ = static_cast<char*>(malloc_or_die(input_buffer_size_));
 
         output_buffer_size_ = ZSTD_CStreamOutSize();
-        output_buffer_ =
-            static_cast<char *>(malloc_or_die(output_buffer_size_));
+        output_buffer_ = static_cast<char*>(malloc_or_die(output_buffer_size_));
 
         compression_stream_ = ZSTD_createCStream();
         if (compression_stream_ == NULL) {
@@ -29,16 +32,19 @@ class ZstdCompressionStream : public Stream {
             ZSTD_initCStream(compression_stream_, compression_level_);
 
         if (ZSTD_isError(init_result)) {
-            fprintf(stderr, "ZSTD_initCStream() error : %s \n",
+            fprintf(stderr,
+                    "ZSTD_initCStream() error : %s \n",
                     ZSTD_getErrorName(init_result));
             exit(EXIT_FAILURE);
         }
     }
 
-    int get_compression_level() const { return compression_level_; }
+    int get_compression_level() const {
+        return compression_level_;
+    }
 
-    void write(const void *buffer, std::size_t bytes) override {
-        const char *buf = static_cast<const char *>(buffer);
+    void write(const void* buffer, std::size_t bytes) override {
+        const char* buf          = static_cast<const char*>(buffer);
         std::size_t copied_bytes = 0;
         while (bytes != 0) {
             copied_bytes =
@@ -56,9 +62,9 @@ class ZstdCompressionStream : public Stream {
         if (output_buffer_ == nullptr || input_buffer_ == nullptr) {
             return;
         }
-        ZSTD_inBuffer input{input_buffer_, input_buffer_index_, 0};
+        ZSTD_inBuffer  input{input_buffer_, input_buffer_index_, 0};
         ZSTD_outBuffer output{output_buffer_, output_buffer_size_, 0};
-        std::size_t compressed_bytes = 0;
+        std::size_t    compressed_bytes = 0;
         while (input.pos < input.size) {
             output.pos = 0;
             /* compressed_bytes is guaranteed to be <= ZSTD_CStreamInSize() */
@@ -66,7 +72,8 @@ class ZstdCompressionStream : public Stream {
                 ZSTD_compressStream(compression_stream_, &output, &input);
 
             if (ZSTD_isError(compressed_bytes)) {
-                fprintf(stderr, "ZSTD_compressStream() error : %s \n",
+                fprintf(stderr,
+                        "ZSTD_compressStream() error : %s \n",
                         ZSTD_getErrorName(compressed_bytes));
                 exit(EXIT_FAILURE);
             }
@@ -87,12 +94,13 @@ class ZstdCompressionStream : public Stream {
             return;
         }
         flush();
-        size_t unflushed;
+        size_t         unflushed;
         ZSTD_outBuffer output = {output_buffer_, output_buffer_size_, 0};
         while ((unflushed = ZSTD_endStream(compression_stream_, &output))) {
             /* close frame */
             if (ZSTD_isError(unflushed)) {
-                fprintf(stderr, "ZSTD_endStream() error : %s \n",
+                fprintf(stderr,
+                        "ZSTD_endStream() error : %s \n",
                         ZSTD_getErrorName(unflushed));
                 exit(EXIT_FAILURE);
             }
@@ -104,24 +112,26 @@ class ZstdCompressionStream : public Stream {
 
         ZSTD_freeCStream(compression_stream_);
         std::free(input_buffer_);
-        input_buffer_ = nullptr;
-        input_buffer_size_ = 0;
+        input_buffer_       = nullptr;
+        input_buffer_size_  = 0;
         input_buffer_index_ = 0;
         std::free(output_buffer_);
-        output_buffer_ = nullptr;
+        output_buffer_      = nullptr;
         output_buffer_size_ = 0;
     }
 
-    virtual ~ZstdCompressionStream() { finalize(); }
+    virtual ~ZstdCompressionStream() {
+        finalize();
+    }
 
   private:
-    int compression_level_;
-    char *input_buffer_;
-    std::size_t input_buffer_size_;
-    std::size_t input_buffer_index_;
-    char *output_buffer_;
-    std::size_t output_buffer_size_;
-    ZSTD_CStream *compression_stream_;
+    int           compression_level_;
+    char*         input_buffer_;
+    std::size_t   input_buffer_size_;
+    std::size_t   input_buffer_index_;
+    char*         output_buffer_;
+    std::size_t   output_buffer_size_;
+    ZSTD_CStream* compression_stream_;
 };
 
 #endif /* PROMISEDYNTRACER_ZSTD_COMPRESSION_STREAM_H */

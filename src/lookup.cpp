@@ -21,11 +21,11 @@ lookup_result find_binding_in_global_cache(const SEXP symbol) {
     return {lookup_status::SUCCESS, rho, CAR(frame)};
 }
 
-/*inline*/ lookup_result get_hash(int hashcode, const SEXP symbol,
-                                  const SEXP rho) {
+/*inline*/ lookup_result
+get_hash(int hashcode, const SEXP symbol, const SEXP rho) {
     const SEXP table = HASHTAB(rho);
     for (SEXP chain = VECTOR_ELT(table, hashcode); chain != R_NilValue;
-         chain = CDR(chain)) {
+         chain      = CDR(chain)) {
         if (TAG(chain) == symbol)
             return get_binding_value(chain, rho);
     }
@@ -59,7 +59,7 @@ lookup_result find_binding_in_single_environment(const SEXP symbol,
     // the hash on the SXP.
     if (HASHTAB(rho) != R_NilValue) {
         SEXP print_name = PRINTNAME(symbol);
-        int hashcode =
+        int  hashcode =
             (!HASHASH(print_name))
                 ? (newhashpjw(CHAR(print_name)) % LENGTH(HASHTAB(rho)))
                 : (HASHVALUE(print_name) % LENGTH(HASHTAB(rho)));
@@ -76,7 +76,8 @@ lookup_result find_binding_in_environment(const SEXP symbol, const SEXP rho2) {
         return {lookup_status::FAIL_ENVIRONMENT_IS_NIL, rho, R_UnboundValue};
 
     if (TYPEOF(rho) != ENVSXP) {
-        return {lookup_status::FAIL_ARGUMENT_IS_NOT_AN_ENVIRONMENT, rho,
+        return {lookup_status::FAIL_ARGUMENT_IS_NOT_AN_ENVIRONMENT,
+                rho,
                 R_UnboundValue};
     }
 
@@ -105,16 +106,16 @@ lookup_result find_binding_in_environment(const SEXP symbol, const SEXP rho2) {
 
 std::string lookup_status_to_string(lookup_status status) {
     switch (status) {
-        case lookup_status::FAIL_ARGUMENT_IS_NOT_AN_ENVIRONMENT:
-            return "Lookup in environment failed: second argument is not an "
-                   "environment";
-        case lookup_status::FAIL_ENVIRONMENT_IS_NIL:
-            return "Lookup in environment failed: NIL is not a valid "
-                   "environment (anymore)";
-        case lookup_status::FAIL_GLOBAL_CACHE:
-            return "Lookup in environment failed: global cache";
-        case lookup_status::FAIL_USER_DEFINED_DATABASE:
-            return "Lookup in environment failed: user defined database";
+    case lookup_status::FAIL_ARGUMENT_IS_NOT_AN_ENVIRONMENT:
+        return "Lookup in environment failed: second argument is not an "
+               "environment";
+    case lookup_status::FAIL_ENVIRONMENT_IS_NIL:
+        return "Lookup in environment failed: NIL is not a valid "
+               "environment (anymore)";
+    case lookup_status::FAIL_GLOBAL_CACHE:
+        return "Lookup in environment failed: global cache";
+    case lookup_status::FAIL_USER_DEFINED_DATABASE:
+        return "Lookup in environment failed: user defined database";
     }
     return "Lookup case not handled, search for this string in codebase";
 }

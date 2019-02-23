@@ -1,13 +1,14 @@
 #include "sexptypes.h"
+
 #include "lookup.h"
 
-const sexptype_t ACTIVESXP = 100001;
-const sexptype_t UNBOUNDSXP = 100002;
+const sexptype_t ACTIVESXP     = 100001;
+const sexptype_t UNBOUNDSXP    = 100002;
 const sexptype_t UNASSIGNEDSXP = 100003;
-const sexptype_t MISSINGSXP = 100004;
-const sexptype_t JUMPSXP = 100005;
-const sexptype_t CONTEXTSXP = 100006;
-const sexptype_t NULLSXP = 100007;
+const sexptype_t MISSINGSXP    = 100004;
+const sexptype_t JUMPSXP       = 100005;
+const sexptype_t CONTEXTSXP    = 100006;
+const sexptype_t NULLSXP       = 100007;
 
 std::string sexptype_to_string(sexptype_t sexptype) {
     switch (sexptype) {
@@ -43,16 +44,15 @@ std::string sexptype_to_string(sexptype_t sexptype) {
 }
 
 sexptype_t type_of_sexp(SEXP value) {
-    if(value == NULL) {
+    if (value == NULL) {
         return NULLSXP;
     }
-    if(IS_ACTIVE_BINDING(value)) {
+    if (IS_ACTIVE_BINDING(value)) {
         return ACTIVESXP;
     }
     if (value == R_UnboundValue) {
         return UNBOUNDSXP;
-    }
-    else if(value == R_MissingArg) {
+    } else if (value == R_MissingArg) {
         return MISSINGSXP;
     }
     return static_cast<sexptype_t>(TYPEOF(value));

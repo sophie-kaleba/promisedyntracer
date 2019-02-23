@@ -16,10 +16,11 @@ std::string lookup_status_to_string(lookup_status);
 
 struct lookup_result {
     lookup_status status;
-    SEXP environment;
-    SEXP value;
+    SEXP          environment;
+    SEXP          value;
 };
 
-lookup_result find_binding_in_environment(const SEXP symbol, const SEXP environment);
+lookup_result find_binding_in_environment(const SEXP symbol,
+                                          const SEXP environment);
 
 #endif /* __LOOKUP_H__ */

@@ -7,8 +7,12 @@
 extern "C" {
 #endif
 
-SEXP create_dyntracer(SEXP trace_filepath, SEXP truncate, SEXP enable_trace,
-                      SEXP verbose, SEXP output_dir, SEXP binary,
+SEXP create_dyntracer(SEXP trace_filepath,
+                      SEXP truncate,
+                      SEXP enable_trace,
+                      SEXP verbose,
+                      SEXP output_dir,
+                      SEXP binary,
                       SEXP compression_level);
 
 SEXP destroy_dyntracer(SEXP tracer);

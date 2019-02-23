@@ -25,13 +25,15 @@ class TraceSerializer {
     static const std::string OPCODE_ENVIRONMENT_DEFINE;
     static const std::string OPCODE_ENVIRONMENT_LOOKUP;
 
-    TraceSerializer(std::string trace_filepath, bool truncate,
-                    bool enable_trace)
+    TraceSerializer(std::string trace_filepath,
+                    bool        truncate,
+                    bool        enable_trace)
         : trace_filepath(trace_filepath), enable_trace_(enable_trace) {
         open_trace(trace_filepath, truncate);
     }
 
-    template <typename T> void serialize(T value) {
+    template <typename T>
+    void serialize(T value) {
         if (enable_trace()) {
             trace << value << RECORD_SEPARATOR << std::endl;
         }
@@ -45,10 +47,12 @@ class TraceSerializer {
         }
     }
 
-    ~TraceSerializer() { close_trace(); }
+    ~TraceSerializer() {
+        close_trace();
+    }
 
   private:
-    void open_trace(const std::string &trace_filepath, bool truncate) {
+    void open_trace(const std::string& trace_filepath, bool truncate) {
         if (!enable_trace())
             return;
         if (file_exists(trace_filepath)) {
@@ -74,11 +78,13 @@ class TraceSerializer {
             trace.close();
     }
 
-    bool enable_trace() const { return enable_trace_; }
+    bool enable_trace() const {
+        return enable_trace_;
+    }
 
-    std::string trace_filepath;
+    std::string   trace_filepath;
     std::ofstream trace;
-    bool enable_trace_;
+    bool          enable_trace_;
 };
 
 #endif /* __TRACE_SERIALIZER_H__ */

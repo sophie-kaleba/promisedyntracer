@@ -3,31 +3,38 @@
 
 #include "Stream.h"
 #include "utilities.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-class BufferStream : public Stream {
+class BufferStream: public Stream {
   public:
-    explicit BufferStream(Stream *sink, std::size_t capacity = 25 * 1024 * 1024)
+    explicit BufferStream(Stream* sink, std::size_t capacity = 25 * 1024 * 1024)
         : Stream(sink), capacity_{0}, index_{0}, buffer_{nullptr} {
         set_capacity(capacity);
     }
 
-    bool is_empty() const noexcept { return index_ == 0; }
+    bool is_empty() const noexcept {
+        return index_ == 0;
+    }
 
-    std::size_t get_size() const noexcept { return index_; }
+    std::size_t get_size() const noexcept {
+        return index_;
+    }
 
-    std::size_t get_capacity() const noexcept { return capacity_; }
+    std::size_t get_capacity() const noexcept {
+        return capacity_;
+    }
 
     void set_capacity(std::size_t capacity) {
         std::free(buffer_);
-        if ((buffer_ = static_cast<char *>(calloc_or_die(capacity, 1))) ==
+        if ((buffer_ = static_cast<char*>(calloc_or_die(capacity, 1))) ==
             nullptr) {
-            std::fprintf(stderr, "unable to reserve buffer with capacity %ld",
-                         capacity);
+            std::fprintf(
+                stderr, "unable to reserve buffer with capacity %ld", capacity);
             exit(EXIT_FAILURE);
         }
         capacity_ = capacity;
@@ -42,7 +49,7 @@ class BufferStream : public Stream {
     }
 
     void fill(char byte, std::size_t count) {
-        char *buffer = static_cast<char *>(calloc_or_die(count, sizeof(char)));
+        char* buffer = static_cast<char*>(calloc_or_die(count, sizeof(char)));
         for (std::size_t index = 0; index < count; ++index) {
             buffer[index] = byte;
         }
@@ -50,10 +57,10 @@ class BufferStream : public Stream {
         std::free(buffer);
     }
 
-    void write(const void *buffer, std::size_t bytes) override {
-        const char *buf = static_cast<const char *>(buffer);
+    void write(const void* buffer, std::size_t bytes) override {
+        const char* buf             = static_cast<const char*>(buffer);
         std::size_t remaining_bytes = bytes;
-        std::size_t copied_bytes = 0;
+        std::size_t copied_bytes    = 0;
         do {
             copied_bytes =
                 std::min(get_capacity() - get_size(), remaining_bytes);
@@ -79,7 +86,7 @@ class BufferStream : public Stream {
   private:
     std::size_t capacity_;
     std::size_t index_;
-    char *buffer_;
+    char*       buffer_;
 };
 
 #endif /* PROMISEDYNTRACER_BUFFER_STREAM_H */
