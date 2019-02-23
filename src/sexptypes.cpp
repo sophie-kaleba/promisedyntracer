@@ -1,6 +1,5 @@
 #include "sexptypes.h"
 
-#include "lookup.h"
 
 const sexptype_t ACTIVESXP     = 100001;
 const sexptype_t UNBOUNDSXP    = 100002;
