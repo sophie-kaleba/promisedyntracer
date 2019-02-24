@@ -48,10 +48,10 @@ class FileStream: public Stream {
 
     void write(const void* buffer, std::size_t bytes) override {
         using ::write;
-        int         written_bytes = 0;
         const char* buf           = static_cast<const char*>(buffer);
+
         while (bytes > 0) {
-            written_bytes = write(descriptor_, buf, bytes);
+            int written_bytes = write(descriptor_, buf, bytes);
             if (written_bytes == -1) {
                 if (errno == EINTR || errno == EAGAIN) {
                     continue;
@@ -77,7 +77,7 @@ class FileStream: public Stream {
         }
     }
 
-    void flush() {
+    void flush() override {
     }
 
     virtual ~FileStream() {

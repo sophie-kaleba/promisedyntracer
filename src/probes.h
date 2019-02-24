@@ -25,7 +25,7 @@ void closure_exit(dyntracer_t* dyntracer,
                   const SEXP   op,
                   const SEXP   args,
                   const SEXP   rho,
-                  const SEXP   retval);
+                  const SEXP   return_value);
 void builtin_entry(dyntracer_t* dyntracer,
                    const SEXP   call,
                    const SEXP   op,
@@ -41,13 +41,13 @@ void builtin_exit(dyntracer_t* dyntracer,
                   const SEXP   op,
                   const SEXP   args,
                   const SEXP   rho,
-                  const SEXP   retval);
+                  const SEXP   return_value);
 void special_exit(dyntracer_t* dyntracer,
                   const SEXP   call,
                   const SEXP   op,
                   const SEXP   args,
                   const SEXP   rho,
-                  const SEXP   retval);
+                  const SEXP   return_value);
 void S3_dispatch_entry(dyntracer_t* dyntracer,
                        const char*  generic,
                        const SEXP   cls,
@@ -71,7 +71,7 @@ void promise_environment_assign(dyntracer_t* dyntracer,
                                 const SEXP   promise,
                                 const SEXP   environment);
 void promise_substitute(dyntracer_t* dyntracer, const SEXP promise);
-void gc_unmark(dyntracer_t* dyntracer, const SEXP expression);
+void gc_unmark(dyntracer_t* dyntracer, const SEXP object);
 void context_entry(dyntracer_t* dyntracer, const RCNTXT*);
 void context_jump(dyntracer_t* dyntracer,
                   const RCNTXT*,

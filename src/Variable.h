@@ -43,7 +43,7 @@ class Variable {
         return env_id_;
     }
 
-    bool is_dot_dot() const {
+    bool is_dot_dot_dot() const {
         const std::string& name = get_name();
         if (name.size() < 2) {
             return false;

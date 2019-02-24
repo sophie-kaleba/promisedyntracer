@@ -323,7 +323,6 @@ static SEXP read_compressed_binary_data_table(const std::string& filepath,
     std::size_t remaining_bytes   = 0;
     int         row_index         = 0;
     int         column_index      = 0;
-    bool        have_enough_data  = false;
     const char* output_buffer_cur = nullptr;
     const char* output_buffer_end = nullptr;
 
@@ -336,7 +335,7 @@ static SEXP read_compressed_binary_data_table(const std::string& filepath,
         std::size_t decompressed_bytes =
             ZSTD_decompressStream(decompression_stream, &output, &input);
 
-        have_enough_data = true;
+        bool have_enough_data = true;
 
         if (ZSTD_isError(decompressed_bytes)) {
             fprintf(stderr,

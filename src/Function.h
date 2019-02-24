@@ -10,7 +10,7 @@
 
 class Function {
   public:
-    Function(const SEXP op)
+    explicit Function(const SEXP op)
         : op_(op)
         , formal_parameter_count_(0)
         , method_name_("")

@@ -20,9 +20,6 @@ class TextDataTableStream: public DataTableStream {
                           compression_level) {
         contents_.reserve(1024);
 
-        const char* separator = get_column_separator().c_str();
-        std::size_t bytes     = get_column_separator().size();
-
         if (get_column_count() == 0) {
             return;
         }

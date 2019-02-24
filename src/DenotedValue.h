@@ -540,7 +540,7 @@ class DenotedValue {
         return previous_default_argument_;
     }
 
-    lifecycle_t get_lifecycle() {
+    lifecycle_t get_lifecycle() const {
         return lifecycle_;
     }
 
@@ -574,8 +574,8 @@ class DenotedValue {
         , previous_formal_parameter_count_(UNASSIGNED_FORMAL_PARAMETER_COUNT)
         , previous_actual_argument_position_(
               UNASSIGNED_ACTUAL_ARGUMENT_POSITION)
-        , previous_default_argument_(false)
         , previous_call_return_value_type_(UNASSIGNEDSXP)
+        , previous_default_argument_(false)
         , before_escape_force_count_(0)
         , force_count_(0)
         , before_escape_value_lookup_count_(0)
@@ -623,10 +623,6 @@ class DenotedValue {
         lifecycle_.count.reserve(4);
     }
 
-    void copy_and_reset_(std::uint8_t& left, std::uint8_t& right) {
-        left  = right;
-        right = 0;
-    }
     /* For a promise to escape:
        - It should not be an argument
        - It should have been an argument
@@ -640,70 +636,70 @@ class DenotedValue {
         if (!is_argument() && was_argument()) {
             escape_ = true;
 
-            copy_and_reset_(before_escape_force_count_, force_count_);
+            copy_and_reset(before_escape_force_count_, force_count_);
 
-            copy_and_reset_(before_escape_metaprogram_count_,
+            copy_and_reset(before_escape_metaprogram_count_,
                             metaprogram_count_);
 
-            copy_and_reset_(before_escape_value_lookup_count_,
+            copy_and_reset(before_escape_value_lookup_count_,
                             value_lookup_count_);
 
-            copy_and_reset_(before_escape_value_assign_count_,
+            copy_and_reset(before_escape_value_assign_count_,
                             value_assign_count_);
 
-            copy_and_reset_(before_escape_expression_lookup_count_,
+            copy_and_reset(before_escape_expression_lookup_count_,
                             expression_lookup_count_);
 
-            copy_and_reset_(before_escape_expression_assign_count_,
+            copy_and_reset(before_escape_expression_assign_count_,
                             expression_assign_count_);
 
-            copy_and_reset_(before_escape_environment_lookup_count_,
+            copy_and_reset(before_escape_environment_lookup_count_,
                             environment_lookup_count_);
 
-            copy_and_reset_(before_escape_environment_assign_count_,
+            copy_and_reset(before_escape_environment_assign_count_,
                             environment_assign_count_);
 
-            copy_and_reset_(before_escape_direct_self_scope_mutation_count_,
+            copy_and_reset(before_escape_direct_self_scope_mutation_count_,
                             direct_self_scope_mutation_count_);
 
-            copy_and_reset_(before_escape_indirect_self_scope_mutation_count_,
+            copy_and_reset(before_escape_indirect_self_scope_mutation_count_,
                             indirect_self_scope_mutation_count_);
 
-            copy_and_reset_(before_escape_direct_lexical_scope_mutation_count_,
+            copy_and_reset(before_escape_direct_lexical_scope_mutation_count_,
                             direct_lexical_scope_mutation_count_);
 
-            copy_and_reset_(
+            copy_and_reset(
                 before_escape_indirect_lexical_scope_mutation_count_,
                 indirect_lexical_scope_mutation_count_);
 
-            copy_and_reset_(
+            copy_and_reset(
                 before_escape_direct_non_lexical_scope_mutation_count_,
                 direct_non_lexical_scope_mutation_count_);
 
-            copy_and_reset_(
+            copy_and_reset(
                 before_escape_indirect_non_lexical_scope_mutation_count_,
                 indirect_non_lexical_scope_mutation_count_);
 
-            copy_and_reset_(before_escape_direct_self_scope_observation_count_,
+            copy_and_reset(before_escape_direct_self_scope_observation_count_,
                             direct_self_scope_observation_count_);
 
-            copy_and_reset_(
+            copy_and_reset(
                 before_escape_indirect_self_scope_observation_count_,
                 indirect_self_scope_observation_count_);
 
-            copy_and_reset_(
+            copy_and_reset(
                 before_escape_direct_lexical_scope_observation_count_,
                 direct_lexical_scope_observation_count_);
 
-            copy_and_reset_(
+            copy_and_reset(
                 before_escape_indirect_lexical_scope_observation_count_,
                 indirect_lexical_scope_observation_count_);
 
-            copy_and_reset_(
+            copy_and_reset(
                 before_escape_direct_non_lexical_scope_observation_count_,
                 direct_non_lexical_scope_observation_count_);
 
-            copy_and_reset_(
+            copy_and_reset(
                 before_escape_indirect_non_lexical_scope_observation_count_,
                 indirect_non_lexical_scope_observation_count_);
         }

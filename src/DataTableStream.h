@@ -44,6 +44,12 @@ class DataTableStream: public Stream {
         }
     }
 
+    DataTableStream(const DataTableStream&) = delete;
+
+    DataTableStream&
+    operator=(const DataTableStream&) = delete; // Disallow copying
+
+
     void fill(char byte, std::size_t count) {
         buffer_stream_->fill(byte, count);
     }
@@ -64,7 +70,7 @@ class DataTableStream: public Stream {
         file_stream_->seek(offset, whence);
     }
 
-    void flush() {
+    void flush() override {
         for (Stream* stream = get_sink(); stream != nullptr;
              stream         = stream->get_sink()) {
             stream->flush();

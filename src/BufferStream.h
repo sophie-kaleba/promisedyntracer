@@ -34,7 +34,7 @@ class BufferStream: public Stream {
         if ((buffer_ = static_cast<char*>(calloc_or_die(capacity, 1))) ==
             nullptr) {
             std::fprintf(
-                stderr, "unable to reserve buffer with capacity %ld", capacity);
+                stderr, "unable to reserve buffer with capacity %zu", capacity);
             exit(EXIT_FAILURE);
         }
         capacity_ = capacity;
@@ -60,9 +60,8 @@ class BufferStream: public Stream {
     void write(const void* buffer, std::size_t bytes) override {
         const char* buf             = static_cast<const char*>(buffer);
         std::size_t remaining_bytes = bytes;
-        std::size_t copied_bytes    = 0;
         do {
-            copied_bytes =
+            std::size_t copied_bytes =
                 std::min(get_capacity() - get_size(), remaining_bytes);
             std::memcpy(buffer_ + index_, buf, copied_bytes);
             buf += copied_bytes;
@@ -73,7 +72,7 @@ class BufferStream: public Stream {
         } while (remaining_bytes != 0);
     }
 
-    void flush() {
+    void flush() override {
         get_sink()->write(buffer_, get_size());
         index_ = 0;
     }

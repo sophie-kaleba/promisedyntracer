@@ -37,11 +37,11 @@ class TracerState {
         , verbose_(verbose)
         , binary_(binary)
         , compression_level_(compression_level)
+        , denoted_value_id_counter_(0)
         , environment_id_(0)
         , variable_id_(0)
         , timestamp_(0)
         , call_id_counter_(0)
-        , denoted_value_id_counter_(0)
         , object_count_(OBJECT_TYPE_TABLE_COUNT, 0) {
         object_count_data_table_ =
             create_data_table(output_dirpath_ + "/" + "object_count",
@@ -253,7 +253,7 @@ class TracerState {
         return compression_level_;
     }
 
-    void initialize() {
+    void initialize() const {
         serialize_configuration_();
     }
 
@@ -298,7 +298,7 @@ class TracerState {
     DataTableStream* promise_data_table_;
     DataTableStream* promise_lifecycle_data_table_;
 
-    void serialize_configuration_() {
+    void serialize_configuration_() const {
         std::ofstream fout(get_output_dirpath() + "/CONFIGURATION",
                            std::ios::trunc);
 
@@ -621,7 +621,7 @@ class TracerState {
 
     DenotedValue* create_raw_promise_(const SEXP promise, bool local) {
         const SEXP    rho    = dyntrace_get_promise_environment(promise);
-        env_id_t      env_id = lookup_environment(rho).get_id();
+
         DenotedValue* promise_state =
             new DenotedValue(get_next_denoted_value_id_(), promise, local);
 
@@ -684,7 +684,6 @@ class TracerState {
         call_id_t            call_id       = get_next_call_id_();
         const function_id_t& function_id   = function->get_id();
         const std::string    function_name = get_name(call);
-        int                  eval          = 0;
 
         function_call = new Call(call_id,
                                  function_id,
@@ -776,7 +775,6 @@ class TracerState {
         SEXP formal                    = nullptr;
         SEXP name                      = nullptr;
         SEXP argument                  = nullptr;
-        SEXP dot_dot_dot_arguments     = nullptr;
         SEXP rho                       = call->get_environment();
         int  formal_parameter_position = -1;
         int  actual_argument_position  = -1;
@@ -919,7 +917,7 @@ class TracerState {
 
     void serialize_function_call_summary_(const Function& function) {
         const std::string& function_namespace = function.get_namespace();
-        const std::vector<std::string> function_names = function.get_names();
+        const std::vector<std::string>& function_names = function.get_names();
 
         std::string all_names = "";
 
@@ -1048,8 +1046,6 @@ class TracerState {
                 const SEXP prom_env = promise->get_environment();
 
                 if (prom_env == env) {
-                    const timestamp_t var_timestamp =
-                        var.get_modification_timestamp();
                     if (promise->get_creation_timestamp() < var_timestamp) {
                         promise->set_self_scope_observation(direct);
                         direct = false;
@@ -1068,19 +1064,6 @@ class TracerState {
                 }
             }
         }
-    }
-
-    /* is env_a parent of env_b? */
-    bool is_parent_environment(SEXP env_a, SEXP env_b) {
-        SEXP env_cur = R_NilValue;
-        if (env_a == env_b)
-            return false;
-        for (env_cur = ENCLOS(env_b); env_cur != R_NilValue;
-             env_cur = ENCLOS(env_cur)) {
-            if (env_cur == env_a)
-                return true;
-        }
-        return false;
     }
 
     void update_wrapper_state(Call* call) {

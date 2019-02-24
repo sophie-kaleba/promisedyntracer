@@ -25,7 +25,7 @@ class TraceSerializer {
     static const std::string OPCODE_ENVIRONMENT_DEFINE;
     static const std::string OPCODE_ENVIRONMENT_LOOKUP;
 
-    TraceSerializer(std::string trace_filepath,
+    TraceSerializer(const std::string& trace_filepath,
                     bool        truncate,
                     bool        enable_trace)
         : trace_filepath(trace_filepath), enable_trace_(enable_trace) {

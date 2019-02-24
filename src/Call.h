@@ -71,10 +71,6 @@ class Call {
         return function_;
     }
 
-    void set_formal_parameter_count(int formal_parameter_count) {
-        formal_parameter_count_ = formal_parameter_count;
-    }
-
     int get_formal_parameter_count() const {
         return formal_parameter_count_;
     }
@@ -103,7 +99,7 @@ class Call {
         jumped_ = true;
     }
 
-    bool is_jumped() {
+    bool is_jumped() const {
         return jumped_;
     }
 

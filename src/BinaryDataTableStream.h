@@ -31,7 +31,7 @@ class BinaryDataTableStream: public DataTableStream {
             std::fprintf(
                 stderr,
                 "column type mismatch: expected %s of %d bytes at column "
-                "%lo of file %s",
+                "%zu of file %s",
                 sexptype_to_string(column_type.first).c_str(),
                 column_type.second,
                 get_current_column_index(),

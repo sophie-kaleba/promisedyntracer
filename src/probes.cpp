@@ -365,7 +365,7 @@ void gc_allocate(dyntracer_t* dyntracer, const SEXP object) {
     state.increment_object_count(type_of_sexp(object));
 
     if (TYPEOF(object) == PROMSXP) {
-        DenotedValue* promise_state = state.create_promise(object);
+        state.create_promise(object);
 
         // std::string cre_id = std::string("cre ") +
         // std::to_string(promise_state -> get_id());
@@ -377,7 +377,7 @@ void gc_allocate(dyntracer_t* dyntracer, const SEXP object) {
         //                                        promise_state ->
         //                                        get_expression());
     } else if (TYPEOF(object) == ENVSXP) {
-        env_id_t env_id = state.create_environment(object).get_id();
+        state.create_environment(object).get_id();
 
         // tracer_serializer(dyntracer).serialize(
         //     TraceSerializer::OPCODE_ENVIRONMENT_CREATE, env_id);

@@ -45,9 +45,8 @@ class ZstdCompressionStream: public Stream {
 
     void write(const void* buffer, std::size_t bytes) override {
         const char* buf          = static_cast<const char*>(buffer);
-        std::size_t copied_bytes = 0;
         while (bytes != 0) {
-            copied_bytes =
+            std::size_t copied_bytes =
                 std::min(input_buffer_size_ - input_buffer_index_, bytes);
             std::memcpy(input_buffer_ + input_buffer_index_, buf, copied_bytes);
             buf += copied_bytes;
@@ -58,17 +57,17 @@ class ZstdCompressionStream: public Stream {
         }
     }
 
-    void flush() {
+    void flush() override {
         if (output_buffer_ == nullptr || input_buffer_ == nullptr) {
             return;
         }
         ZSTD_inBuffer  input{input_buffer_, input_buffer_index_, 0};
         ZSTD_outBuffer output{output_buffer_, output_buffer_size_, 0};
-        std::size_t    compressed_bytes = 0;
+
         while (input.pos < input.size) {
             output.pos = 0;
             /* compressed_bytes is guaranteed to be <= ZSTD_CStreamInSize() */
-            compressed_bytes =
+            std::size_t compressed_bytes =
                 ZSTD_compressStream(compression_stream_, &output, &input);
 
             if (ZSTD_isError(compressed_bytes)) {
@@ -80,8 +79,9 @@ class ZstdCompressionStream: public Stream {
 
             /* Safely handle case when `buffInSize` is manually changed to a
                value < ZSTD_CStreamInSize()*/
-            if (compressed_bytes > input.size)
+            if (compressed_bytes > input.size) {
                 compressed_bytes = input.size;
+            }
 
             get_sink()->write(output.dst, output.pos);
         }

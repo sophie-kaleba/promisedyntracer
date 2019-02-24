@@ -71,45 +71,6 @@ const char* get_name(SEXP sexp) {
     return s == NULL ? "" : s;
 }
 
-static int get_lineno(SEXP srcref) {
-    if (srcref && srcref != R_NilValue) {
-        if (TYPEOF(srcref) == VECSXP) {
-            srcref = VECTOR_ELT(srcref, 0);
-        }
-
-        return asInteger(srcref);
-    }
-
-    return -1;
-}
-
-static int get_colno(SEXP srcref) {
-    if (srcref && srcref != R_NilValue) {
-        if (TYPEOF(srcref) == VECSXP) {
-            srcref = VECTOR_ELT(srcref, 0);
-        }
-
-        //        INTEGER(val)[0] = lloc->first_line;
-        //        INTEGER(val)[1] = lloc->first_byte;
-        //        INTEGER(val)[2] = lloc->last_line;
-        //        INTEGER(val)[3] = lloc->last_byte;
-        //        INTEGER(val)[4] = lloc->first_column;
-        //        INTEGER(val)[5] = lloc->last_column;
-        //        INTEGER(val)[6] = lloc->first_parsed;
-        //        INTEGER(val)[7] = lloc->last_parsed;
-
-        if (TYPEOF(srcref) == INTSXP) {
-            // lineno = INTEGER(srcref)[0];
-            return INTEGER(srcref)[4];
-        } else {
-            // This should never happen, right?
-            return -1;
-        }
-    }
-
-    return -1;
-}
-
 #include <Rinternals.h>
 
 std::string get_expression(SEXP e) {
@@ -123,42 +84,6 @@ std::string get_expression(SEXP e) {
         expression.append(CHAR(STRING_ELT(strvec, linecount - 1)));
     }
     return expression;
-}
-
-std::string escape(const std::string& s) {
-    // https://stackoverflow.com/questions/5612182/convert-string-with-explicit-escape-sequence-into-relative-character
-    std::string                 res;
-    std::string::const_iterator it = s.begin();
-    while (it != s.end()) {
-        char c = *it++;
-        if (c == '\n') {
-            res += "    ";
-        } else if (c == '\t') {
-            res += "    ";
-        } else {
-            res += c;
-        }
-    }
-    return res;
-}
-
-// returns a monotonic timestamp in microseconds
-uint64_t timestamp() {
-    uint64_t t;
-// The __MACH__ bit is from http://stackoverflow.com/a/6725161/6846474
-#if !defined(HAVE_CLOCK_GETTIME) && defined(__MACH__)
-    clock_serv_t    cclock;
-    mach_timespec_t mts;
-    host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
-    clock_get_time(cclock, &mts);
-    mach_port_deallocate(mach_task_self(), cclock);
-    t = mts.tv_sec * 1e9 + mts.tv_nsec;
-#else
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    t                 = ts.tv_sec * 1e9 + ts.tv_nsec;
-#endif
-    return t;
 }
 
 std::string compute_hash(const char* data) {
@@ -195,9 +120,6 @@ const char* remove_null(const char* value) {
     return value ? value : "";
 }
 
-std::string clock_ticks_to_string(clock_t ticks) {
-    return std::to_string((double) ticks / CLOCKS_PER_SEC);
-}
 
 std::string to_string(const char* str) {
     return str ? std::string(str) : std::string("");
