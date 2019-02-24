@@ -51,25 +51,6 @@ void closure_entry(dyntracer_t* dyntracer,
     state.get_stack().push(function_call);
 
     state.exit_probe();
-
-    /* TRACE GENERATION
-    tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_FUNCTION_BEGIN, sexptype_to_string(CLOSXP),
-        call -> get_function_id(),
-        call -> get_id(),
-        state.lookup_environment(rho, true).get_id());
-
-    This function call has to be made only for the DEFAULT and
-    CUSTOM arguments. The trick is to loop over all the promises
-    in the call and only call this function for those that
-    satisfy the criterion.
-
-    tracer_serializer(dyntracer).serialize(
-        TraceSerializer::OPCODE_ARGUMENT_PROMISE_ASSOCIATE, info.fn_id,
-        info.call_id, argument.formal_parameter_position,
-        state.lookup_variable(rho, argument.name).get_id(), argument.name,
-        promise_state->get_id());
-    */
 }
 
 void closure_exit(dyntracer_t* dyntracer,
@@ -92,9 +73,6 @@ void closure_exit(dyntracer_t* dyntracer,
 
     function_call->set_return_value_type(type_of_sexp(return_value));
 
-    // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_FUNCTION_FINISH,
-    //                                        call -> get_id(), false);
-
     state.destroy_call(function_call);
 
     state.exit_probe();
@@ -114,11 +92,6 @@ void builtin_entry(dyntracer_t* dyntracer,
     state.update_wrapper_state(function_call);
 
     state.get_stack().push(function_call);
-
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_FUNCTION_BEGIN,
-    //     sexptype_to_string(BUILTINSXP), call -> get_function_id(),
-    //     call -> get_id(), state.lookup_environment(rho).get_id());
 
     state.exit_probe();
 }
@@ -145,10 +118,6 @@ void builtin_exit(dyntracer_t* dyntracer,
 
     state.destroy_call(function_call);
 
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_FUNCTION_FINISH, call->get_id(),
-    //     false);
-
     state.exit_probe();
 }
 
@@ -166,13 +135,6 @@ void special_entry(dyntracer_t* dyntracer,
     state.update_wrapper_state(function_call);
 
     state.get_stack().push(function_call);
-
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_FUNCTION_BEGIN,
-    //     sexptype_to_string(SPECIALSXP),
-    //     call -> get_function_id(),
-    //     call -> get_id(),
-    //     state.lookup_environment(rho).get_id());
 
     state.exit_probe();
 }
@@ -198,10 +160,6 @@ void special_exit(dyntracer_t* dyntracer,
     function_call->set_return_value_type(type_of_sexp(return_value));
 
     state.destroy_call(function_call);
-
-    // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_FUNCTION_FINISH,
-    //                                        call -> get_id(),
-    //                                        false);
 
     state.exit_probe();
 }
@@ -289,22 +247,6 @@ void context_jump(dyntracer_t* dyntracer,
 
     state.enter_probe();
 
-    // When doing longjump (exception thrown, etc.) this function gets the
-    // target environment and unwinds function call stack until that environment
-    // is on top. It also fixes indentation.
-
-    /* Add these serializer calls back when generating traces
-
-       tracer_serializer(dyntracer).serialize(
-       TraceSerializer::OPCODE_FUNCTION_FINISH,
-       // Change api to get_id instead
-       element.call->get_id(), true);
-
-       tracer_serializer(dyntracer).serialize(
-       TraceSerializer::OPCODE_PROMISE_FINISH, element.promise_state->get_id(),
-       true);
-    */
-
     /* Identify promises that do non local return. First, check if
    this special is a 'return', then check if the return happens
    right after a promise is forced, then walk back in the stack
@@ -367,20 +309,9 @@ void gc_allocate(dyntracer_t* dyntracer, const SEXP object) {
     if (TYPEOF(object) == PROMSXP) {
         state.create_promise(object);
 
-        // std::string cre_id = std::string("cre ") +
-        // std::to_string(promise_state -> get_id());
-
-        // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_PROMISE_CREATE,
-        //                                        promise_state -> get_id(),
-        //                                        promise_state ->
-        //                                        get_environment(),
-        //                                        promise_state ->
-        //                                        get_expression());
     } else if (TYPEOF(object) == ENVSXP) {
         state.create_environment(object).get_id();
 
-        // tracer_serializer(dyntracer).serialize(
-        //     TraceSerializer::OPCODE_ENVIRONMENT_CREATE, env_id);
     } else if (isVector(object)) {
         // analyzer.vector_alloc(info);
     }
@@ -421,9 +352,6 @@ void promise_force_entry(dyntracer_t* dyntracer, const SEXP promise) {
 
     state.get_stack().push(promise_state);
 
-    // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_PROMISE_BEGIN,
-    //                                        promise_state -> get_id());
-
     state.exit_probe();
 }
 
@@ -444,14 +372,6 @@ void promise_force_exit(dyntracer_t* dyntracer, const SEXP promise) {
 
     promise_state->set_value_type(type_of_sexp(value));
 
-    // std::string ext_id =
-    //     std::string("ext ") + std::to_string(promise_state->get_id());
-
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_PROMISE_FINISH,
-    //     promise_state -> get_id(),
-    //     false);
-
     state.exit_probe();
 }
 
@@ -463,14 +383,6 @@ void promise_value_lookup(dyntracer_t* dyntracer, const SEXP promise) {
     DenotedValue* promise_state = state.lookup_promise(promise, true);
 
     promise_state->lookup_value();
-
-    // std::string val_id = std::string("val ") + std::to_string(promise_state
-    // -> get_id());
-
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_PROMISE_VALUE_LOOKUP,
-    //     promise_state -> get_id(),
-    //     value_type_to_string(dyntrace_get_promise_value(promise)));
 
     state.exit_probe();
 }
@@ -484,11 +396,6 @@ void promise_expression_lookup(dyntracer_t* dyntracer, const SEXP promise) {
 
     promise_state->lookup_expression();
 
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_PROMISE_EXPRESSION_LOOKUP,
-    //     promise_state -> get_id(),
-    //     get_expression(dyntrace_get_promise_expression(promise)));
-
     state.exit_probe();
 }
 
@@ -500,11 +407,6 @@ void promise_environment_lookup(dyntracer_t* dyntracer, const SEXP promise) {
     DenotedValue* promise_state = state.lookup_promise(promise, true);
 
     promise_state->lookup_environment();
-
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_LOOKUP,
-    //     promise_state->get_id(),
-    //     promise_state->get_environment_id());
 
     state.exit_probe();
 }
@@ -520,11 +422,6 @@ void promise_expression_assign(dyntracer_t* dyntracer,
 
     promise_state->assign_expression();
 
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_PROMISE_EXPRESSION_ASSIGN,
-    //     promise_state -> get_id(),
-    //     get_expression(expression));
-
     state.exit_probe();
 }
 
@@ -538,11 +435,6 @@ void promise_value_assign(dyntracer_t* dyntracer,
     DenotedValue* promise_state = state.lookup_promise(promise, true);
 
     promise_state->assign_value();
-
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_PROMISE_VALUE_ASSIGN,
-    //     promise_state -> get_id(),
-    //     value_type_to_string(value));
 
     state.exit_probe();
 }
@@ -558,11 +450,6 @@ void promise_environment_assign(dyntracer_t* dyntracer,
 
     promise_state->assign_environment();
 
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_ASSIGN,
-    //     promise_state->get_id(),
-    //     promise_state->get_environment_id());
-
     state.exit_probe();
 }
 
@@ -574,11 +461,6 @@ void promise_substitute(dyntracer_t* dyntracer, const SEXP promise) {
     DenotedValue* promise_state = state.lookup_promise(promise, true);
 
     promise_state->metaprogram();
-
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_PROMISE_ENVIRONMENT_ASSIGN,
-    //     promise_state->get_id(),
-    //     promise_state->get_environment_id());
 
     state.exit_probe();
 }
@@ -627,12 +509,6 @@ void environment_variable_define(dyntracer_t* dyntracer,
 
     Variable& var = state.define_variable(rho, symbol);
 
-    // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_ENVIRONMENT_DEFINE,
-    //                                        var.get_environment_id(),
-    //                                        var.get_id(),
-    //                                        var.get_name(),
-    //                                        value_type_to_string(value));
-
     state.exit_probe();
 }
 
@@ -645,12 +521,6 @@ void environment_variable_assign(dyntracer_t* dyntracer,
     state.enter_probe();
 
     Variable& var = state.update_variable(rho, symbol);
-
-    // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_ENVIRONMENT_ASSIGN,
-    //                                        var.get_environment_id(),
-    //                                        var.get_id(),
-    //                                        var.get_name(),
-    //                                        value_type_to_string(value));
 
     /* When a variable is assigned, then a promise might be doing a side-effect.
        A promise writing to its own environment is not considered a side effect
@@ -681,11 +551,6 @@ void environment_variable_remove(dyntracer_t* dyntracer,
 
     Variable var = state.lookup_variable(rho, symbol);
 
-    // tracer_serializer(dyntracer).serialize(TraceSerializer::OPCODE_ENVIRONMENT_REMOVE,
-    //                                        var.get_environment_id(),
-    //                                        var.get_id(),
-    //                                        var.get_name());
-
     state.exit_probe();
 }
 
@@ -698,10 +563,6 @@ void environment_variable_lookup(dyntracer_t* dyntracer,
     state.enter_probe();
 
     Variable& var = state.lookup_variable(rho, symbol);
-
-    // tracer_serializer(dyntracer).serialize(
-    //     TraceSerializer::OPCODE_ENVIRONMENT_LOOKUP, var.get_environment_id(),
-    //     var.get_id(), var.get_name(), value_type_to_string(value));
 
     state.identify_side_effect_observers(var, rho);
 
