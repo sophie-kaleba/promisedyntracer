@@ -9,9 +9,9 @@
 
 DataTableStream* create_data_table(const std::string& table_filepath,
                                    const std::vector<std::string>& column_names,
-                                   bool                            truncate,
-                                   bool binary            = true,
-                                   int  compression_level = 0);
+                                   bool truncate,
+                                   bool binary = true,
+                                   int compression_level = 0);
 
 #ifdef __cplusplus
 extern "C" {

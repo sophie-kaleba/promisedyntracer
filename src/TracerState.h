@@ -16,20 +16,20 @@ class TracerState {
   private:
     const std::string output_dirpath_;
     const std::string trace_filepath_;
-    const bool        enable_trace_;
-    const bool        truncate_;
-    const bool        verbose_;
-    const bool        binary_;
-    const int         compression_level_;
+    const bool enable_trace_;
+    const bool truncate_;
+    const bool verbose_;
+    const bool binary_;
+    const int compression_level_;
 
   public:
     TracerState(const std::string& output_dirpath,
                 const std::string& trace_filepath,
-                bool               enable_trace,
-                bool               truncate,
-                bool               verbose,
-                bool               binary,
-                int                compression_level)
+                bool enable_trace,
+                bool truncate,
+                bool verbose,
+                bool binary,
+                int compression_level)
         : output_dirpath_(output_dirpath)
         , trace_filepath_(trace_filepath)
         , enable_trace_(enable_trace)
@@ -360,16 +360,16 @@ class TracerState {
 
     Variable& lookup_variable(const SEXP rho,
                               const SEXP symbol,
-                              bool       create_environment = true,
-                              bool       create_variable    = true) {
+                              bool create_environment = true,
+                              bool create_variable = true) {
         return lookup_variable(
             rho, symbol_to_string(symbol), create_environment, create_variable);
     }
 
-    Variable& lookup_variable(const SEXP         rho,
+    Variable& lookup_variable(const SEXP rho,
                               const std::string& symbol,
-                              bool               create_environment = true,
-                              bool               create_variable    = true) {
+                              bool create_environment = true,
+                              bool create_variable = true) {
         Environment& env = lookup_environment(rho, create_environment);
 
         bool var_exists = env.exists(symbol);
@@ -384,7 +384,7 @@ class TracerState {
 
     Variable& define_variable(const SEXP rho,
                               const SEXP symbol,
-                              bool       create_environment = true) {
+                              bool create_environment = true) {
         return lookup_environment(rho, true).define(symbol_to_string(symbol),
                                                     create_next_variable_id_(),
                                                     get_current_timestamp_());
@@ -392,8 +392,8 @@ class TracerState {
 
     Variable& update_variable(const SEXP rho,
                               const SEXP symbol,
-                              bool       create_environment = true,
-                              bool       create_variable    = true) {
+                              bool create_environment = true,
+                              bool create_variable = true) {
         Variable& var = lookup_variable(rho, symbol);
         var.set_modification_timestamp(get_current_timestamp_());
         return var;
@@ -401,7 +401,7 @@ class TracerState {
 
     Variable remove_variable(const SEXP rho,
                              const SEXP symbol,
-                             bool       create_environment = true) {
+                             bool create_environment = true) {
         return lookup_environment(rho, create_environment)
             .remove(symbol_to_string(symbol));
     }
@@ -415,8 +415,8 @@ class TracerState {
         return variable_id_++;
     }
 
-    env_id_t                              environment_id_;
-    var_id_t                              variable_id_;
+    env_id_t environment_id_;
+    var_id_t variable_id_;
     std::unordered_map<SEXP, Environment> environment_mapping_;
 
   public:
@@ -454,8 +454,8 @@ class TracerState {
     }
 
     DenotedValue* lookup_promise(const SEXP promise,
-                                 bool       create = false,
-                                 bool       local  = false) {
+                                 bool create = false,
+                                 bool local = false) {
         auto iter = promises_.find(promise);
 
         /* all promises encountered are added to the map. Its not possible for
@@ -620,7 +620,7 @@ class TracerState {
     }
 
     DenotedValue* create_raw_promise_(const SEXP promise, bool local) {
-        const SEXP    rho    = dyntrace_get_promise_environment(promise);
+        const SEXP rho = dyntrace_get_promise_environment(promise);
 
         DenotedValue* promise_state =
             new DenotedValue(get_next_denoted_value_id_(), promise, local);
@@ -651,7 +651,7 @@ class TracerState {
     }
 
     std::unordered_map<SEXP, DenotedValue*> promises_;
-    denoted_value_id_t                      denoted_value_id_counter_;
+    denoted_value_id_t denoted_value_id_counter_;
 
   private:
     timestamp_t get_current_timestamp_() const {
@@ -679,11 +679,11 @@ class TracerState {
                       const SEXP op,
                       const SEXP args,
                       const SEXP rho) {
-        Function*            function      = lookup_function(op);
-        Call*                function_call = nullptr;
-        call_id_t            call_id       = get_next_call_id_();
-        const function_id_t& function_id   = function->get_id();
-        const std::string    function_name = get_name(call);
+        Function* function = lookup_function(op);
+        Call* function_call = nullptr;
+        call_id_t call_id = get_next_call_id_();
+        const function_id_t& function_id = function->get_id();
+        const std::string function_name = get_name(call);
 
         function_call = new Call(call_id,
                                  function_id,
@@ -736,12 +736,12 @@ class TracerState {
         return ++call_id_counter_;
     }
 
-    void process_closure_argument_(Call*      call,
-                                   int        formal_parameter_position,
-                                   int        actual_argument_position,
+    void process_closure_argument_(Call* call,
+                                   int formal_parameter_position,
+                                   int actual_argument_position,
                                    const SEXP name,
                                    const SEXP argument,
-                                   bool       dot_dot_dot) {
+                                   bool dot_dot_dot) {
         DenotedValue* value = nullptr;
         /* only add to promise map if the argument is a promise */
         if (type_of_sexp(argument) == PROMSXP) {
@@ -772,12 +772,12 @@ class TracerState {
     }
 
     void process_closure_arguments_(Call* call, const SEXP op) {
-        SEXP formal                    = nullptr;
-        SEXP name                      = nullptr;
-        SEXP argument                  = nullptr;
-        SEXP rho                       = call->get_environment();
-        int  formal_parameter_position = -1;
-        int  actual_argument_position  = -1;
+        SEXP formal = nullptr;
+        SEXP name = nullptr;
+        SEXP argument = nullptr;
+        SEXP rho = call->get_environment();
+        int formal_parameter_position = -1;
+        int actual_argument_position = -1;
 
         for (formal = FORMALS(op); formal != R_NilValue; formal = CDR(formal)) {
             ++formal_parameter_position;
@@ -821,7 +821,7 @@ class TracerState {
     }
 
     void serialize_argument_(Argument* argument) {
-        Call*         call  = argument->get_call();
+        Call* call = argument->get_call();
         DenotedValue* value = argument->get_denoted_value();
 
         argument_data_table_->write_row(
@@ -905,9 +905,9 @@ class TracerState {
         delete function;
     }
 
-    DataTableStream*                    call_summary_data_table_;
-    DataTableStream*                    function_definition_data_table_;
-    std::unordered_set<function_id_t>   serialized_functions_;
+    DataTableStream* call_summary_data_table_;
+    DataTableStream* function_definition_data_table_;
+    std::unordered_set<function_id_t> serialized_functions_;
     std::unordered_map<SEXP, Function*> functions_;
 
     void serialize_function_(Function* function) {
@@ -960,8 +960,8 @@ class TracerState {
 
   public:
     void identify_side_effect_creators(const Variable& var, const SEXP env) {
-        bool                   direct = true;
-        ExecutionContextStack& stack  = get_stack();
+        bool direct = true;
+        ExecutionContextStack& stack = get_stack();
 
         for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
             ExecutionContext& exec_ctxt = *iter;
@@ -1084,10 +1084,10 @@ class TracerState {
     }
 
     eval_depth_t get_evaluation_depth(Call* call) {
-        ExecutionContextStack&                  stack = get_stack();
+        ExecutionContextStack& stack = get_stack();
         ExecutionContextStack::reverse_iterator iter;
-        eval_depth_t                            eval_depth = {0, 0, 0, -1};
-        bool                                    nesting    = true;
+        eval_depth_t eval_depth = {0, 0, 0, -1};
+        bool nesting = true;
 
         for (iter = stack.rbegin(); iter != stack.rend(); ++iter) {
             ExecutionContext& exec_ctxt = *iter;
@@ -1143,8 +1143,8 @@ class TracerState {
     }
 
   private:
-    call_id_t                                call_id_counter_;
-    std::vector<unsigned int>                object_count_;
+    call_id_t call_id_counter_;
+    std::vector<unsigned int> object_count_;
     std::vector<std::pair<lifecycle_t, int>> lifecycle_summary_;
 };
 

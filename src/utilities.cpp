@@ -75,8 +75,8 @@ const char* get_name(SEXP sexp) {
 
 std::string get_expression(SEXP e) {
     std::string expression;
-    int         linecount = 0;
-    SEXP        strvec    = serialize_sexp(e, &linecount);
+    int linecount = 0;
+    SEXP strvec = serialize_sexp(e, &linecount);
     for (int i = 0; i < linecount - 1; ++i) {
         expression.append(CHAR(STRING_ELT(strvec, i))).append("\n");
     }
@@ -89,7 +89,7 @@ std::string get_expression(SEXP e) {
 std::string compute_hash(const char* data) {
     const EVP_MD* md = EVP_md5();
     unsigned char md_value[EVP_MAX_MD_SIZE];
-    unsigned int  md_len = 0;
+    unsigned int md_len = 0;
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     EVP_MD_CTX mdctx;
     EVP_MD_CTX_init(&mdctx);
@@ -119,7 +119,6 @@ std::string compute_hash(const char* data) {
 const char* remove_null(const char* value) {
     return value ? value : "";
 }
-
 
 std::string to_string(const char* str) {
     return str ? std::string(str) : std::string("");

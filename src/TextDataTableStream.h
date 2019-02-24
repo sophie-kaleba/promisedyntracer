@@ -10,9 +10,9 @@
 
 class TextDataTableStream: public DataTableStream {
   public:
-    explicit TextDataTableStream(const std::string&              table_filepath,
+    explicit TextDataTableStream(const std::string& table_filepath,
                                  const std::vector<std::string>& column_names,
-                                 bool                            truncate,
+                                 bool truncate,
                                  int compression_level)
         : DataTableStream(table_filepath,
                           column_names,
@@ -86,7 +86,7 @@ class TextDataTableStream: public DataTableStream {
         return is_last_column() ? get_row_separator() : get_column_separator();
     }
 
-    std::string              contents_;
+    std::string contents_;
     static const std::string column_separator_;
     static const std::string row_separator_;
 };

@@ -12,7 +12,7 @@ extern const sexptype_t MISSINGSXP;
 extern const sexptype_t JUMPSXP;
 extern const sexptype_t CONTEXTSXP;
 
-sexptype_t  type_of_sexp(SEXP value);
+sexptype_t type_of_sexp(SEXP value);
 std::string sexptype_to_string(sexptype_t);
 std::string value_type_to_string(SEXP value);
 

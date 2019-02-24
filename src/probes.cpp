@@ -21,10 +21,10 @@ void dyntrace_entry(dyntracer_t* dyntracer, SEXP expression, SEXP environment) {
 }
 
 void dyntrace_exit(dyntracer_t* dyntracer,
-                   SEXP         expression,
-                   SEXP         environment,
-                   SEXP         result,
-                   int          error) {
+                   SEXP expression,
+                   SEXP environment,
+                   SEXP result,
+                   int error) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -36,10 +36,10 @@ void dyntrace_exit(dyntracer_t* dyntracer,
 }
 
 void closure_entry(dyntracer_t* dyntracer,
-                   const SEXP   call,
-                   const SEXP   op,
-                   const SEXP   args,
-                   const SEXP   rho) {
+                   const SEXP call,
+                   const SEXP op,
+                   const SEXP args,
+                   const SEXP rho) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -73,11 +73,11 @@ void closure_entry(dyntracer_t* dyntracer,
 }
 
 void closure_exit(dyntracer_t* dyntracer,
-                  const SEXP   call,
-                  const SEXP   op,
-                  const SEXP   args,
-                  const SEXP   rho,
-                  const SEXP   return_value) {
+                  const SEXP call,
+                  const SEXP op,
+                  const SEXP args,
+                  const SEXP rho,
+                  const SEXP return_value) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -101,10 +101,10 @@ void closure_exit(dyntracer_t* dyntracer,
 }
 
 void builtin_entry(dyntracer_t* dyntracer,
-                   const SEXP   call,
-                   const SEXP   op,
-                   const SEXP   args,
-                   const SEXP   rho) {
+                   const SEXP call,
+                   const SEXP op,
+                   const SEXP args,
+                   const SEXP rho) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -124,11 +124,11 @@ void builtin_entry(dyntracer_t* dyntracer,
 }
 
 void builtin_exit(dyntracer_t* dyntracer,
-                  const SEXP   call,
-                  const SEXP   op,
-                  const SEXP   args,
-                  const SEXP   rho,
-                  const SEXP   return_value) {
+                  const SEXP call,
+                  const SEXP op,
+                  const SEXP args,
+                  const SEXP rho,
+                  const SEXP return_value) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -153,10 +153,10 @@ void builtin_exit(dyntracer_t* dyntracer,
 }
 
 void special_entry(dyntracer_t* dyntracer,
-                   const SEXP   call,
-                   const SEXP   op,
-                   const SEXP   args,
-                   const SEXP   rho) {
+                   const SEXP call,
+                   const SEXP op,
+                   const SEXP args,
+                   const SEXP rho) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -178,11 +178,11 @@ void special_entry(dyntracer_t* dyntracer,
 }
 
 void special_exit(dyntracer_t* dyntracer,
-                  const SEXP   call,
-                  const SEXP   op,
-                  const SEXP   args,
-                  const SEXP   rho,
-                  const SEXP   return_value) {
+                  const SEXP call,
+                  const SEXP op,
+                  const SEXP args,
+                  const SEXP rho,
+                  const SEXP return_value) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -207,11 +207,11 @@ void special_exit(dyntracer_t* dyntracer,
 }
 
 void S3_dispatch_entry(dyntracer_t* dyntracer,
-                       const char*  generic,
-                       const SEXP   cls,
-                       SEXP         generic_method,
-                       SEXP         specific_method,
-                       SEXP         objects) {
+                       const char* generic,
+                       const SEXP cls,
+                       SEXP generic_method,
+                       SEXP specific_method,
+                       SEXP objects) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -255,11 +255,11 @@ void context_entry(dyntracer_t* dyntracer, const RCNTXT* cptr) {
     state.exit_probe();
 }
 
-void jump_single_context(TracerState&      state,
+void jump_single_context(TracerState& state,
                          ExecutionContext& exec_ctxt,
-                         bool              returned,
-                         const sexptype_t  return_value_type,
-                         const SEXP        rho) {
+                         bool returned,
+                         const sexptype_t return_value_type,
+                         const SEXP rho) {
     if (exec_ctxt.is_call()) {
         Call* call = exec_ctxt.get_call();
 
@@ -281,10 +281,10 @@ void jump_single_context(TracerState&      state,
     }
 }
 
-void context_jump(dyntracer_t*  dyntracer,
+void context_jump(dyntracer_t* dyntracer,
                   const RCNTXT* context,
-                  const SEXP    return_value,
-                  int           restart) {
+                  const SEXP return_value,
+                  int restart) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -326,7 +326,7 @@ void context_jump(dyntracer_t*  dyntracer,
         jump_single_context(state, exec_ctxts.front(), false, JUMPSXP, rho);
     } else {
         auto begin_iter = exec_ctxts.begin();
-        auto end_iter   = --exec_ctxts.end();
+        auto end_iter = --exec_ctxts.end();
 
         bool returned =
             (begin_iter->is_special() &&
@@ -510,8 +510,8 @@ void promise_environment_lookup(dyntracer_t* dyntracer, const SEXP promise) {
 }
 
 void promise_expression_assign(dyntracer_t* dyntracer,
-                               const SEXP   promise,
-                               const SEXP   expression) {
+                               const SEXP promise,
+                               const SEXP expression) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -529,8 +529,8 @@ void promise_expression_assign(dyntracer_t* dyntracer,
 }
 
 void promise_value_assign(dyntracer_t* dyntracer,
-                          const SEXP   promise,
-                          const SEXP   value) {
+                          const SEXP promise,
+                          const SEXP value) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -548,8 +548,8 @@ void promise_value_assign(dyntracer_t* dyntracer,
 }
 
 void promise_environment_assign(dyntracer_t* dyntracer,
-                                const SEXP   promise,
-                                const SEXP   environment) {
+                                const SEXP promise,
+                                const SEXP environment) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -619,9 +619,9 @@ void gc_unmark(dyntracer_t* dyntracer, const SEXP object) {
 }
 
 void environment_variable_define(dyntracer_t* dyntracer,
-                                 const SEXP   symbol,
-                                 const SEXP   value,
-                                 const SEXP   rho) {
+                                 const SEXP symbol,
+                                 const SEXP value,
+                                 const SEXP rho) {
     TracerState& state = tracer_state(dyntracer);
     state.enter_probe();
 
@@ -637,9 +637,9 @@ void environment_variable_define(dyntracer_t* dyntracer,
 }
 
 void environment_variable_assign(dyntracer_t* dyntracer,
-                                 const SEXP   symbol,
-                                 const SEXP   value,
-                                 const SEXP   rho) {
+                                 const SEXP symbol,
+                                 const SEXP value,
+                                 const SEXP rho) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -673,8 +673,8 @@ void environment_variable_assign(dyntracer_t* dyntracer,
 }
 
 void environment_variable_remove(dyntracer_t* dyntracer,
-                                 const SEXP   symbol,
-                                 const SEXP   rho) {
+                                 const SEXP symbol,
+                                 const SEXP rho) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
@@ -690,9 +690,9 @@ void environment_variable_remove(dyntracer_t* dyntracer,
 }
 
 void environment_variable_lookup(dyntracer_t* dyntracer,
-                                 const SEXP   symbol,
-                                 const SEXP   value,
-                                 const SEXP   rho) {
+                                 const SEXP symbol,
+                                 const SEXP value,
+                                 const SEXP rho) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();

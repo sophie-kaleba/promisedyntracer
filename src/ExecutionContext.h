@@ -75,12 +75,12 @@ class ExecutionContext {
     sexptype_t type_;
     union {
         DenotedValue* promise_state_;
-        Call*         call_;
+        Call* call_;
         const RCNTXT* r_context_;
     };
 };
 
-using execution_contexts_t       = std::vector<ExecutionContext>;
+using execution_contexts_t = std::vector<ExecutionContext>;
 using execution_context_iterator = execution_contexts_t::iterator;
 using reverse_execution_context_iterator =
     execution_contexts_t::reverse_iterator;

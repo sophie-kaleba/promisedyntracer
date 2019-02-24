@@ -7,7 +7,7 @@ class BinaryDataTableStream: public DataTableStream {
   public:
     explicit BinaryDataTableStream(const std::string& table_filepath,
                                    const std::vector<std::string>& column_names,
-                                   bool                            truncate,
+                                   bool truncate,
                                    int compression_level)
         : DataTableStream(table_filepath,
                           column_names,
@@ -112,7 +112,7 @@ class BinaryDataTableStream: public DataTableStream {
         /* write each column name as a variable length string */
         for (auto column_index = 0; column_index < get_column_count();
              ++column_index) {
-            const std::string&   column_name{get_column_name(column_index)};
+            const std::string& column_name{get_column_name(column_index)};
             const column_type_t& column_type{get_column_type(column_index)};
             size = column_name.size();
             write(&size, sizeof(size));

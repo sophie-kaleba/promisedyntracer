@@ -15,7 +15,7 @@ class Stream {
         sink_ = sink;
     }
     virtual void write(const void* buffer, std::size_t bytes) = 0;
-    virtual void flush()                                      = 0;
+    virtual void flush() = 0;
 
   private:
     Stream* sink_;

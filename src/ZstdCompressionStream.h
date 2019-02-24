@@ -44,7 +44,7 @@ class ZstdCompressionStream: public Stream {
     }
 
     void write(const void* buffer, std::size_t bytes) override {
-        const char* buf          = static_cast<const char*>(buffer);
+        const char* buf = static_cast<const char*>(buffer);
         while (bytes != 0) {
             std::size_t copied_bytes =
                 std::min(input_buffer_size_ - input_buffer_index_, bytes);
@@ -61,7 +61,7 @@ class ZstdCompressionStream: public Stream {
         if (output_buffer_ == nullptr || input_buffer_ == nullptr) {
             return;
         }
-        ZSTD_inBuffer  input{input_buffer_, input_buffer_index_, 0};
+        ZSTD_inBuffer input{input_buffer_, input_buffer_index_, 0};
         ZSTD_outBuffer output{output_buffer_, output_buffer_size_, 0};
 
         while (input.pos < input.size) {
@@ -94,7 +94,7 @@ class ZstdCompressionStream: public Stream {
             return;
         }
         flush();
-        size_t         unflushed;
+        size_t unflushed;
         ZSTD_outBuffer output = {output_buffer_, output_buffer_size_, 0};
         while ((unflushed = ZSTD_endStream(compression_stream_, &output))) {
             /* close frame */
@@ -112,11 +112,11 @@ class ZstdCompressionStream: public Stream {
 
         ZSTD_freeCStream(compression_stream_);
         std::free(input_buffer_);
-        input_buffer_       = nullptr;
-        input_buffer_size_  = 0;
+        input_buffer_ = nullptr;
+        input_buffer_size_ = 0;
         input_buffer_index_ = 0;
         std::free(output_buffer_);
-        output_buffer_      = nullptr;
+        output_buffer_ = nullptr;
         output_buffer_size_ = 0;
     }
 
@@ -125,12 +125,12 @@ class ZstdCompressionStream: public Stream {
     }
 
   private:
-    int           compression_level_;
-    char*         input_buffer_;
-    std::size_t   input_buffer_size_;
-    std::size_t   input_buffer_index_;
-    char*         output_buffer_;
-    std::size_t   output_buffer_size_;
+    int compression_level_;
+    char* input_buffer_;
+    std::size_t input_buffer_size_;
+    std::size_t input_buffer_index_;
+    char* output_buffer_;
+    std::size_t output_buffer_size_;
     ZSTD_CStream* compression_stream_;
 };
 

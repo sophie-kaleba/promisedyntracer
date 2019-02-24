@@ -17,10 +17,10 @@
 #include <utility>
 #include <zstd.h>
 
-int  open_file(const std::string& filepath, int flags, mode_t mode = 0666);
+int open_file(const std::string& filepath, int flags, mode_t mode = 0666);
 void close_file(int fd, const std::string& filepath);
 std::pair<void*, std::size_t> map_to_memory(const std::string& filepath);
-void                          unmap_memory(void* data, std::size_t size);
+void unmap_memory(void* data, std::size_t size);
 
 class FileStream: public Stream {
   public:
@@ -48,7 +48,7 @@ class FileStream: public Stream {
 
     void write(const void* buffer, std::size_t bytes) override {
         using ::write;
-        const char* buf           = static_cast<const char*>(buffer);
+        const char* buf = static_cast<const char*>(buffer);
 
         while (bytes > 0) {
             int written_bytes = write(descriptor_, buf, bytes);
@@ -86,7 +86,7 @@ class FileStream: public Stream {
 
   private:
     std::string filepath_;
-    int         descriptor_;
+    int descriptor_;
 };
 
 #endif /* PROMISEDYNTRACER_FILE_STREAM_H */

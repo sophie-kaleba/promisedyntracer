@@ -31,8 +31,8 @@ class Environment {
     }
 
     Variable& define(const std::string& symbol,
-                     const var_id_t     var_id,
-                     const timestamp_t  timestamp) {
+                     const var_id_t var_id,
+                     const timestamp_t timestamp) {
         auto iter = variable_mapping_.insert(
             {symbol, Variable(symbol, var_id, timestamp, rho_, get_id())});
         return iter.first->second;
@@ -49,7 +49,7 @@ class Environment {
     }
 
   private:
-    const SEXP     rho_;
+    const SEXP rho_;
     const env_id_t id_;
 
     std::unordered_map<std::string, Variable> variable_mapping_;

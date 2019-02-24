@@ -13,13 +13,13 @@ typedef std::vector<int> force_order_t;
 
 class Call {
   public:
-    explicit Call(const call_id_t      id,
+    explicit Call(const call_id_t id,
                   const function_id_t& function_id,
-                  const sexptype_t     function_type,
-                  const std::string&   function_name,
-                  const int            formal_parameter_count,
-                  const SEXP           environment,
-                  Function*            function)
+                  const sexptype_t function_type,
+                  const std::string& function_name,
+                  const int formal_parameter_count,
+                  const SEXP environment,
+                  Function* function)
         : id_(id)
         , function_id_(function_id)
         , function_type_(function_type)
@@ -134,7 +134,7 @@ class Call {
 
     pos_seq_t get_missing_argument_positions() const {
         pos_seq_t missing_argument_positions;
-        int       position;
+        int position;
 
         for (auto argument: arguments_) {
             if (argument->get_denoted_value()->is_missing()) {
@@ -155,18 +155,18 @@ class Call {
     }
 
   private:
-    const call_id_t        id_;
-    const function_id_t    function_id_;
-    const sexptype_t       function_type_;
-    const std::string      function_name_;
-    int                    formal_parameter_count_;
-    int                    actual_argument_count_;
-    const SEXP             environment_;
-    Function*              function_;
-    sexptype_t             return_value_type_;
-    bool                   jumped_;
+    const call_id_t id_;
+    const function_id_t function_id_;
+    const sexptype_t function_type_;
+    const std::string function_name_;
+    int formal_parameter_count_;
+    int actual_argument_count_;
+    const SEXP environment_;
+    Function* function_;
+    sexptype_t return_value_type_;
+    bool jumped_;
     std::vector<Argument*> arguments_;
-    pos_seq_t              force_order_;
+    pos_seq_t force_order_;
 };
 
 #endif /* PROMISEDYTRACER_CALL_H */

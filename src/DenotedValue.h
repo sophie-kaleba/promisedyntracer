@@ -15,8 +15,8 @@ class DenotedValue {
         if (type_ == PROMSXP) {
             add_lifecycle_action_('A');
             SEXP expr = dyntrace_get_promise_expression(object);
-            SEXP val  = dyntrace_get_promise_value(object);
-            SEXP rho  = dyntrace_get_promise_environment(object);
+            SEXP val = dyntrace_get_promise_value(object);
+            SEXP rho = dyntrace_get_promise_environment(object);
             set_expression_type(type_of_sexp(expr));
             set_value_type(type_of_sexp(val));
             set_environment(rho);
@@ -93,11 +93,11 @@ class DenotedValue {
         add_lifecycle_action_('B');
     }
 
-    void remove_argument(const call_id_t      call_id,
+    void remove_argument(const call_id_t call_id,
                          const function_id_t& function_id,
-                         const sexptype_t     return_value_type,
-                         const int            formal_parameter_count,
-                         const Argument*      argument);
+                         const sexptype_t return_value_type,
+                         const int formal_parameter_count,
+                         const Argument* argument);
 
     const function_id_t& get_scope() const {
         return scope_;
@@ -639,38 +639,37 @@ class DenotedValue {
             copy_and_reset(before_escape_force_count_, force_count_);
 
             copy_and_reset(before_escape_metaprogram_count_,
-                            metaprogram_count_);
+                           metaprogram_count_);
 
             copy_and_reset(before_escape_value_lookup_count_,
-                            value_lookup_count_);
+                           value_lookup_count_);
 
             copy_and_reset(before_escape_value_assign_count_,
-                            value_assign_count_);
+                           value_assign_count_);
 
             copy_and_reset(before_escape_expression_lookup_count_,
-                            expression_lookup_count_);
+                           expression_lookup_count_);
 
             copy_and_reset(before_escape_expression_assign_count_,
-                            expression_assign_count_);
+                           expression_assign_count_);
 
             copy_and_reset(before_escape_environment_lookup_count_,
-                            environment_lookup_count_);
+                           environment_lookup_count_);
 
             copy_and_reset(before_escape_environment_assign_count_,
-                            environment_assign_count_);
+                           environment_assign_count_);
 
             copy_and_reset(before_escape_direct_self_scope_mutation_count_,
-                            direct_self_scope_mutation_count_);
+                           direct_self_scope_mutation_count_);
 
             copy_and_reset(before_escape_indirect_self_scope_mutation_count_,
-                            indirect_self_scope_mutation_count_);
+                           indirect_self_scope_mutation_count_);
 
             copy_and_reset(before_escape_direct_lexical_scope_mutation_count_,
-                            direct_lexical_scope_mutation_count_);
+                           direct_lexical_scope_mutation_count_);
 
-            copy_and_reset(
-                before_escape_indirect_lexical_scope_mutation_count_,
-                indirect_lexical_scope_mutation_count_);
+            copy_and_reset(before_escape_indirect_lexical_scope_mutation_count_,
+                           indirect_lexical_scope_mutation_count_);
 
             copy_and_reset(
                 before_escape_direct_non_lexical_scope_mutation_count_,
@@ -681,11 +680,10 @@ class DenotedValue {
                 indirect_non_lexical_scope_mutation_count_);
 
             copy_and_reset(before_escape_direct_self_scope_observation_count_,
-                            direct_self_scope_observation_count_);
+                           direct_self_scope_observation_count_);
 
-            copy_and_reset(
-                before_escape_indirect_self_scope_observation_count_,
-                indirect_self_scope_observation_count_);
+            copy_and_reset(before_escape_indirect_self_scope_observation_count_,
+                           indirect_self_scope_observation_count_);
 
             copy_and_reset(
                 before_escape_direct_lexical_scope_observation_count_,
@@ -715,58 +713,58 @@ class DenotedValue {
         }
     }
 
-    denoted_value_id_t     id_;
-    sexptype_t             type_;
-    sexptype_t             expression_type_;
-    sexptype_t             value_type_;
-    bool                   preforced_;
-    SEXP                   environment_;
-    bool                   local_;
-    bool                   active_;
+    denoted_value_id_t id_;
+    sexptype_t type_;
+    sexptype_t expression_type_;
+    sexptype_t value_type_;
+    bool preforced_;
+    SEXP environment_;
+    bool local_;
+    bool active_;
     std::vector<Argument*> argument_stack_;
-    bool                   default_;
-    bool                   evaluated_;
-    bool                   was_argument_;
-    function_id_t          scope_;
-    std::string            class_name_;
-    int                    S3_dispatch_count_;
-    int                    S4_dispatch_count_;
-    bool                   non_local_return_;
-    timestamp_t            creation_timestamp_;
-    double                 execution_time_;
-    bool                   escape_;
-    eval_depth_t           eval_depth_;
-    call_id_t              previous_call_id_;
-    function_id_t          previous_function_id_;
-    int                    previous_formal_parameter_position_;
-    int                    previous_formal_parameter_count_;
-    int                    previous_actual_argument_position_;
-    sexptype_t             previous_call_return_value_type_;
-    bool                   previous_default_argument_;
-    std::uint8_t           before_escape_force_count_;
-    std::uint8_t           force_count_;
-    std::uint8_t           before_escape_value_lookup_count_;
-    std::uint8_t           value_lookup_count_;
-    std::uint8_t           before_escape_metaprogram_count_;
-    std::uint8_t           metaprogram_count_;
-    std::uint8_t           before_escape_value_assign_count_;
-    std::uint8_t           value_assign_count_;
-    std::uint8_t           before_escape_expression_lookup_count_;
-    std::uint8_t           expression_lookup_count_;
-    std::uint8_t           before_escape_expression_assign_count_;
-    std::uint8_t           expression_assign_count_;
-    std::uint8_t           before_escape_environment_lookup_count_;
-    std::uint8_t           environment_lookup_count_;
-    std::uint8_t           before_escape_environment_assign_count_;
-    std::uint8_t           environment_assign_count_;
-    std::uint8_t           before_escape_direct_self_scope_mutation_count_;
-    std::uint8_t           direct_self_scope_mutation_count_;
-    std::uint8_t           before_escape_indirect_self_scope_mutation_count_;
-    std::uint8_t           indirect_self_scope_mutation_count_;
-    std::uint8_t           before_escape_direct_lexical_scope_mutation_count_;
-    std::uint8_t           direct_lexical_scope_mutation_count_;
-    std::uint8_t           before_escape_indirect_lexical_scope_mutation_count_;
-    std::uint8_t           indirect_lexical_scope_mutation_count_;
+    bool default_;
+    bool evaluated_;
+    bool was_argument_;
+    function_id_t scope_;
+    std::string class_name_;
+    int S3_dispatch_count_;
+    int S4_dispatch_count_;
+    bool non_local_return_;
+    timestamp_t creation_timestamp_;
+    double execution_time_;
+    bool escape_;
+    eval_depth_t eval_depth_;
+    call_id_t previous_call_id_;
+    function_id_t previous_function_id_;
+    int previous_formal_parameter_position_;
+    int previous_formal_parameter_count_;
+    int previous_actual_argument_position_;
+    sexptype_t previous_call_return_value_type_;
+    bool previous_default_argument_;
+    std::uint8_t before_escape_force_count_;
+    std::uint8_t force_count_;
+    std::uint8_t before_escape_value_lookup_count_;
+    std::uint8_t value_lookup_count_;
+    std::uint8_t before_escape_metaprogram_count_;
+    std::uint8_t metaprogram_count_;
+    std::uint8_t before_escape_value_assign_count_;
+    std::uint8_t value_assign_count_;
+    std::uint8_t before_escape_expression_lookup_count_;
+    std::uint8_t expression_lookup_count_;
+    std::uint8_t before_escape_expression_assign_count_;
+    std::uint8_t expression_assign_count_;
+    std::uint8_t before_escape_environment_lookup_count_;
+    std::uint8_t environment_lookup_count_;
+    std::uint8_t before_escape_environment_assign_count_;
+    std::uint8_t environment_assign_count_;
+    std::uint8_t before_escape_direct_self_scope_mutation_count_;
+    std::uint8_t direct_self_scope_mutation_count_;
+    std::uint8_t before_escape_indirect_self_scope_mutation_count_;
+    std::uint8_t indirect_self_scope_mutation_count_;
+    std::uint8_t before_escape_direct_lexical_scope_mutation_count_;
+    std::uint8_t direct_lexical_scope_mutation_count_;
+    std::uint8_t before_escape_indirect_lexical_scope_mutation_count_;
+    std::uint8_t indirect_lexical_scope_mutation_count_;
     std::uint8_t before_escape_direct_non_lexical_scope_mutation_count_;
     std::uint8_t direct_non_lexical_scope_mutation_count_;
     std::uint8_t before_escape_indirect_non_lexical_scope_mutation_count_;
@@ -783,7 +781,7 @@ class DenotedValue {
     std::uint8_t direct_non_lexical_scope_observation_count_;
     std::uint8_t before_escape_indirect_non_lexical_scope_observation_count_;
     std::uint8_t indirect_non_lexical_scope_observation_count_;
-    lifecycle_t  lifecycle_;
+    lifecycle_t lifecycle_;
 };
 
 #endif /* PROMISEDYNTRACER_DENOTED_VALUE_H */

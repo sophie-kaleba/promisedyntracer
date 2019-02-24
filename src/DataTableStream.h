@@ -16,10 +16,10 @@ class DataTableStream: public Stream {
   public:
     using column_type_t = std::pair<SEXPTYPE, uint32_t>;
 
-    DataTableStream(const std::string&              table_filepath,
+    DataTableStream(const std::string& table_filepath,
                     const std::vector<std::string>& column_names,
-                    bool                            truncate,
-                    int                             compression_level)
+                    bool truncate,
+                    int compression_level)
         : Stream(nullptr)
         , table_filepath_{table_filepath}
         , column_names_{column_names}
@@ -30,9 +30,9 @@ class DataTableStream: public Stream {
         , buffer_stream_{nullptr}
         , zstd_compression_stream_{nullptr} {
         int flags = O_WRONLY | O_CREAT;
-        flags     = truncate ? flags | O_TRUNC : flags;
+        flags = truncate ? flags | O_TRUNC : flags;
 
-        file_stream_   = new FileStream(table_filepath, flags);
+        file_stream_ = new FileStream(table_filepath, flags);
         buffer_stream_ = new BufferStream(file_stream_);
 
         if (compression_level > 0) {
@@ -48,7 +48,6 @@ class DataTableStream: public Stream {
 
     DataTableStream&
     operator=(const DataTableStream&) = delete; // Disallow copying
-
 
     void fill(char byte, std::size_t count) {
         buffer_stream_->fill(byte, count);
@@ -72,7 +71,7 @@ class DataTableStream: public Stream {
 
     void flush() override {
         for (Stream* stream = get_sink(); stream != nullptr;
-             stream         = stream->get_sink()) {
+             stream = stream->get_sink()) {
             stream->flush();
         }
     }
@@ -155,22 +154,22 @@ class DataTableStream: public Stream {
     static std::size_t get_buffer_size();
 
   private:
-    virtual void write_column_impl_(bool value)               = 0;
-    virtual void write_column_impl_(int value)                = 0;
-    virtual void write_column_impl_(std::uint8_t value)       = 0;
-    virtual void write_column_impl_(double value)             = 0;
+    virtual void write_column_impl_(bool value) = 0;
+    virtual void write_column_impl_(int value) = 0;
+    virtual void write_column_impl_(std::uint8_t value) = 0;
+    virtual void write_column_impl_(double value) = 0;
     virtual void write_column_impl_(const std::string& value) = 0;
-    virtual void write_column_impl_(const char* value)        = 0;
+    virtual void write_column_impl_(const char* value) = 0;
 
-    std::string              table_filepath_;
+    std::string table_filepath_;
     std::vector<std::string> column_names_;
-    std::size_t              column_count_;
+    std::size_t column_count_;
 
     std::size_t current_row_index_;
     std::size_t current_column_index_;
 
-    FileStream*            file_stream_;
-    BufferStream*          buffer_stream_;
+    FileStream* file_stream_;
+    BufferStream* buffer_stream_;
     ZstdCompressionStream* zstd_compression_stream_;
 };
 

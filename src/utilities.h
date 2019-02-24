@@ -36,7 +36,6 @@ const char* get_name(SEXP sexp);
 
 std::string get_expression(SEXP e);
 
-
 std::string clock_ticks_to_string(clock_t ticks);
 std::string to_string(const char* str);
 
@@ -85,8 +84,9 @@ inline std::string symbol_to_string(const SEXP symbol) {
     return CHAR(PRINTNAME(symbol));
 }
 
-template <typename T> inline void copy_and_reset(T& left, T& right) {
-    left  = right;
+template <typename T>
+inline void copy_and_reset(T& left, T& right) {
+    left = right;
     right = 0;
 }
 

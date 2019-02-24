@@ -9,9 +9,9 @@ using execution_contexts_t = std::vector<ExecutionContext>;
 
 class ExecutionContextStack {
   public:
-    using iterator               = execution_contexts_t::iterator;
-    using reverse_iterator       = execution_contexts_t::reverse_iterator;
-    using const_iterator         = execution_contexts_t::const_iterator;
+    using iterator = execution_contexts_t::iterator;
+    using reverse_iterator = execution_contexts_t::reverse_iterator;
+    using const_iterator = execution_contexts_t::const_iterator;
     using const_reverse_iterator = execution_contexts_t::const_reverse_iterator;
 
     explicit ExecutionContextStack(): stack_() {

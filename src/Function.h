@@ -24,7 +24,7 @@ class Function {
 
         if (type_ == CLOSXP) {
             for (SEXP formal = FORMALS(op); formal != R_NilValue;
-                 formal      = CDR(formal)) {
+                 formal = CDR(formal)) {
                 ++formal_parameter_count_;
             }
             /* All closures are assumed to be wrappers to begin with. */
@@ -139,7 +139,7 @@ class Function {
         if (wrapper_assigned_) {
             wrapper_ = wrapper_ && callee_is_internal_or_primitive;
         } else {
-            wrapper_          = callee_is_internal_or_primitive;
+            wrapper_ = callee_is_internal_or_primitive;
             wrapper_assigned_ = true;
         }
     }
@@ -180,21 +180,21 @@ class Function {
     }
 
   private:
-    const SEXP               op_;
-    sexptype_t               type_;
-    std::size_t              formal_parameter_count_;
-    std::string              method_name_;
-    bool                     dispatcher_;
-    bool                     wrapper_;
-    bool                     wrapper_assigned_;
-    std::string              definition_;
-    function_id_t            id_;
-    std::string              namespace_;
+    const SEXP op_;
+    sexptype_t type_;
+    std::size_t formal_parameter_count_;
+    std::string method_name_;
+    bool dispatcher_;
+    bool wrapper_;
+    bool wrapper_assigned_;
+    std::string definition_;
+    function_id_t id_;
+    std::string namespace_;
     std::vector<std::string> names_;
-    std::vector<pos_seq_t>   force_orders_;
-    std::vector<pos_seq_t>   missing_arguments_;
-    std::vector<sexptype_t>  return_value_types_;
-    std::vector<int>         call_counts_;
+    std::vector<pos_seq_t> force_orders_;
+    std::vector<pos_seq_t> missing_arguments_;
+    std::vector<sexptype_t> return_value_types_;
+    std::vector<int> call_counts_;
 
     std::string find_namespace_() {
         SEXP env = CLOENV(op_);

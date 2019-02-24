@@ -15,10 +15,10 @@ class Call;
 class Argument {
   public:
     explicit Argument(Call* call,
-                      int   formal_parameter_position,
-                      int   actual_argument_position,
-                      bool  default_argument,
-                      bool  dot_dot_dot)
+                      int formal_parameter_position,
+                      int actual_argument_position,
+                      bool default_argument,
+                      bool dot_dot_dot)
         : call_(call)
         , formal_parameter_position_(formal_parameter_position)
         , actual_argument_position_(actual_argument_position)
@@ -148,22 +148,22 @@ class Argument {
     }
 
   private:
-    Call*         call_;
-    const int     formal_parameter_position_;
-    const int     actual_argument_position_;
-    const bool    default_argument_;
-    const bool    dot_dot_dot_;
-    bool          direct_force_;
-    bool          indirect_force_;
-    int           direct_lookup_count_;
-    int           indirect_lookup_count_;
-    int           direct_metaprogram_count_;
-    int           indirect_metaprogram_count_;
-    bool          S3_dispatch_;
-    bool          S4_dispatch_;
-    bool          non_local_return_;
+    Call* call_;
+    const int formal_parameter_position_;
+    const int actual_argument_position_;
+    const bool default_argument_;
+    const bool dot_dot_dot_;
+    bool direct_force_;
+    bool indirect_force_;
+    int direct_lookup_count_;
+    int indirect_lookup_count_;
+    int direct_metaprogram_count_;
+    int indirect_metaprogram_count_;
+    bool S3_dispatch_;
+    bool S4_dispatch_;
+    bool non_local_return_;
     DenotedValue* denoted_value_;
-    int           forcing_actual_argument_position_;
+    int forcing_actual_argument_position_;
 };
 
 #endif /* PROMISEDYNTRACER_ARGUMENT_H */

@@ -58,7 +58,7 @@ class BufferStream: public Stream {
     }
 
     void write(const void* buffer, std::size_t bytes) override {
-        const char* buf             = static_cast<const char*>(buffer);
+        const char* buf = static_cast<const char*>(buffer);
         std::size_t remaining_bytes = bytes;
         do {
             std::size_t copied_bytes =
@@ -85,7 +85,7 @@ class BufferStream: public Stream {
   private:
     std::size_t capacity_;
     std::size_t index_;
-    char*       buffer_;
+    char* buffer_;
 };
 
 #endif /* PROMISEDYNTRACER_BUFFER_STREAM_H */

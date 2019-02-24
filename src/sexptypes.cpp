@@ -1,13 +1,12 @@
 #include "sexptypes.h"
 
-
-const sexptype_t ACTIVESXP     = 100001;
-const sexptype_t UNBOUNDSXP    = 100002;
+const sexptype_t ACTIVESXP = 100001;
+const sexptype_t UNBOUNDSXP = 100002;
 const sexptype_t UNASSIGNEDSXP = 100003;
-const sexptype_t MISSINGSXP    = 100004;
-const sexptype_t JUMPSXP       = 100005;
-const sexptype_t CONTEXTSXP    = 100006;
-const sexptype_t NULLSXP       = 100007;
+const sexptype_t MISSINGSXP = 100004;
+const sexptype_t JUMPSXP = 100005;
+const sexptype_t CONTEXTSXP = 100006;
+const sexptype_t NULLSXP = 100007;
 
 std::string sexptype_to_string(sexptype_t sexptype) {
     switch (sexptype) {
