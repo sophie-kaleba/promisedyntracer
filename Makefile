@@ -30,8 +30,10 @@ check: build
 test:
 	$(R_DYNTRACE) -e "devtools::test()"
 
-
 install-dependencies:
 	$(R_DYNTRACE) -e "install.packages(c('withr', 'testthat', 'devtools', 'roxygen2'), repos='http://cran.us.r-project.org')"
 
-.PHONY: all build install clean document check test install-dependencies
+init:
+	git config core.hooksPath .git-hooks
+
+.PHONY: all build install clean document check test install-dependencies init

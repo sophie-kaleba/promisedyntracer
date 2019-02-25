@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+# This script formats code using clang-format before a commit.
+
+## This setting ensures that the pre-commit hook runs inside Magit.
+## https://magit.vc/manual/magit/My-Git-hooks-work-on-the-command_002dline-but-not-inside-Magit.html
+unset GIT_LITERAL_PATHSPECS
+
+C_CPP_FILE_EXTS="c h cpp hpp cc hh cxx m"
+
+is_c_cpp_file() {
+    extension=`echo "$1" | awk -F . '{print $NF}'`
+
+    for ext in $C_CPP_FILE_EXTS
+    do
+        [[ "$ext" == "$extension" ]] && return 0
+    done
+
+    return 1
+}
+
+clang_format() {
+    if is_c_cpp_file $1
+    then
+        echo "Formatting $1"
+        clang-format -i $1
+        git add $1
+    fi
+}
+
+for file in `git diff-index --cached --name-only --diff-filter=ACMR HEAD`
+do
+    clang_format ${file}
+done
