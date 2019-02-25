@@ -2,6 +2,7 @@
 #define PROMISEDYNTRACER_FUNCTION_H
 
 #include "Call.h"
+#include "CallSummary.h"
 #include "Rinternals.h"
 #include "sexptypes.h"
 #include "utilities.h"
@@ -18,11 +19,10 @@ class Function {
         , wrapper_assigned_(false) {
         type_ = type_of_sexp(op);
 
-        if(type_ == CLOSXP) {
+        if (type_ == CLOSXP) {
             definition_ = get_expression(op);
             id_ = compute_hash(definition_.c_str());
-        }
-        else {
+        } else {
             definition_ = "function body not extracted for non closures";
             id_ = dyntrace_get_c_function_name(op);
         }
@@ -92,23 +92,11 @@ class Function {
     }
 
     std::size_t get_summary_count() const {
-        return force_orders_.size();
+        return call_summaries_.size();
     }
 
-    const pos_seq_t& get_force_order(std::size_t summary_index) const {
-        return force_orders_[summary_index];
-    }
-
-    const pos_seq_t& get_missing_arguments(std::size_t summary_index) const {
-        return missing_arguments_[summary_index];
-    }
-
-    sexptype_t get_return_value_type(std::size_t summary_index) const {
-        return return_value_types_[summary_index];
-    }
-
-    int get_call_count(std::size_t summary_index) const {
-        return call_counts_[summary_index];
+    const CallSummary& get_call_summary(std::size_t summary_index) const {
+        return call_summaries_[summary_index];
     }
 
     const std::vector<std::string>& get_names() const {
@@ -162,26 +150,13 @@ class Function {
             names_.push_back(call->get_function_name());
         }
 
-        const pos_seq_t& force_order = call->get_force_order();
-
-        const pos_seq_t& missing_arguments =
-            call->get_missing_argument_positions();
-
-        sexptype_t return_value_type = call->get_return_value_type();
-
-        for (i = 0; i < force_orders_.size(); ++i) {
-            if (force_orders_[i] == force_order &&
-                missing_arguments_[i] == missing_arguments &&
-                return_value_types_[i] == return_value_type) {
-                ++call_counts_[i];
+        for (i = 0; i < call_summaries_.size(); ++i) {
+            if (call_summaries_[i].try_to_merge(call)) {
                 return;
             }
         }
 
-        force_orders_.push_back(force_order);
-        missing_arguments_.push_back(missing_arguments);
-        return_value_types_.push_back(return_value_type);
-        call_counts_.push_back(1);
+        call_summaries_.push_back(CallSummary(call));
     }
 
   private:
@@ -196,10 +171,7 @@ class Function {
     function_id_t id_;
     std::string namespace_;
     std::vector<std::string> names_;
-    std::vector<pos_seq_t> force_orders_;
-    std::vector<pos_seq_t> missing_arguments_;
-    std::vector<sexptype_t> return_value_types_;
-    std::vector<int> call_counts_;
+    std::vector<CallSummary> call_summaries_;
 
     std::string find_namespace_() {
         SEXP env = CLOENV(op_);

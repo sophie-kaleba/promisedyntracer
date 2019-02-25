@@ -683,7 +683,6 @@ class TracerState {
         Function* function = lookup_function(op);
         Call* function_call = nullptr;
         call_id_t call_id = get_next_call_id_();
-        const function_id_t& function_id = function->get_id();
         const std::string function_name = get_name(call);
 
         function_call = new Call(call_id, function_name, rho, function);
@@ -926,6 +925,8 @@ class TracerState {
         }
 
         for (std::size_t i = 0; i < function.get_summary_count(); ++i) {
+            const CallSummary& call_summary = function.get_call_summary(i);
+
             call_summary_data_table_->write_row(
                 function.get_id(),
                 sexptype_to_string(function.get_type()),
@@ -934,10 +935,11 @@ class TracerState {
                 all_names,
                 function.get_generic_method_name(),
                 function.is_dispatcher(),
-                pos_seq_to_string(function.get_force_order(i)),
-                pos_seq_to_string(function.get_missing_arguments(i)),
-                sexptype_to_string(function.get_return_value_type(i)),
-                function.get_call_count(i));
+                pos_seq_to_string(call_summary.get_force_order()),
+                pos_seq_to_string(
+                    call_summary.get_missing_argument_positions()),
+                sexptype_to_string(call_summary.get_return_value_type()),
+                call_summary.get_call_count());
         }
     }
 
