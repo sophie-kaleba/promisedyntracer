@@ -155,45 +155,45 @@ class DenotedValue {
 
     void force();
 
-    std::uint8_t get_force_count() const {
+    int get_force_count() const {
         return get_force_count_before_escape() + get_force_count_after_escape();
     }
 
-    std::uint8_t get_force_count_before_escape() const {
+    int get_force_count_before_escape() const {
         return before_escape_force_count_;
     }
 
-    std::uint8_t get_force_count_after_escape() const {
+    int get_force_count_after_escape() const {
         return force_count_;
     }
 
     void lookup_value();
 
-    std::uint8_t get_value_lookup_count() const {
+    int get_value_lookup_count() const {
         return get_value_lookup_count_before_escape() +
                get_value_lookup_count_after_escape();
     }
 
-    std::uint8_t get_value_lookup_count_before_escape() const {
+    int get_value_lookup_count_before_escape() const {
         return before_escape_value_lookup_count_;
     }
 
-    std::uint8_t get_value_lookup_count_after_escape() const {
+    int get_value_lookup_count_after_escape() const {
         return value_lookup_count_;
     }
 
     void metaprogram();
 
-    std::uint8_t get_metaprogram_count() const {
+    int get_metaprogram_count() const {
         return get_metaprogram_count_before_escape() +
                get_metaprogram_count_after_escape();
     }
 
-    std::uint8_t get_metaprogram_count_before_escape() const {
+    int get_metaprogram_count_before_escape() const {
         return before_escape_metaprogram_count_;
     }
 
-    std::uint8_t get_metaprogram_count_after_escape() const {
+    int get_metaprogram_count_after_escape() const {
         return metaprogram_count_;
     }
 
@@ -202,16 +202,16 @@ class DenotedValue {
         ++value_assign_count_;
     }
 
-    std::uint8_t get_value_assign_count() const {
+    int get_value_assign_count() const {
         return get_value_assign_count_before_escape() +
                get_value_assign_count_after_escape();
     }
 
-    std::uint8_t get_value_assign_count_before_escape() const {
+    int get_value_assign_count_before_escape() const {
         return before_escape_value_assign_count_;
     }
 
-    std::uint8_t get_value_assign_count_after_escape() const {
+    int get_value_assign_count_after_escape() const {
         return value_assign_count_;
     }
 
@@ -220,16 +220,16 @@ class DenotedValue {
         ++expression_lookup_count_;
     }
 
-    std::uint8_t get_expression_lookup_count() const {
+    int get_expression_lookup_count() const {
         return get_expression_lookup_count_before_escape() +
                get_expression_lookup_count_after_escape();
     }
 
-    std::uint8_t get_expression_lookup_count_before_escape() const {
+    int get_expression_lookup_count_before_escape() const {
         return before_escape_expression_lookup_count_;
     }
 
-    std::uint8_t get_expression_lookup_count_after_escape() const {
+    int get_expression_lookup_count_after_escape() const {
         return expression_lookup_count_;
     }
 
@@ -238,16 +238,16 @@ class DenotedValue {
         ++expression_assign_count_;
     }
 
-    std::uint8_t get_expression_assign_count() const {
+    int get_expression_assign_count() const {
         return get_expression_assign_count_before_escape() +
                get_expression_assign_count_after_escape();
     }
 
-    std::uint8_t get_expression_assign_count_before_escape() const {
+    int get_expression_assign_count_before_escape() const {
         return before_escape_expression_assign_count_;
     }
 
-    std::uint8_t get_expression_assign_count_after_escape() const {
+    int get_expression_assign_count_after_escape() const {
         return expression_assign_count_;
     }
 
@@ -256,16 +256,16 @@ class DenotedValue {
         ++environment_lookup_count_;
     }
 
-    std::uint8_t get_environment_lookup_count() const {
+    int get_environment_lookup_count() const {
         return get_environment_lookup_count_before_escape() +
                get_environment_lookup_count_after_escape();
     }
 
-    std::uint8_t get_environment_lookup_count_before_escape() const {
+    int get_environment_lookup_count_before_escape() const {
         return before_escape_environment_lookup_count_;
     }
 
-    std::uint8_t get_environment_lookup_count_after_escape() const {
+    int get_environment_lookup_count_after_escape() const {
         return environment_lookup_count_;
     }
 
@@ -274,16 +274,16 @@ class DenotedValue {
         ++environment_assign_count_;
     }
 
-    std::uint8_t get_environment_assign_count() const {
+    int get_environment_assign_count() const {
         return get_environment_assign_count_before_escape() +
                get_environment_assign_count_after_escape();
     }
 
-    std::uint8_t get_environment_assign_count_before_escape() const {
+    int get_environment_assign_count_before_escape() const {
         return before_escape_environment_assign_count_;
     }
 
-    std::uint8_t get_environment_assign_count_after_escape() const {
+    int get_environment_assign_count_after_escape() const {
         return environment_assign_count_;
     }
 
@@ -296,13 +296,12 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t get_self_scope_mutation_count(bool direct) const {
+    int get_self_scope_mutation_count(bool direct) const {
         return get_self_scope_mutation_count_before_escape(direct) +
                get_self_scope_mutation_count_after_escape(direct);
     }
 
-    std::uint8_t
-    get_self_scope_mutation_count_before_escape(bool direct) const {
+    int get_self_scope_mutation_count_before_escape(bool direct) const {
         if (direct) {
             return before_escape_direct_self_scope_mutation_count_;
         } else {
@@ -310,7 +309,7 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t get_self_scope_mutation_count_after_escape(bool direct) const {
+    int get_self_scope_mutation_count_after_escape(bool direct) const {
         if (direct) {
             return direct_self_scope_mutation_count_;
         } else {
@@ -327,13 +326,12 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t get_lexical_scope_mutation_count(bool direct) const {
+    int get_lexical_scope_mutation_count(bool direct) const {
         return get_lexical_scope_mutation_count_before_escape(direct) +
                get_lexical_scope_mutation_count_after_escape(direct);
     }
 
-    std::uint8_t
-    get_lexical_scope_mutation_count_before_escape(bool direct) const {
+    int get_lexical_scope_mutation_count_before_escape(bool direct) const {
         if (direct) {
             return before_escape_direct_lexical_scope_mutation_count_;
         } else {
@@ -341,8 +339,7 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t
-    get_lexical_scope_mutation_count_after_escape(bool direct) const {
+    int get_lexical_scope_mutation_count_after_escape(bool direct) const {
         if (direct) {
             return direct_lexical_scope_mutation_count_;
         } else {
@@ -359,13 +356,12 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t get_non_lexical_scope_mutation_count(bool direct) const {
+    int get_non_lexical_scope_mutation_count(bool direct) const {
         return get_non_lexical_scope_mutation_count_before_escape(direct) +
                get_non_lexical_scope_mutation_count_after_escape(direct);
     }
 
-    std::uint8_t
-    get_non_lexical_scope_mutation_count_before_escape(bool direct) const {
+    int get_non_lexical_scope_mutation_count_before_escape(bool direct) const {
         if (direct) {
             return before_escape_direct_non_lexical_scope_mutation_count_;
         } else {
@@ -373,8 +369,7 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t
-    get_non_lexical_scope_mutation_count_after_escape(bool direct) const {
+    int get_non_lexical_scope_mutation_count_after_escape(bool direct) const {
         if (direct) {
             return direct_non_lexical_scope_mutation_count_;
         } else {
@@ -391,13 +386,12 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t get_self_scope_observation_count(bool direct) const {
+    int get_self_scope_observation_count(bool direct) const {
         return get_self_scope_observation_count_before_escape(direct) +
                get_self_scope_observation_count_after_escape(direct);
     }
 
-    std::uint8_t
-    get_self_scope_observation_count_before_escape(bool direct) const {
+    int get_self_scope_observation_count_before_escape(bool direct) const {
         if (direct) {
             return before_escape_direct_self_scope_observation_count_;
         } else {
@@ -405,8 +399,7 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t
-    get_self_scope_observation_count_after_escape(bool direct) const {
+    int get_self_scope_observation_count_after_escape(bool direct) const {
         if (direct) {
             return direct_self_scope_observation_count_;
         } else {
@@ -423,13 +416,12 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t get_lexical_scope_observation_count(bool direct) const {
+    int get_lexical_scope_observation_count(bool direct) const {
         return get_lexical_scope_observation_count_before_escape(direct) +
                get_lexical_scope_observation_count_after_escape(direct);
     }
 
-    std::uint8_t
-    get_lexical_scope_observation_count_before_escape(bool direct) const {
+    int get_lexical_scope_observation_count_before_escape(bool direct) const {
         if (direct) {
             return before_escape_direct_lexical_scope_observation_count_;
         } else {
@@ -437,8 +429,7 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t
-    get_lexical_scope_observation_count_after_escape(bool direct) const {
+    int get_lexical_scope_observation_count_after_escape(bool direct) const {
         if (direct) {
             return direct_lexical_scope_observation_count_;
         } else {
@@ -455,12 +446,12 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t get_non_lexical_scope_observation_count(bool direct) const {
+    int get_non_lexical_scope_observation_count(bool direct) const {
         return get_non_lexical_scope_observation_count_before_escape(direct) +
                get_non_lexical_scope_observation_count_after_escape(direct);
     }
 
-    std::uint8_t
+    int
     get_non_lexical_scope_observation_count_before_escape(bool direct) const {
         if (direct) {
             return before_escape_direct_non_lexical_scope_observation_count_;
@@ -469,7 +460,7 @@ class DenotedValue {
         }
     }
 
-    std::uint8_t
+    int
     get_non_lexical_scope_observation_count_after_escape(bool direct) const {
         if (direct) {
             return direct_non_lexical_scope_observation_count_;
@@ -741,46 +732,46 @@ class DenotedValue {
     int previous_actual_argument_position_;
     sexptype_t previous_call_return_value_type_;
     bool previous_default_argument_;
-    std::uint8_t before_escape_force_count_;
-    std::uint8_t force_count_;
-    std::uint8_t before_escape_value_lookup_count_;
-    std::uint8_t value_lookup_count_;
-    std::uint8_t before_escape_metaprogram_count_;
-    std::uint8_t metaprogram_count_;
-    std::uint8_t before_escape_value_assign_count_;
-    std::uint8_t value_assign_count_;
-    std::uint8_t before_escape_expression_lookup_count_;
-    std::uint8_t expression_lookup_count_;
-    std::uint8_t before_escape_expression_assign_count_;
-    std::uint8_t expression_assign_count_;
-    std::uint8_t before_escape_environment_lookup_count_;
-    std::uint8_t environment_lookup_count_;
-    std::uint8_t before_escape_environment_assign_count_;
-    std::uint8_t environment_assign_count_;
-    std::uint8_t before_escape_direct_self_scope_mutation_count_;
-    std::uint8_t direct_self_scope_mutation_count_;
-    std::uint8_t before_escape_indirect_self_scope_mutation_count_;
-    std::uint8_t indirect_self_scope_mutation_count_;
-    std::uint8_t before_escape_direct_lexical_scope_mutation_count_;
-    std::uint8_t direct_lexical_scope_mutation_count_;
-    std::uint8_t before_escape_indirect_lexical_scope_mutation_count_;
-    std::uint8_t indirect_lexical_scope_mutation_count_;
-    std::uint8_t before_escape_direct_non_lexical_scope_mutation_count_;
-    std::uint8_t direct_non_lexical_scope_mutation_count_;
-    std::uint8_t before_escape_indirect_non_lexical_scope_mutation_count_;
-    std::uint8_t indirect_non_lexical_scope_mutation_count_;
-    std::uint8_t before_escape_direct_self_scope_observation_count_;
-    std::uint8_t direct_self_scope_observation_count_;
-    std::uint8_t before_escape_indirect_self_scope_observation_count_;
-    std::uint8_t indirect_self_scope_observation_count_;
-    std::uint8_t before_escape_direct_lexical_scope_observation_count_;
-    std::uint8_t direct_lexical_scope_observation_count_;
-    std::uint8_t before_escape_indirect_lexical_scope_observation_count_;
-    std::uint8_t indirect_lexical_scope_observation_count_;
-    std::uint8_t before_escape_direct_non_lexical_scope_observation_count_;
-    std::uint8_t direct_non_lexical_scope_observation_count_;
-    std::uint8_t before_escape_indirect_non_lexical_scope_observation_count_;
-    std::uint8_t indirect_non_lexical_scope_observation_count_;
+    int before_escape_force_count_;
+    int force_count_;
+    int before_escape_value_lookup_count_;
+    int value_lookup_count_;
+    int before_escape_metaprogram_count_;
+    int metaprogram_count_;
+    int before_escape_value_assign_count_;
+    int value_assign_count_;
+    int before_escape_expression_lookup_count_;
+    int expression_lookup_count_;
+    int before_escape_expression_assign_count_;
+    int expression_assign_count_;
+    int before_escape_environment_lookup_count_;
+    int environment_lookup_count_;
+    int before_escape_environment_assign_count_;
+    int environment_assign_count_;
+    int before_escape_direct_self_scope_mutation_count_;
+    int direct_self_scope_mutation_count_;
+    int before_escape_indirect_self_scope_mutation_count_;
+    int indirect_self_scope_mutation_count_;
+    int before_escape_direct_lexical_scope_mutation_count_;
+    int direct_lexical_scope_mutation_count_;
+    int before_escape_indirect_lexical_scope_mutation_count_;
+    int indirect_lexical_scope_mutation_count_;
+    int before_escape_direct_non_lexical_scope_mutation_count_;
+    int direct_non_lexical_scope_mutation_count_;
+    int before_escape_indirect_non_lexical_scope_mutation_count_;
+    int indirect_non_lexical_scope_mutation_count_;
+    int before_escape_direct_self_scope_observation_count_;
+    int direct_self_scope_observation_count_;
+    int before_escape_indirect_self_scope_observation_count_;
+    int indirect_self_scope_observation_count_;
+    int before_escape_direct_lexical_scope_observation_count_;
+    int direct_lexical_scope_observation_count_;
+    int before_escape_indirect_lexical_scope_observation_count_;
+    int indirect_lexical_scope_observation_count_;
+    int before_escape_direct_non_lexical_scope_observation_count_;
+    int direct_non_lexical_scope_observation_count_;
+    int before_escape_indirect_non_lexical_scope_observation_count_;
+    int indirect_non_lexical_scope_observation_count_;
     lifecycle_t lifecycle_;
 };
 
