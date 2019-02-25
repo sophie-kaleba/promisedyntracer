@@ -19,9 +19,8 @@ class ExecutionContext {
         : type_(CONTEXTSXP), r_context_(r_context) {
     }
 
-    explicit ExecutionContext(Call* call)
-        : type_(call->get_function_type()), call_(call) {
-    }
+    /* defined in cpp file to get around cyclic dependency issues. */
+    explicit ExecutionContext(Call* call);
 
     bool is_promise() const {
         return (type_ == PROMSXP);

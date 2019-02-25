@@ -13,54 +13,14 @@ typedef std::vector<int> force_order_t;
 
 class Call {
   public:
+    /* defined in cpp file to get around cyclic dependency issues. */
     explicit Call(const call_id_t id,
-                  const function_id_t& function_id,
-                  const sexptype_t function_type,
                   const std::string& function_name,
-                  const int formal_parameter_count,
                   const SEXP environment,
-                  Function* function)
-        : id_(id)
-        , function_id_(function_id)
-        , function_type_(function_type)
-        , function_name_(function_name)
-        , formal_parameter_count_(formal_parameter_count)
-        , actual_argument_count_(0)
-        , environment_(environment)
-        , function_(function)
-        , return_value_type_(UNASSIGNEDSXP)
-        , jumped_(false) {
-        /* most calls have only one argument. Argument list of size 5
-           covers almost every call */
-        arguments_.reserve(std::max(get_formal_parameter_count(), 0));
-        /* INFO - Reserve size to 15 bytes to prevent repeated string
-         * allocations when forced arguments are added. This increases
-         * the memory requirement but should speed up the program. */
-        force_order_.reserve(std::max(get_formal_parameter_count(), 0));
-    }
+                  Function* function);
 
     call_id_t get_id() const {
         return id_;
-    }
-
-    const function_id_t& get_function_id() const {
-        return function_id_;
-    }
-
-    sexptype_t get_function_type() const {
-        return function_type_;
-    }
-
-    bool is_closure() const {
-        return get_function_type() == CLOSXP;
-    }
-
-    bool is_special() const {
-        return get_function_type() == SPECIALSXP;
-    }
-
-    bool is_builtin() const {
-        return get_function_type() == BUILTINSXP;
     }
 
     const std::string& get_function_name() const {
@@ -69,10 +29,6 @@ class Call {
 
     Function* get_function() {
         return function_;
-    }
-
-    int get_formal_parameter_count() const {
-        return formal_parameter_count_;
     }
 
     void set_actual_argument_count(int actual_argument_count) {
@@ -156,10 +112,7 @@ class Call {
 
   private:
     const call_id_t id_;
-    const function_id_t function_id_;
-    const sexptype_t function_type_;
     const std::string function_name_;
-    int formal_parameter_count_;
     int actual_argument_count_;
     const SEXP environment_;
     Function* function_;

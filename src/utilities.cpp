@@ -42,7 +42,7 @@ bool sexp_to_bool(SEXP value) {
 }
 
 int sexp_to_int(SEXP value) {
-    return (int) *INTEGER(value);
+    return (int) *REAL(value);
 }
 
 std::string sexp_to_string(SEXP value) {

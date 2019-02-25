@@ -642,7 +642,8 @@ class TracerState {
                '{' function. We want to keep going back until we find a closure
              */
             if (iter->is_call()) {
-                denoted_value->set_scope(iter->get_call()->get_function_id());
+                denoted_value->set_scope(
+                    iter->get_call()->get_function()->get_id());
             }
             if (iter->is_closure()) {
                 break;
@@ -685,13 +686,7 @@ class TracerState {
         const function_id_t& function_id = function->get_id();
         const std::string function_name = get_name(call);
 
-        function_call = new Call(call_id,
-                                 function_id,
-                                 TYPEOF(op),
-                                 function_name,
-                                 function->get_formal_parameter_count(),
-                                 rho,
-                                 function);
+        function_call = new Call(call_id, function_name, rho, function);
 
         if (TYPEOF(op) == CLOSXP) {
             process_closure_arguments_(function_call, op);
@@ -716,11 +711,12 @@ class TracerState {
             if (!value->is_active()) {
                 delete value;
             } else {
-                value->remove_argument(call->get_id(),
-                                       call->get_function_id(),
-                                       call->get_return_value_type(),
-                                       call->get_formal_parameter_count(),
-                                       argument);
+                value->remove_argument(
+                    call->get_id(),
+                    call->get_function()->get_id(),
+                    call->get_return_value_type(),
+                    call->get_function()->get_formal_parameter_count(),
+                    argument);
             }
 
             argument->set_denoted_value(nullptr);
@@ -826,7 +822,7 @@ class TracerState {
 
         argument_data_table_->write_row(
             call->get_id(),
-            call->get_function_id(),
+            call->get_function()->get_id(),
             value->get_id(),
             argument->get_formal_parameter_position(),
             argument->get_actual_argument_position(),
