@@ -75,7 +75,9 @@ void DenotedValue::set_evaluation_depth(const eval_depth_t& eval_depth) {
 
 void DenotedValue::used_for_S3_dispatch() {
     ++S3_dispatch_count_;
+
     add_lifecycle_action_('3');
+
     if (is_argument()) {
         argument_stack_.back()->set_used_for_S3_dispatch();
     }
@@ -83,7 +85,9 @@ void DenotedValue::used_for_S3_dispatch() {
 
 void DenotedValue::used_for_S4_dispatch() {
     ++S4_dispatch_count_;
+
     add_lifecycle_action_('4');
+
     if (is_argument()) {
         argument_stack_.back()->set_used_for_S4_dispatch();
     }

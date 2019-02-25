@@ -5,10 +5,6 @@
 #include "definitions.h"
 #include "sexptypes.h"
 #include "utilities.h"
-// class DenotedValue {
-// public:
-//     bool is_missing();
-// };
 
 class Call;
 

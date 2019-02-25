@@ -33,7 +33,7 @@ std::string sexptype_to_string(sexptype_t sexptype) {
     case ACTIVESXP:
         return "Active binding";
     case NULLSXP:
-        return "Null";
+        return "Null Pointer";
     default:
         std::string str(type2char(sexptype));
         str[0] = std::toupper(str[0]);
