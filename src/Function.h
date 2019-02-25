@@ -18,9 +18,14 @@ class Function {
         , wrapper_assigned_(false) {
         type_ = type_of_sexp(op);
 
-        definition_ = get_expression(op);
-
-        id_ = compute_hash(definition_.c_str());
+        if(type_ == CLOSXP) {
+            definition_ = get_expression(op);
+            id_ = compute_hash(definition_.c_str());
+        }
+        else {
+            definition_ = "function body not extracted for non closures";
+            id_ = dyntrace_get_c_function_name(op);
+        }
 
         if (type_ == CLOSXP) {
             for (SEXP formal = FORMALS(op); formal != R_NilValue;
