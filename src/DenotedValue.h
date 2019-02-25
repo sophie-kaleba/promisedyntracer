@@ -99,12 +99,22 @@ class DenotedValue {
                          const int formal_parameter_count,
                          const Argument* argument);
 
-    const function_id_t& get_scope() const {
-        return scope_;
+    const scope_t& get_creation_scope() const {
+        return creation_scope_;
     }
 
-    void set_scope(const function_id_t& scope) {
-        scope_ = scope;
+    void set_creation_scope(const scope_t& creation_scope) {
+        creation_scope_ = creation_scope;
+    }
+
+    void set_forcing_scope_if_unset(const scope_t& forcing_scope) {
+        if (forcing_scope_ == UNASSIGNED_SCOPE) {
+            forcing_scope_ = forcing_scope;
+        }
+    }
+
+    const scope_t& get_forcing_scope() const {
+        return forcing_scope_;
     }
 
     const std::string& get_class_name() const {
@@ -549,7 +559,8 @@ class DenotedValue {
         , default_(false)
         , evaluated_(false)
         , was_argument_(false)
-        , scope_(UNASSIGNED_FUNCTION_ID)
+        , creation_scope_(UNASSIGNED_SCOPE)
+        , forcing_scope_(UNASSIGNED_SCOPE)
         , class_name_(UNASSIGNED_CLASS_NAME)
         , S3_dispatch_count_(0)
         , S4_dispatch_count_(0)
@@ -716,7 +727,8 @@ class DenotedValue {
     bool default_;
     bool evaluated_;
     bool was_argument_;
-    function_id_t scope_;
+    scope_t creation_scope_;
+    scope_t forcing_scope_;
     std::string class_name_;
     int S3_dispatch_count_;
     int S4_dispatch_count_;

@@ -175,7 +175,8 @@ class TracerState {
                                "argument",
                                "expression_type",
                                "value_type",
-                               "scope",
+                               "creation_scope",
+                               "forcing_scope",
                                "S3_dispatch",
                                "S4_dispatch",
                                "preforce",
@@ -520,7 +521,8 @@ class TracerState {
             promise->was_argument(),
             sexptype_to_string(promise->get_expression_type()),
             sexptype_to_string(promise->get_value_type()),
-            promise->get_scope(),
+            promise->get_creation_scope(),
+            promise->get_forcing_scope(),
             promise->get_S3_dispatch_count(),
             promise->get_S4_dispatch_count(),
             promise->is_preforced(),
@@ -625,30 +627,13 @@ class TracerState {
         DenotedValue* promise_state =
             new DenotedValue(get_next_denoted_value_id_(), promise, local);
 
-        set_scope_(promise_state);
+        promise_state->set_creation_scope(infer_creation_scope());
 
         /* Setting this bit tells us that the promise is currently in the
            promises table. As long as this is set, the call holding a reference
            to it will not delete it. */
         promise_state->set_active();
         return promise_state;
-    }
-
-    void set_scope_(DenotedValue* denoted_value) {
-        auto& stack = get_stack();
-        for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
-            /* we do not stop at first call because in all cases it turns out to
-               be
-               '{' function. We want to keep going back until we find a closure
-             */
-            if (iter->is_call()) {
-                denoted_value->set_scope(
-                    iter->get_call()->get_function()->get_id());
-            }
-            if (iter->is_closure()) {
-                break;
-            }
-        }
     }
 
     std::unordered_map<SEXP, DenotedValue*> promises_;
@@ -666,6 +651,42 @@ class TracerState {
     timestamp_t timestamp_;
 
   public:
+    scope_t infer_creation_scope() {
+        ExecutionContextStack& stack = get_stack();
+
+        for (auto iter = stack.crbegin(); iter != stack.crend(); ++iter) {
+            if (iter->is_call()) {
+                const Function* const function =
+                    iter->get_call()->get_function();
+                /* '{' function as promise creation source is not very
+                   insightful. We want to keep going back until we find
+                   something meaningful. */
+                if (!function->is_curly_bracket()) {
+                    return function->get_id();
+                }
+            }
+        }
+        return TOP_LEVEL_SCOPE;
+    }
+
+    scope_t infer_forcing_scope() {
+        const ExecutionContextStack& stack = get_stack();
+
+        for (auto iter = stack.crbegin(); iter != stack.crend(); ++iter) {
+            const ExecutionContext& exec_ctxt = *iter;
+
+            if (exec_ctxt.is_r_context()) {
+                continue;
+            } else if (exec_ctxt.is_promise()) {
+                return "Promise";
+            } else {
+                return exec_ctxt.get_call()->get_function_name();
+            }
+        }
+
+        return TOP_LEVEL_SCOPE;
+    }
+
     void exit_probe() {
         resume_execution_timer();
     }
@@ -744,7 +765,7 @@ class TracerState {
         } else {
             value =
                 new DenotedValue(get_next_denoted_value_id_(), argument, false);
-            set_scope_(value);
+            value->set_creation_scope(infer_creation_scope());
         }
 
         bool default_argument = true;

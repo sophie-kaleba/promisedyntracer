@@ -27,4 +27,6 @@ struct lifecycle_t {
     std::vector<int> count;
 };
 
+typedef std::string scope_t;
+
 #endif /* PROMISEDYNTRACER_DEFINITIONS_H */

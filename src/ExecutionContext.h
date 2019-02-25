@@ -46,23 +46,23 @@ class ExecutionContext {
         return (type_ == CONTEXTSXP);
     }
 
-    DenotedValue* get_promise() {
+    DenotedValue* get_promise() const {
         return promise_state_;
     }
 
-    Call* get_builtin() {
+    Call* get_builtin() const {
         return call_;
     }
 
-    Call* get_special() {
+    Call* get_special() const {
         return call_;
     }
 
-    Call* get_closure() {
+    Call* get_closure() const {
         return call_;
     }
 
-    Call* get_call() {
+    Call* get_call() const {
         return call_;
     }
 

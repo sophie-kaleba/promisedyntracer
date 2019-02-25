@@ -182,7 +182,9 @@ void S3_dispatch_entry(dyntracer_t* dyntracer,
     DenotedValue* value = state.lookup_promise(CAR(objects), true);
     value->set_class_name(class_name);
     value->used_for_S3_dispatch();
-
+    if (!value->is_forced()) {
+        value->set_forcing_scope_if_unset("S3");
+    }
     state.lookup_function(specific_method)->set_generic_method_name(generic);
     state.lookup_function(generic_method)->set_dispatcher();
 
@@ -198,6 +200,10 @@ void S4_dispatch_argument(dyntracer_t* dyntracer, const SEXP argument) {
         DenotedValue* value = state.lookup_promise(argument, true);
 
         value->used_for_S4_dispatch();
+
+        if (!value->is_forced()) {
+            value->set_forcing_scope_if_unset("S4");
+        }
     }
 
     state.exit_probe();
@@ -325,6 +331,8 @@ void promise_force_entry(dyntracer_t* dyntracer, const SEXP promise) {
     state.enter_probe();
 
     DenotedValue* promise_state = state.lookup_promise(promise, true);
+
+    promise_state->set_forcing_scope_if_unset(state.infer_forcing_scope());
 
     /* if promise is not an argument, then don't process it. */
     if (promise_state->is_argument()) {

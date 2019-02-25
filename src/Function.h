@@ -79,6 +79,11 @@ class Function {
                 dyntrace_get_primitive_offset(op_) == PRIMITIVE_RETURN_OFFSET);
     }
 
+    bool is_curly_bracket() const {
+        return (is_special() && dyntrace_get_primitive_offset(op_) ==
+                                    PRIMITIVE_CURLY_BRACKET_OFFSET);
+    }
+
     const function_id_t& get_id() const {
         return id_;
     }
