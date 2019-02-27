@@ -62,6 +62,7 @@ class TracerState {
                                "force_order",
                                "missing_arguments",
                                "return_value_type",
+                               "jumped",
                                "call_count"},
                               truncate_,
                               binary_,
@@ -960,6 +961,7 @@ class TracerState {
                 pos_seq_to_string(
                     call_summary.get_missing_argument_positions()),
                 sexptype_to_string(call_summary.get_return_value_type()),
+                call_summary.is_jumped(),
                 call_summary.get_call_count());
         }
     }

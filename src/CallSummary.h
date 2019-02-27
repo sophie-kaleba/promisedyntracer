@@ -9,6 +9,7 @@ class CallSummary {
         force_order_ = call->get_force_order();
         missing_argument_positions_ = call->get_missing_argument_positions();
         return_value_type_ = call->get_return_value_type();
+        jumped_ = call->is_jumped();
         call_count_ = 1;
     }
 
@@ -22,6 +23,10 @@ class CallSummary {
 
     sexptype_t get_return_value_type() const {
         return return_value_type_;
+    }
+
+    bool is_jumped() const {
+        return jumped_;
     }
 
     int get_call_count() const {
@@ -40,12 +45,14 @@ class CallSummary {
     pos_seq_t force_order_;
     pos_seq_t missing_argument_positions_;
     sexptype_t return_value_type_;
+    bool jumped_;
     int call_count_;
 
     bool is_mergeable_(const Call* const call) const {
         return (get_force_order() == call->get_force_order() &&
                 get_missing_argument_positions() ==
                     call->get_missing_argument_positions() &&
+                is_jumped() == call->is_jumped() &&
                 get_return_value_type() == call->get_return_value_type());
     }
 };
