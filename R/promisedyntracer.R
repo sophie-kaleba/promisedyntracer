@@ -2,6 +2,7 @@ create_dyntracer <- function(trace_filepath, output_dir,
                              truncate=FALSE, enable_trace=TRUE,
                              verbose=FALSE, binary=TRUE,
                              compression_level=1) {
+    compression_level <- as.integer(compression_level)
     .Call(C_create_dyntracer, trace_filepath,
           truncate, enable_trace, verbose,
           output_dir, binary, compression_level)
@@ -14,7 +15,8 @@ dyntrace_promises <- function(expr, trace_filepath, output_dir,
                               truncate=FALSE, enable_trace = TRUE,
                               verbose=FALSE, binary=TRUE,
                               compression_level=1) {
-  write(Sys.time(), file.path(output_dir, "BEGIN"))
+    write(Sys.time(), file.path(output_dir, "BEGIN"))
+    compression_level <- as.integer(compression_level)
   dyntracer <- create_dyntracer(trace_filepath, output_dir,
                                 truncate, enable_trace,
                                 verbose, binary,
@@ -27,13 +29,14 @@ dyntrace_promises <- function(expr, trace_filepath, output_dir,
 }
 
 write_data_table <- function(df, filepath, truncate = TRUE,
-                             binary = TRUE, compression_level = 1) {
+                             binary = FALSE, compression_level = 0) {
+    compression_level <- as.integer(compression_level)
     invisible(.Call(C_write_data_table, df, filepath, truncate,
                     binary, compression_level))
 }
 
 read_data_table <- function(filepath_without_ext, binary = TRUE,
-                            compression_level = 0) {
+                            compression_level = 3) {
 
     binary = as.logical(binary)
     compression_level <- as.integer(compression_level)
