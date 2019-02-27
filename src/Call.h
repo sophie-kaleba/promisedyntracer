@@ -96,14 +96,12 @@ class Call {
             if (argument->get_denoted_value()->is_missing()) {
                 position = argument->get_formal_parameter_position();
 
-                /* this is true only if we encounter multiple missing values
+                /* this condition handles multiple missing values
                    in dot dot arguments. */
-                if (missing_argument_positions.size() > 0 &&
-                    missing_argument_positions.back() == position) {
-                    break;
+                if (missing_argument_positions.size() == 0 ||
+                    missing_argument_positions.back() != position) {
+                    missing_argument_positions.push_back(position);
                 }
-
-                missing_argument_positions.push_back(position);
             }
         }
 
