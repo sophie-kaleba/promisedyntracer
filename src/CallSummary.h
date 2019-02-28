@@ -10,6 +10,8 @@ class CallSummary {
         missing_argument_positions_ = call->get_missing_argument_positions();
         return_value_type_ = call->get_return_value_type();
         jumped_ = call->is_jumped();
+        S3_method_ = call->is_S3_method();
+        S4_method_ = call->is_S4_method();
         call_count_ = 1;
     }
 
@@ -29,6 +31,14 @@ class CallSummary {
         return jumped_;
     }
 
+    bool is_S3_method() const {
+        return S3_method_;
+    }
+
+    bool is_S4_method() const {
+        return S4_method_;
+    }
+
     int get_call_count() const {
         return call_count_;
     }
@@ -46,14 +56,18 @@ class CallSummary {
     pos_seq_t missing_argument_positions_;
     sexptype_t return_value_type_;
     bool jumped_;
+    bool S3_method_;
+    bool S4_method_;
     int call_count_;
 
     bool is_mergeable_(const Call* const call) const {
         return (get_force_order() == call->get_force_order() &&
-                get_missing_argument_positions() ==
-                    call->get_missing_argument_positions() &&
-                is_jumped() == call->is_jumped() &&
-                get_return_value_type() == call->get_return_value_type());
+                    get_missing_argument_positions() ==
+                        call->get_missing_argument_positions() &&
+                    is_jumped() == call->is_jumped() &&
+                    get_return_value_type() == call->get_return_value_type(),
+                is_S3_method() == call->is_S3_method(),
+                is_S4_method() == call->is_S4_method());
     }
 };
 

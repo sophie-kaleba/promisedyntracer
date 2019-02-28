@@ -35,16 +35,28 @@ void dyntrace_exit(dyntracer_t* dyntracer,
        executing and we don't need to resume the timer. */
 }
 
+static inline void set_dispatch(Call* call,
+                                const dyntrace_dispatch_t dispatch) {
+    if (dispatch == DYNTRACE_DISPATCH_S3) {
+        call->set_S3_method();
+    } else if (dispatch == DYNTRACE_DISPATCH_S4) {
+        call->set_S4_method();
+    }
+}
+
 void closure_entry(dyntracer_t* dyntracer,
                    const SEXP call,
                    const SEXP op,
                    const SEXP args,
-                   const SEXP rho) {
+                   const SEXP rho,
+                   const dyntrace_dispatch_t dispatch) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
 
     Call* function_call = state.create_call(call, op, args, rho);
+
+    set_dispatch(function_call, dispatch);
 
     state.update_wrapper_state(function_call);
 
@@ -58,6 +70,7 @@ void closure_exit(dyntracer_t* dyntracer,
                   const SEXP op,
                   const SEXP args,
                   const SEXP rho,
+                  const dyntrace_dispatch_t dispatch,
                   const SEXP return_value) {
     TracerState& state = tracer_state(dyntracer);
 
@@ -82,12 +95,15 @@ void builtin_entry(dyntracer_t* dyntracer,
                    const SEXP call,
                    const SEXP op,
                    const SEXP args,
-                   const SEXP rho) {
+                   const SEXP rho,
+                   const dyntrace_dispatch_t dispatch) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
 
     Call* function_call = state.create_call(call, op, args, rho);
+
+    set_dispatch(function_call, dispatch);
 
     state.update_wrapper_state(function_call);
 
@@ -101,6 +117,7 @@ void builtin_exit(dyntracer_t* dyntracer,
                   const SEXP op,
                   const SEXP args,
                   const SEXP rho,
+                  const dyntrace_dispatch_t dispatch,
                   const SEXP return_value) {
     TracerState& state = tracer_state(dyntracer);
 
@@ -125,12 +142,15 @@ void special_entry(dyntracer_t* dyntracer,
                    const SEXP call,
                    const SEXP op,
                    const SEXP args,
-                   const SEXP rho) {
+                   const SEXP rho,
+                   const dyntrace_dispatch_t dispatch) {
     TracerState& state = tracer_state(dyntracer);
 
     state.enter_probe();
 
     Call* function_call = state.create_call(call, op, args, rho);
+
+    set_dispatch(function_call, dispatch);
 
     state.update_wrapper_state(function_call);
 
@@ -144,6 +164,7 @@ void special_exit(dyntracer_t* dyntracer,
                   const SEXP op,
                   const SEXP args,
                   const SEXP rho,
+                  const dyntrace_dispatch_t dispatch,
                   const SEXP return_value) {
     TracerState& state = tracer_state(dyntracer);
 
@@ -180,13 +201,17 @@ void S3_dispatch_entry(dyntracer_t* dyntracer,
     }
 
     DenotedValue* value = state.lookup_promise(CAR(objects), true);
+
     value->set_class_name(class_name);
+
     value->used_for_S3_dispatch();
+
     if (!value->is_forced()) {
         value->set_forcing_scope_if_unset("S3");
     }
-    state.lookup_function(specific_method)->set_generic_method_name(generic);
-    state.lookup_function(generic_method)->set_dispatcher();
+
+    // state.lookup_function(specific_method)->set_generic_method_name(generic);
+    // state.lookup_function(generic_method)->set_dispatcher();
 
     state.exit_probe();
 }

@@ -12,11 +12,7 @@
 class Function {
   public:
     explicit Function(const SEXP op)
-        : op_(op)
-        , formal_parameter_count_(0)
-        , method_name_("")
-        , dispatcher_(false)
-        , wrapper_assigned_(false) {
+        : op_(op), formal_parameter_count_(0), wrapper_assigned_(false) {
         type_ = type_of_sexp(op);
 
         if (type_ == CLOSXP) {
@@ -108,22 +104,6 @@ class Function {
         return names_;
     }
 
-    void set_generic_method_name(const std::string& method_name) {
-        method_name_ = method_name;
-    }
-
-    const std::string& get_generic_method_name() const {
-        return method_name_;
-    }
-
-    bool is_dispatcher() const {
-        return dispatcher_;
-    }
-
-    void set_dispatcher() {
-        dispatcher_ = true;
-    }
-
     bool is_wrapper() const {
         /* wrapper is never assigned for builtins, specials and closures that
            are never called. this means that this path will not be taked for
@@ -168,8 +148,6 @@ class Function {
     const SEXP op_;
     sexptype_t type_;
     std::size_t formal_parameter_count_;
-    std::string method_name_;
-    bool dispatcher_;
     bool wrapper_;
     bool wrapper_assigned_;
     std::string definition_;

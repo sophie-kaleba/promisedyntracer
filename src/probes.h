@@ -21,32 +21,37 @@ void closure_entry(dyntracer_t* dyntracer,
                    const SEXP call,
                    const SEXP op,
                    const SEXP args,
-                   const SEXP rho);
+                   const SEXP rho,
+                   const dyntrace_dispatch_t dispatch);
 
 void closure_exit(dyntracer_t* dyntracer,
                   const SEXP call,
                   const SEXP op,
                   const SEXP args,
                   const SEXP rho,
+                  const dyntrace_dispatch_t dispatch,
                   const SEXP return_value);
 
 void builtin_entry(dyntracer_t* dyntracer,
                    const SEXP call,
                    const SEXP op,
                    const SEXP args,
-                   const SEXP rho);
+                   const SEXP rho,
+                   const dyntrace_dispatch_t dispatch);
 
 void special_entry(dyntracer_t* dyntracer,
                    const SEXP call,
                    const SEXP op,
                    const SEXP args,
-                   const SEXP rho);
+                   const SEXP rho,
+                   const dyntrace_dispatch_t dispatch);
 
 void builtin_exit(dyntracer_t* dyntracer,
                   const SEXP call,
                   const SEXP op,
                   const SEXP args,
                   const SEXP rho,
+                  const dyntrace_dispatch_t dispatch,
                   const SEXP return_value);
 
 void special_exit(dyntracer_t* dyntracer,
@@ -54,6 +59,7 @@ void special_exit(dyntracer_t* dyntracer,
                   const SEXP op,
                   const SEXP args,
                   const SEXP rho,
+                  const dyntrace_dispatch_t dispatch,
                   const SEXP return_value);
 
 void S3_dispatch_entry(dyntracer_t* dyntracer,

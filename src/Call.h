@@ -59,6 +59,22 @@ class Call {
         return jumped_;
     }
 
+    void set_S3_method() {
+        S3_method_ = true;
+    }
+
+    bool is_S3_method() const {
+        return S3_method_;
+    }
+
+    void set_S4_method() {
+        S4_method_ = true;
+    }
+
+    bool is_S4_method() const {
+        return S4_method_;
+    }
+
     std::vector<Argument*>& get_arguments() {
         return arguments_;
     }
@@ -116,6 +132,8 @@ class Call {
     Function* function_;
     sexptype_t return_value_type_;
     bool jumped_;
+    bool S3_method_;
+    bool S4_method_;
     std::vector<Argument*> arguments_;
     pos_seq_t force_order_;
 };
