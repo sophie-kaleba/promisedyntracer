@@ -5,7 +5,6 @@
 
 typedef unsigned int sexptype_t;
 
-extern const sexptype_t ACTIVESXP;
 extern const sexptype_t UNBOUNDSXP;
 extern const sexptype_t UNASSIGNEDSXP;
 extern const sexptype_t MISSINGSXP;

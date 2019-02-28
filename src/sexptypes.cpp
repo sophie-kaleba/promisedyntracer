@@ -1,6 +1,5 @@
 #include "sexptypes.h"
 
-const sexptype_t ACTIVESXP = 100001;
 const sexptype_t UNBOUNDSXP = 100002;
 const sexptype_t UNASSIGNEDSXP = 100003;
 const sexptype_t MISSINGSXP = 100004;
@@ -30,8 +29,6 @@ std::string sexptype_to_string(sexptype_t sexptype) {
         return "Free";
     case FUNSXP:
         return "Closure or Builtin";
-    case ACTIVESXP:
-        return "Active binding";
     case NULLSXP:
         return "Null Pointer";
     default:
@@ -45,12 +42,10 @@ sexptype_t type_of_sexp(SEXP value) {
     if (value == NULL) {
         return NULLSXP;
     }
-    if (IS_ACTIVE_BINDING(value)) {
-        return ACTIVESXP;
-    }
     if (value == R_UnboundValue) {
         return UNBOUNDSXP;
-    } else if (value == R_MissingArg) {
+    }
+    if (value == R_MissingArg) {
         return MISSINGSXP;
     }
     return static_cast<sexptype_t>(TYPEOF(value));
