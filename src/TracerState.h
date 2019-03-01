@@ -15,26 +15,20 @@
 class TracerState {
   private:
     const std::string output_dirpath_;
-    const std::string trace_filepath_;
-    const bool enable_trace_;
-    const bool truncate_;
     const bool verbose_;
+    const bool truncate_;
     const bool binary_;
     const int compression_level_;
 
   public:
     TracerState(const std::string& output_dirpath,
-                const std::string& trace_filepath,
-                bool enable_trace,
-                bool truncate,
                 bool verbose,
+                bool truncate,
                 bool binary,
                 int compression_level)
         : output_dirpath_(output_dirpath)
-        , trace_filepath_(trace_filepath)
-        , enable_trace_(enable_trace)
-        , truncate_(truncate)
         , verbose_(verbose)
+        , truncate_(truncate)
         , binary_(binary)
         , compression_level_(compression_level)
         , denoted_value_id_counter_(0)
@@ -229,14 +223,6 @@ class TracerState {
 
     const std::string& get_output_dirpath() const {
         return output_dirpath_;
-    }
-
-    const std::string& get_trace_filepath() const {
-        return trace_filepath_;
-    }
-
-    bool is_trace_enabled() const {
-        return enable_trace_;
     }
 
     bool get_truncate() const {
@@ -1097,9 +1083,7 @@ class TracerState {
                 Function* called_function = call->get_function();
                 Function* caller_function =
                     exec_ctxt.get_closure()->get_function();
-                caller_function->update_wrapper(
-                    called_function->is_internal() ||
-                    called_function->is_primitive());
+                caller_function->update_wrapper(called_function->is_wrapper());
             }
         }
     }
