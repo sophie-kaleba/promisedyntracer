@@ -58,9 +58,7 @@ void closure_entry(dyntracer_t* dyntracer,
 
     set_dispatch(function_call, dispatch);
 
-    state.update_wrapper_state(function_call);
-
-    state.get_stack().push(function_call);
+    state.push_stack(function_call);
 
     state.exit_probe();
 }
@@ -76,7 +74,7 @@ void closure_exit(dyntracer_t* dyntracer,
 
     state.enter_probe();
 
-    ExecutionContext exec_ctxt = state.get_stack().pop();
+    ExecutionContext exec_ctxt = state.pop_stack();
 
     if (!exec_ctxt.is_closure()) {
         dyntrace_log_error("Not found matching closure on stack");
@@ -85,6 +83,8 @@ void closure_exit(dyntracer_t* dyntracer,
     Call* function_call = exec_ctxt.get_closure();
 
     function_call->set_return_value_type(type_of_sexp(return_value));
+
+    state.notify_caller(function_call);
 
     state.destroy_call(function_call);
 
@@ -105,9 +105,7 @@ void builtin_entry(dyntracer_t* dyntracer,
 
     set_dispatch(function_call, dispatch);
 
-    state.update_wrapper_state(function_call);
-
-    state.get_stack().push(function_call);
+    state.push_stack(function_call);
 
     state.exit_probe();
 }
@@ -123,7 +121,7 @@ void builtin_exit(dyntracer_t* dyntracer,
 
     state.enter_probe();
 
-    ExecutionContext exec_ctxt = state.get_stack().pop();
+    ExecutionContext exec_ctxt = state.pop_stack();
 
     if (!exec_ctxt.is_builtin()) {
         dyntrace_log_error("Not found matching builtin on stack");
@@ -132,6 +130,8 @@ void builtin_exit(dyntracer_t* dyntracer,
     Call* function_call = exec_ctxt.get_builtin();
 
     function_call->set_return_value_type(type_of_sexp(return_value));
+
+    state.notify_caller(function_call);
 
     state.destroy_call(function_call);
 
@@ -152,9 +152,7 @@ void special_entry(dyntracer_t* dyntracer,
 
     set_dispatch(function_call, dispatch);
 
-    state.update_wrapper_state(function_call);
-
-    state.get_stack().push(function_call);
+    state.push_stack(function_call);
 
     state.exit_probe();
 }
@@ -170,7 +168,7 @@ void special_exit(dyntracer_t* dyntracer,
 
     state.enter_probe();
 
-    ExecutionContext exec_ctxt = state.get_stack().pop();
+    ExecutionContext exec_ctxt = state.pop_stack();
 
     if (!exec_ctxt.is_special()) {
         dyntrace_log_error("Not found matching special object on stack");
@@ -179,6 +177,8 @@ void special_exit(dyntracer_t* dyntracer,
     Call* function_call = exec_ctxt.get_special();
 
     function_call->set_return_value_type(type_of_sexp(return_value));
+
+    state.notify_caller(function_call);
 
     state.destroy_call(function_call);
 
@@ -239,7 +239,7 @@ void context_entry(dyntracer_t* dyntracer, const RCNTXT* cptr) {
 
     state.enter_probe();
 
-    state.get_stack().push(cptr);
+    state.push_stack(cptr);
 
     state.exit_probe();
 }
@@ -254,6 +254,8 @@ void jump_single_context(TracerState& state,
 
         call->set_jumped();
         call->set_return_value_type(return_value_type);
+
+        state.notify_caller(call);
 
         state.destroy_call(call);
     }
@@ -287,8 +289,7 @@ void context_jump(dyntracer_t* dyntracer,
    because only one promise can be held responsible for non local
    return, the one that invokes the return function. */
 
-    execution_contexts_t exec_ctxts =
-        state.get_stack().unwind(ExecutionContext(context));
+    execution_contexts_t exec_ctxts(state.unwind_stack(context));
 
     const SEXP rho = context->cloenv;
 
@@ -321,7 +322,7 @@ void context_exit(dyntracer_t* dyntracer, const RCNTXT* cptr) {
 
     state.enter_probe();
 
-    ExecutionContext exec_ctxt = state.get_stack().pop();
+    ExecutionContext exec_ctxt = state.pop_stack();
 
     if (!exec_ctxt.is_r_context()) {
         dyntrace_log_error("Nonmatching r context on stack");
@@ -383,7 +384,7 @@ void promise_force_entry(dyntracer_t* dyntracer, const SEXP promise) {
        from the call object. */
     promise_state->force();
 
-    state.get_stack().push(promise_state);
+    state.push_stack(promise_state);
 
     state.exit_probe();
 }
@@ -393,7 +394,7 @@ void promise_force_exit(dyntracer_t* dyntracer, const SEXP promise) {
 
     state.enter_probe();
 
-    ExecutionContext exec_ctxt = state.get_stack().pop();
+    ExecutionContext exec_ctxt = state.pop_stack();
 
     if (!exec_ctxt.is_promise()) {
         dyntrace_log_error("unable to find matching promise on stack");
@@ -404,6 +405,8 @@ void promise_force_exit(dyntracer_t* dyntracer, const SEXP promise) {
     const SEXP value = dyntrace_get_promise_value(promise);
 
     promise_state->set_value_type(type_of_sexp(value));
+
+    promise_state->set_execution_time(exec_ctxt.get_execution_time());
 
     state.exit_probe();
 }

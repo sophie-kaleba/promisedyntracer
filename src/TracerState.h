@@ -62,12 +62,12 @@ class TracerState {
                               binary_,
                               compression_level_);
 
-        function_definition_data_table_ =
-            create_data_table(output_dirpath_ + "/" + "function_definition",
-                              {"function_id", "byte_compiled", "definition"},
-                              truncate_,
-                              binary_,
-                              compression_level_);
+        function_definition_data_table_ = create_data_table(
+            output_dirpath_ + "/" + "function_definition",
+            {"function_id", "function_name", "byte_compiled", "definition"},
+            truncate_,
+            binary_,
+            compression_level_);
 
         argument_data_table_ =
             create_data_table(output_dirpath_ + "/" + "arguments",
@@ -246,23 +246,25 @@ class TracerState {
     }
 
     void cleanup(int error) {
-        for (auto iter = promises_.begin(); iter != promises_.end(); ++iter) {
-            destroy_promise(iter->second);
+        for (auto const& binding: promises_) {
+            destroy_promise(binding.second);
         }
 
         promises_.clear();
 
-        for (auto iter = functions_.begin(); iter != functions_.end(); ++iter) {
-            destroy_function_(iter->second);
+        for (auto const& binding: function_cache_) {
+            destroy_function_(binding.second);
         }
 
         functions_.clear();
+
+        function_cache_.clear();
 
         serialize_object_count_();
 
         serialize_promise_lifecycle_summary_();
 
-        if (!get_stack().is_empty()) {
+        if (!get_stack_().is_empty()) {
             dyntrace_log_error("stack not empty on tracer exit.")
         }
 
@@ -320,7 +322,7 @@ class TracerState {
     ExecutionContextStack stack_;
 
   public:
-    ExecutionContextStack& get_stack() {
+    ExecutionContextStack& get_stack_() {
         return stack_;
     }
 
@@ -418,11 +420,29 @@ class TracerState {
             std::chrono::duration_cast<std::chrono::nanoseconds>(
                 execution_pause_time - execution_resume_time_)
                 .count();
-        for (auto& element: stack_) {
-            if (element.is_promise()) {
-                element.get_promise()->add_execution_time(execution_time);
-            }
+        ExecutionContextStack& stack(get_stack_());
+        if (!stack.is_empty()) {
+            stack.peek(1).increment_execution_time(execution_time);
         }
+    }
+
+    ExecutionContext pop_stack() {
+        ExecutionContextStack& stack(get_stack_());
+        ExecutionContext exec_ctxt(stack.pop());
+        if (!stack.is_empty()) {
+            stack.peek(1).increment_execution_time(
+                exec_ctxt.get_execution_time());
+        }
+        return exec_ctxt;
+    }
+
+    template <typename T>
+    void push_stack(T* context) {
+        get_stack_().push(context);
+    }
+
+    execution_contexts_t unwind_stack(const RCNTXT* context) {
+        return get_stack_().unwind(ExecutionContext(context));
     }
 
   private:
@@ -639,7 +659,7 @@ class TracerState {
 
   public:
     scope_t infer_creation_scope() {
-        ExecutionContextStack& stack = get_stack();
+        ExecutionContextStack& stack = get_stack_();
 
         for (auto iter = stack.crbegin(); iter != stack.crend(); ++iter) {
             if (iter->is_call()) {
@@ -657,7 +677,7 @@ class TracerState {
     }
 
     scope_t infer_forcing_scope() {
-        const ExecutionContextStack& stack = get_stack();
+        const ExecutionContextStack& stack = get_stack_();
 
         for (auto iter = stack.crbegin(); iter != stack.crend(); ++iter) {
             const ExecutionContext& exec_ctxt = *iter;
@@ -884,20 +904,34 @@ class TracerState {
      ***************************************************************************/
   public:
     Function* lookup_function(const SEXP op) {
+        Function* function = nullptr;
+
         auto iter = functions_.find(op);
-        if (iter == functions_.end()) {
-            Function* function = new Function(op);
-            functions_.insert({op, function});
-            return function;
+
+        if (iter != functions_.end()) {
+            return iter->second;
         }
-        return iter->second;
+
+        const auto [function_definition, function_id] =
+            Function::compute_definition_and_id(op);
+
+        auto iter2 = function_cache_.find(function_id);
+
+        if (iter2 == function_cache_.end()) {
+            function = new Function(op, function_definition, function_id);
+            function_cache_.insert({function_id, function});
+        } else {
+            function = iter2->second;
+        }
+
+        functions_.insert({op, function});
+        return function;
     }
 
     void remove_function(const SEXP op) {
         auto it = functions_.find(op);
 
         if (it != functions_.end()) {
-            destroy_function_(it->second);
             functions_.erase(it);
         }
     }
@@ -910,37 +944,40 @@ class TracerState {
 
     DataTableStream* call_summary_data_table_;
     DataTableStream* function_definition_data_table_;
-    std::unordered_set<function_id_t> serialized_functions_;
     std::unordered_map<SEXP, Function*> functions_;
+    std::unordered_map<function_id_t, Function*> function_cache_;
 
     void serialize_function_(Function* function) {
-        serialize_function_call_summary_(*function);
-        serialize_function_definition_(*function);
-    }
+        const std::string& function_namespace = function->get_namespace();
+        const std::vector<std::string>& function_names = function->get_names();
 
-    void serialize_function_call_summary_(const Function& function) {
-        const std::string& function_namespace = function.get_namespace();
-        const std::vector<std::string>& function_names = function.get_names();
-
-        std::string all_names = "";
+        std::string all_names = "(";
 
         if (function_names.size() >= 1) {
-            all_names = function_namespace + "::" + function_names[0];
+            all_names += function_namespace + "::" + function_names[0];
         }
 
         for (std::size_t i = 1; i < function_names.size(); ++i) {
-            all_names += " | " + function_namespace + "::" + function_names[i];
+            all_names += " " + function_namespace + "::" + function_names[i];
         }
 
-        for (std::size_t i = 0; i < function.get_summary_count(); ++i) {
-            const CallSummary& call_summary = function.get_call_summary(i);
+        all_names += ")";
+
+        serialize_function_call_summary_(function, all_names);
+        serialize_function_definition_(function, all_names);
+    }
+
+    void serialize_function_call_summary_(const Function* function,
+                                          const std::string& names) {
+        for (std::size_t i = 0; i < function->get_summary_count(); ++i) {
+            const CallSummary& call_summary = function->get_call_summary(i);
 
             call_summary_data_table_->write_row(
-                function.get_id(),
-                sexptype_to_string(function.get_type()),
-                function.get_formal_parameter_count(),
-                function.is_wrapper(),
-                all_names,
+                function->get_id(),
+                sexptype_to_string(function->get_type()),
+                function->get_formal_parameter_count(),
+                function->is_wrapper(),
+                names,
                 call_summary.is_S3_method(),
                 call_summary.is_S4_method(),
                 pos_seq_to_string(call_summary.get_force_order()),
@@ -952,23 +989,18 @@ class TracerState {
         }
     }
 
-    void serialize_function_definition_(const Function& function) {
-        auto res = serialized_functions_.insert(function.get_id());
-
-        /* serialize function definition iff the insertion was successful,
-           i.e. the function was not previously serialized. */
-        if (res.second) {
-            function_definition_data_table_->write_row(
-                function.get_id(),
-                function.is_byte_compiled(),
-                function.get_definition());
-        }
+    void serialize_function_definition_(const Function* function,
+                                        const std::string& names) {
+        function_definition_data_table_->write_row(function->get_id(),
+                                                   names,
+                                                   function->is_byte_compiled(),
+                                                   function->get_definition());
     }
 
   public:
     void identify_side_effect_creators(const Variable& var, const SEXP env) {
         bool direct = true;
-        ExecutionContextStack& stack = get_stack();
+        ExecutionContextStack& stack = get_stack_();
 
         for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
             ExecutionContext& exec_ctxt = *iter;
@@ -1025,7 +1057,7 @@ class TracerState {
 
         bool direct = true;
 
-        ExecutionContextStack& stack = get_stack();
+        ExecutionContextStack& stack = get_stack_();
 
         for (auto iter = stack.rbegin(); iter != stack.rend(); ++iter) {
             ExecutionContext& exec_ctxt = *iter;
@@ -1073,23 +1105,26 @@ class TracerState {
         }
     }
 
-    void update_wrapper_state(Call* call) {
-        ExecutionContextStack& stack = get_stack();
+    void notify_caller(Call* callee) {
+        ExecutionContextStack& stack = get_stack_();
 
         if (!stack.is_empty()) {
             ExecutionContext exec_ctxt = stack.peek(1);
 
-            if (exec_ctxt.is_closure()) {
-                Function* called_function = call->get_function();
-                Function* caller_function =
-                    exec_ctxt.get_closure()->get_function();
-                caller_function->update_wrapper(called_function->is_wrapper());
+            if (!exec_ctxt.is_call()) {
+                return;
+            }
+
+            Call* caller = exec_ctxt.get_call();
+            Function* function = caller->get_function();
+            if (function->is_closure() || function->is_curly_bracket()) {
+                caller->analyze_callee(callee);
             }
         }
     }
 
     eval_depth_t get_evaluation_depth(Call* call) {
-        ExecutionContextStack& stack = get_stack();
+        ExecutionContextStack& stack = get_stack_();
         ExecutionContextStack::reverse_iterator iter;
         eval_depth_t eval_depth = {0, 0, 0, -1};
         bool nesting = true;

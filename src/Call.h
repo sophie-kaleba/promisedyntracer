@@ -75,6 +75,20 @@ class Call {
         return S4_method_;
     }
 
+    void analyze_callee(Call* callee) {
+        ++callee_counter_;
+        /* if a caller has more than one callee it is not a wrapper. */
+        if (callee_counter_ > 1) {
+            wrapper_ = false;
+        } else {
+            wrapper_ = callee->is_wrapper();
+        }
+    }
+
+    bool is_wrapper() const {
+        return wrapper_;
+    }
+
     std::vector<Argument*>& get_arguments() {
         return arguments_;
     }
@@ -134,6 +148,8 @@ class Call {
     bool jumped_;
     bool S3_method_;
     bool S4_method_;
+    int callee_counter_;
+    bool wrapper_;
     std::vector<Argument*> arguments_;
     pos_seq_t force_order_;
 };
