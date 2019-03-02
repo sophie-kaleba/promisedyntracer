@@ -159,10 +159,6 @@ class DenotedValue {
         execution_time_ = execution_time;
     }
 
-    void add_execution_time(double execution_time) {
-        execution_time_ += execution_time;
-    }
-
     void force();
 
     int get_force_count() const {

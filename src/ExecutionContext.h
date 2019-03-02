@@ -12,11 +12,11 @@ class Call;
 class ExecutionContext {
   public:
     explicit ExecutionContext(DenotedValue* promise_state)
-        : type_(PROMSXP), promise_state_(promise_state) {
+        : type_(PROMSXP), promise_state_(promise_state), execution_time_(0) {
     }
 
     explicit ExecutionContext(const RCNTXT* r_context)
-        : type_(CONTEXTSXP), r_context_(r_context) {
+        : type_(CONTEXTSXP), r_context_(r_context), execution_time_(0) {
     }
 
     /* defined in cpp file to get around cyclic dependency issues. */
@@ -70,6 +70,14 @@ class ExecutionContext {
         return r_context_;
     }
 
+    void increment_execution_time(const std::uint64_t increment) {
+        execution_time_ += increment;
+    }
+
+    std::uint64_t get_execution_time() const {
+        return execution_time_;
+    }
+
   private:
     sexptype_t type_;
     union {
@@ -77,6 +85,7 @@ class ExecutionContext {
         Call* call_;
         const RCNTXT* r_context_;
     };
+    std::uint64_t execution_time_;
 };
 
 using execution_contexts_t = std::vector<ExecutionContext>;

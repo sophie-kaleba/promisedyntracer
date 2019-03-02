@@ -72,6 +72,10 @@ class ExecutionContextStack {
         return stack_.at(stack_.size() - n);
     }
 
+    ExecutionContext& peek(std::size_t n = 1) {
+        return stack_.at(stack_.size() - n);
+    }
+
     execution_contexts_t unwind(const ExecutionContext& context) {
         execution_contexts_t unwound_contexts;
 
