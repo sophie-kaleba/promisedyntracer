@@ -37,15 +37,15 @@ class TracerState {
         , timestamp_(0)
         , call_id_counter_(0)
         , object_count_(OBJECT_TYPE_TABLE_COUNT, 0) {
-        object_count_data_table_ =
-            create_data_table(output_dirpath_ + "/" + "object_count",
+        object_counts_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "object_counts",
                               {"type", "count"},
                               truncate_,
                               binary_,
                               compression_level_);
 
-        call_summary_data_table_ =
-            create_data_table(output_dirpath_ + "/" + "call_summary",
+        call_summaries_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "call_summaries",
                               {"function_id",
                                "function_type",
                                "formal_parameter_count",
@@ -62,14 +62,14 @@ class TracerState {
                               binary_,
                               compression_level_);
 
-        function_definition_data_table_ = create_data_table(
-            output_dirpath_ + "/" + "function_definition",
+        function_definitions_data_table_ = create_data_table(
+            output_dirpath_ + "/" + "function_definitions",
             {"function_id", "function_name", "byte_compiled", "definition"},
             truncate_,
             binary_,
             compression_level_);
 
-        argument_data_table_ =
+        arguments_data_table_ =
             create_data_table(output_dirpath_ + "/" + "arguments",
                               {"call_id",
                                "function_id",
@@ -91,12 +91,13 @@ class TracerState {
                                "S3_dispatch",
                                "S4_dispatch",
                                "forcing_actual_argument_position",
-                               "non_local_return"},
+                               "non_local_return",
+                               "execution_time"},
                               truncate_,
                               binary_,
                               compression_level_);
 
-        escaped_argument_data_table_ = create_data_table(
+        escaped_arguments_data_table_ = create_data_table(
             output_dirpath_ + "/" + "escaped_arguments",
             {"call_id",
              "function_id",
@@ -164,7 +165,7 @@ class TracerState {
             binary_,
             compression_level_);
 
-        promise_data_table_ =
+        promises_data_table_ =
             create_data_table(output_dirpath_ + "/" + "promises",
                               {"value_id",
                                "argument",
@@ -203,8 +204,8 @@ class TracerState {
                               binary_,
                               compression_level_);
 
-        promise_lifecycle_data_table_ =
-            create_data_table(output_dirpath_ + "/" + "promise_lifecycle",
+        promise_lifecycles_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "promise_lifecycles",
                               {"action", "count", "promise_count"},
                               truncate_,
                               binary_,
@@ -212,13 +213,13 @@ class TracerState {
     }
 
     ~TracerState() {
-        delete object_count_data_table_;
-        delete call_summary_data_table_;
-        delete function_definition_data_table_;
-        delete argument_data_table_;
-        delete promise_data_table_;
-        delete escaped_argument_data_table_;
-        delete promise_lifecycle_data_table_;
+        delete object_counts_data_table_;
+        delete call_summaries_data_table_;
+        delete function_definitions_data_table_;
+        delete arguments_data_table_;
+        delete promises_data_table_;
+        delete escaped_arguments_data_table_;
+        delete promise_lifecycles_data_table_;
     }
 
     const std::string& get_output_dirpath() const {
@@ -284,9 +285,9 @@ class TracerState {
     }
 
   private:
-    DataTableStream* object_count_data_table_;
-    DataTableStream* promise_data_table_;
-    DataTableStream* promise_lifecycle_data_table_;
+    DataTableStream* object_counts_data_table_;
+    DataTableStream* promises_data_table_;
+    DataTableStream* promise_lifecycles_data_table_;
 
     void serialize_configuration_() const {
         std::ofstream fout(get_output_dirpath() + "/CONFIGURATION",
@@ -312,7 +313,7 @@ class TracerState {
     void serialize_object_count_() {
         for (int i = 0; i < object_count_.size(); ++i) {
             if (object_count_[i] != 0) {
-                object_count_data_table_->write_row(
+                object_counts_data_table_->write_row(
                     sexptype_to_string(i),
                     static_cast<double>(object_count_[i]));
             }
@@ -523,7 +524,7 @@ class TracerState {
     }
 
     void serialize_promise_(DenotedValue* promise) {
-        promise_data_table_->write_row(
+        promises_data_table_->write_row(
             promise->get_id(),
             promise->was_argument(),
             sexptype_to_string(promise->get_expression_type()),
@@ -560,7 +561,7 @@ class TracerState {
     }
 
     void serialize_escaped_promise_(DenotedValue* promise) {
-        escaped_argument_data_table_->write_row(
+        escaped_arguments_data_table_->write_row(
             promise->get_previous_call_id(),
             promise->get_previous_function_id(),
             sexptype_to_string(promise->get_previous_call_return_value_type()),
@@ -847,7 +848,7 @@ class TracerState {
         Call* call = argument->get_call();
         DenotedValue* value = argument->get_denoted_value();
 
-        argument_data_table_->write_row(
+        arguments_data_table_->write_row(
             call->get_id(),
             call->get_function()->get_id(),
             value->get_id(),
@@ -868,7 +869,8 @@ class TracerState {
             argument->used_for_S3_dispatch(),
             argument->used_for_S4_dispatch(),
             argument->get_forcing_actual_argument_position(),
-            argument->does_non_local_return());
+            argument->does_non_local_return(),
+            value->get_execution_time());
         // value->has_escaped(),
         // value->get_evaluation_depth().call_depth,
         // value->get_evaluation_depth().promise_depth,
@@ -896,8 +898,8 @@ class TracerState {
         // value->get_execution_time());
     }
 
-    DataTableStream* argument_data_table_;
-    DataTableStream* escaped_argument_data_table_;
+    DataTableStream* arguments_data_table_;
+    DataTableStream* escaped_arguments_data_table_;
 
     /***************************************************************************
      * Function API
@@ -942,8 +944,8 @@ class TracerState {
         delete function;
     }
 
-    DataTableStream* call_summary_data_table_;
-    DataTableStream* function_definition_data_table_;
+    DataTableStream* call_summaries_data_table_;
+    DataTableStream* function_definitions_data_table_;
     std::unordered_map<SEXP, Function*> functions_;
     std::unordered_map<function_id_t, Function*> function_cache_;
 
@@ -972,7 +974,7 @@ class TracerState {
         for (std::size_t i = 0; i < function->get_summary_count(); ++i) {
             const CallSummary& call_summary = function->get_call_summary(i);
 
-            call_summary_data_table_->write_row(
+            call_summaries_data_table_->write_row(
                 function->get_id(),
                 sexptype_to_string(function->get_type()),
                 function->get_formal_parameter_count(),
@@ -991,10 +993,11 @@ class TracerState {
 
     void serialize_function_definition_(const Function* function,
                                         const std::string& names) {
-        function_definition_data_table_->write_row(function->get_id(),
-                                                   names,
-                                                   function->is_byte_compiled(),
-                                                   function->get_definition());
+        function_definitions_data_table_->write_row(
+            function->get_id(),
+            names,
+            function->is_byte_compiled(),
+            function->get_definition());
     }
 
   public:
@@ -1175,7 +1178,7 @@ class TracerState {
 
     void serialize_promise_lifecycle_summary_() {
         for (const auto& summary: lifecycle_summary_) {
-            promise_lifecycle_data_table_->write_row(
+            promise_lifecycles_data_table_->write_row(
                 summary.first.action,
                 pos_seq_to_string(summary.first.count),
                 summary.second);
