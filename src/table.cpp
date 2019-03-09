@@ -307,17 +307,17 @@ static SEXP read_compressed_binary_data_table(const std::string& filepath,
     ZSTD_DStream* decompression_stream = ZSTD_createDStream();
 
     if (decompression_stream == NULL) {
-        fprintf(stderr, "ZSTD_createDStream() error \n");
-        exit(EXIT_FAILURE);
+        /* TODO - cleanup at this point */
+        Rf_error("file '%s': ZSTD_createDStream() error", filepath.c_str());
     }
 
     const std::size_t init_result = ZSTD_initDStream(decompression_stream);
 
     if (ZSTD_isError(init_result)) {
-        fprintf(stderr,
-                "ZSTD_initDStream() error : %s \n",
-                ZSTD_getErrorName(init_result));
-        exit(EXIT_FAILURE);
+        /* TODO - cleanup at this point */
+        Rf_error("file '%s': ZSTD_initDStream() error : %s \n",
+                 filepath.c_str(),
+                 ZSTD_getErrorName(init_result));
     }
 
     std::size_t remaining_bytes = 0;
@@ -338,10 +338,10 @@ static SEXP read_compressed_binary_data_table(const std::string& filepath,
         bool have_enough_data = true;
 
         if (ZSTD_isError(decompressed_bytes)) {
-            fprintf(stderr,
-                    "ZSTD_decompressStream() error : %s \n",
-                    ZSTD_getErrorName(decompressed_bytes));
-            exit(EXIT_FAILURE);
+            /* TODO - cleanup at this point */
+            Rf_error("file '%s': ZSTD_decompressStream() error : %s \n",
+                     filepath.c_str(),
+                     ZSTD_getErrorName(decompressed_bytes));
         }
 
         /* reading starts from beginning of output buffer to ensure that
