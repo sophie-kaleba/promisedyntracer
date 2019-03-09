@@ -1,7 +1,7 @@
 
 create_dyntracer <- function(output_dirpath,
                              verbose = FALSE,
-                             truncate = FALSE,
+                             truncate = TRUE,
                              binary = FALSE,
                              compression_level = 0) {
 
@@ -24,7 +24,7 @@ destroy_dyntracer <- function(dyntracer) {
 dyntrace_promises <- function(expr,
                               output_dirpath,
                               verbose = FALSE,
-                              truncate = FALSE,
+                              truncate = TRUE,
                               binary = FALSE,
                               compression_level = 0) {
 
