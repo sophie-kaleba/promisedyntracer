@@ -35,7 +35,7 @@ void DenotedValue::metaprogram() {
     add_lifecycle_action_('M');
     if (is_argument()) {
         argument_stack_.back()->direct_metaprogram();
-        for (int i = argument_stack_.size() - 1; i >= 0; --i) {
+        for (int i = argument_stack_.size() - 2; i >= 0; --i) {
             argument_stack_[i]->indirect_metaprogram();
         }
     }
@@ -47,7 +47,7 @@ void DenotedValue::force() {
     add_lifecycle_action_('F');
     if (is_argument()) {
         argument_stack_.back()->direct_force();
-        for (int i = argument_stack_.size() - 1; i >= 0; --i) {
+        for (int i = argument_stack_.size() - 2; i >= 0; --i) {
             argument_stack_[i]->indirect_force();
         }
     }
@@ -59,7 +59,7 @@ void DenotedValue::lookup_value() {
     add_lifecycle_action_('L');
     if (is_argument()) {
         argument_stack_.back()->direct_lookup();
-        for (int i = argument_stack_.size() - 1; i >= 0; --i) {
+        for (int i = argument_stack_.size() - 2; i >= 0; --i) {
             argument_stack_[i]->indirect_lookup();
         }
     }
