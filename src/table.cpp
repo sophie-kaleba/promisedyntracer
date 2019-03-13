@@ -183,21 +183,31 @@ struct data_frame_t {
 
 static data_frame_t read_header(const char* buffer, const char** end) {
     data_frame_t data_frame{nullptr, 0, 0, {}, {}};
+    SEXP column_names;
+    SEXP row_names;
     std::size_t character_size = 1024 * 1024;
-    char* character_value = static_cast<char*>(malloc(character_size));
+    int nprotect = 0;
 
-    int row_count = parse_integer(buffer, end);
-    int column_count = parse_integer(*end, end);
+    R_xlen_t row_count = parse_integer(buffer, end);
+    R_xlen_t column_count = parse_integer(*end, end);
 
     data_frame.row_count = row_count;
     data_frame.column_count = column_count;
 
-    data_frame.object = PROTECT(allocVector(VECSXP, column_count));
-    SEXP column_names = PROTECT(allocVector(STRSXP, column_count));
-    SEXP row_names = PROTECT(allocVector(STRSXP, row_count));
+    if (row_count == 0) {
+        column_count = 0;
+    }
+
+    data_frame.object = PROTECT(Rf_allocVector(VECSXP, column_count));
+    ++nprotect;
+    column_names = PROTECT(Rf_allocVector(STRSXP, column_count));
+    ++nprotect;
+    row_names = PROTECT(Rf_allocVector(STRSXP, row_count));
+    ++nprotect;
 
     data_frame.columns.reserve(column_count);
     data_frame.column_types.reserve(column_count);
+    char* character_value = static_cast<char*>(malloc(character_size));
 
     for (int column_index = 0; column_index < column_count; ++column_index) {
         SEXP name =
@@ -206,9 +216,10 @@ static data_frame_t read_header(const char* buffer, const char** end) {
         SEXPTYPE sexptype = parse_sexptype(*end, end);
         uint32_t size = parse_integer(*end, end);
         data_frame.column_types.push_back({sexptype, size});
-        SEXP column = PROTECT(allocVector(sexptype, row_count));
-        data_frame.columns.push_back(column);
+        SEXP column = PROTECT(Rf_allocVector(sexptype, row_count));
+        ++nprotect;
         SET_VECTOR_ELT(data_frame.object, column_index, column);
+        data_frame.columns.push_back(column);
     }
 
     for (int row_index = 0; row_index < row_count; ++row_index) {
@@ -216,20 +227,40 @@ static data_frame_t read_header(const char* buffer, const char** end) {
         SET_STRING_ELT(row_names, row_index, mkChar(character_value));
     }
 
-    setAttrib(data_frame.object, R_RowNamesSymbol, row_names);
-    setAttrib(data_frame.object, R_NamesSymbol, column_names);
-    setAttrib(data_frame.object, R_ClassSymbol, mkString("data.frame"));
     free(character_value);
-    UNPROTECT(3);
+
+    Rf_setAttrib(data_frame.object, R_RowNamesSymbol, row_names);
+    Rf_setAttrib(data_frame.object, R_NamesSymbol, column_names);
+    Rf_setAttrib(data_frame.object, R_ClassSymbol, Rf_mkString("data.frame"));
+
+    UNPROTECT(nprotect);
     return data_frame;
 }
 
 static SEXP read_uncompressed_binary_data_table(const std::string& filepath) {
     auto const [buf, buffer_size] = map_to_memory(filepath);
+
+    if (buf == nullptr || buffer_size == 0) {
+        REprintf("file '%s' is empty.\n", filepath.c_str());
+        return R_NilValue;
+    }
+
     const char* buffer = static_cast<const char*>(buf);
     const char* const end_of_buffer = buffer + buffer_size;
     const char* end = nullptr;
+
     data_frame_t data_frame{read_header(buffer, &end)};
+
+    if (data_frame.row_count == 0 || data_frame.column_count == 0) {
+        unmap_memory(buf, buffer_size);
+        return data_frame.object;
+    }
+
+    int nprotect = 0;
+
+    PROTECT(data_frame.object);
+    ++nprotect;
+
     std::size_t character_size = 1024 * 1024;
     char* character_value = static_cast<char*>(malloc(character_size));
 
@@ -274,7 +305,7 @@ static SEXP read_uncompressed_binary_data_table(const std::string& filepath) {
         }
     }
 
-    UNPROTECT(data_frame.column_count);
+    UNPROTECT(nprotect);
     std::free(character_value);
     unmap_memory(buf, buffer_size);
     return data_frame.object;
@@ -284,6 +315,11 @@ static SEXP read_compressed_binary_data_table(const std::string& filepath,
                                               int compression_level) {
     auto const [buf, input_buffer_size] = map_to_memory(filepath);
 
+    if (buf == nullptr || input_buffer_size == 0) {
+        REprintf("file '%s' is empty.\n", filepath.c_str());
+        return R_NilValue;
+    }
+
     const char* input_buffer = static_cast<const char*>(buf);
 
     const char* const input_buffer_end = input_buffer + input_buffer_size;
@@ -291,6 +327,16 @@ static SEXP read_compressed_binary_data_table(const std::string& filepath,
     const char* input_buffer_current = nullptr;
 
     data_frame_t data_frame{read_header(input_buffer, &input_buffer_current)};
+
+    if (data_frame.row_count == 0 || data_frame.column_count == 0) {
+        unmap_memory(buf, input_buffer_size);
+        return data_frame.object;
+    }
+
+    int nprotect = 0;
+
+    PROTECT(data_frame.object);
+    ++nprotect;
 
     ZSTD_inBuffer input{
         input_buffer_current,
@@ -448,10 +494,10 @@ static SEXP read_compressed_binary_data_table(const std::string& filepath,
         }
     }
 
-    UNPROTECT(data_frame.column_count);
     std::free(character_value);
     std::free(output_buffer);
     unmap_memory(buf, input_buffer_size);
+    UNPROTECT(nprotect);
 
     if (row_index < data_frame.row_count) {
         Rf_error("PROMISEDYNTRACER ERROR: read_compressed_binary_data_table: ",
