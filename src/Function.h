@@ -33,7 +33,7 @@ class Function {
             byte_compiled_ = false;
         }
 
-        namespace_ = find_namespace_(op);
+        namespace_ = find_package_name_(op);
     }
 
     bool is_byte_compiled() const {
@@ -188,21 +188,70 @@ class Function {
     static const int PRIMITIVE_DOT_EXTERNAL_GRAPHICS_OFFSET_ = 431;
     static const int PRIMITIVE_DOT_CALL_GRAPHICS_OFFSET_ = 432;
 
-    std::string find_namespace_(const SEXP op) {
-        SEXP env = CLOENV(op);
+    std::string find_package_name_(const SEXP op) {
+        if (TYPEOF(op) == SPECIALSXP || TYPEOF(op) == BUILTINSXP) {
+            return "gnurprimitive";
+        }
+
+        SEXP namesym = R_NilValue;
+        const char* packprefix = "package:";
+        size_t pplen = strlen(packprefix);
+
         void (*probe)(dyntracer_t*, SEXP, SEXP, SEXP);
         probe = dyntrace_active_dyntracer->probe_environment_variable_lookup;
         dyntrace_active_dyntracer->probe_environment_variable_lookup = NULL;
-        SEXP spec = R_NamespaceEnvSpec(env);
-        dyntrace_active_dyntracer->probe_environment_variable_lookup = probe;
-        if (spec != R_NilValue) {
-            if (TYPEOF(spec) == STRSXP && LENGTH(spec) > 0) {
-                return CHAR(STRING_ELT(spec, 0));
-            } else if (TYPEOF(spec) == CHARSXP) {
-                return CHAR(spec);
+
+        SEXP env = CLOENV(op);
+        const char* name = "empty";
+
+        while (TYPEOF(env) == ENVSXP && env != R_EmptyEnv) {
+            if (env == R_GlobalEnv) {
+                name = "global";
+                break;
             }
+
+            if (env == R_BaseEnv || env == R_BaseNamespace) {
+                name = "base";
+                break;
+            }
+
+            namesym = R_NamespaceEnvSpec(env);
+
+            if (namesym != R_NilValue) {
+                if (TYPEOF(namesym) == STRSXP && LENGTH(namesym) > 0) {
+                    name = CHAR(STRING_ELT(namesym, 0));
+                    break;
+                } else if (TYPEOF(namesym) == CHARSXP) {
+                    name = CHAR(namesym);
+                    break;
+                }
+            }
+
+            namesym = getAttrib(env, R_NameSymbol);
+
+            if (namesym != R_NilValue && TYPEOF(namesym) == STRSXP &&
+                Rf_length(namesym) > 0 &&
+                !strncmp(packprefix, CHAR(STRING_ELT(namesym, 0)), pplen)) {
+                name = CHAR(STRING_ELT(namesym, 0)) + pplen;
+                break;
+            }
+
+            namesym = findVar(R_dot_packageName, env);
+
+            if (TYPEOF(namesym) == STRSXP && LENGTH(namesym) > 0) {
+                name = CHAR(STRING_ELT(namesym, 0));
+                break;
+            } else if (TYPEOF(namesym) == CHARSXP) {
+                name = CHAR(namesym);
+                break;
+            }
+
+            env = ENCLOS(env);
         }
-        return "";
+
+        dyntrace_active_dyntracer->probe_environment_variable_lookup = probe;
+
+        return name;
     }
 };
 
