@@ -44,6 +44,16 @@ static inline void set_dispatch(Call* call,
     }
 }
 
+void eval_entry(dyntracer_t* dyntracer, const SEXP expr, const SEXP rho) {
+    TracerState& state = tracer_state(dyntracer);
+
+    state.enter_probe();
+
+    state.enter_eval(expr, rho);
+
+    state.exit_probe();
+}
+
 void closure_entry(dyntracer_t* dyntracer,
                    const SEXP call,
                    const SEXP op,

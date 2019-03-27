@@ -17,6 +17,8 @@ void dyntrace_exit(dyntracer_t* dyntracer,
                    SEXP result,
                    int error);
 
+void eval_entry(dyntracer_t* dyntracer, const SEXP expr, const SEXP rho);
+
 void closure_entry(dyntracer_t* dyntracer,
                    const SEXP call,
                    const SEXP op,

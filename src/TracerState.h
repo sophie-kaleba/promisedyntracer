@@ -36,7 +36,15 @@ class TracerState {
         , variable_id_(0)
         , timestamp_(0)
         , call_id_counter_(0)
-        , object_count_(OBJECT_TYPE_TABLE_COUNT, 0) {
+        , object_count_(OBJECT_TYPE_TABLE_COUNT, 0)
+        , eval_entry_counter_(0) {
+        event_counts_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "event_counts",
+                              {"event", "count"},
+                              truncate_,
+                              binary_,
+                              compression_level_);
+
         object_counts_data_table_ =
             create_data_table(output_dirpath_ + "/" + "object_counts",
                               {"type", "count"},
@@ -213,6 +221,7 @@ class TracerState {
     }
 
     ~TracerState() {
+        delete event_counts_data_table_;
         delete object_counts_data_table_;
         delete call_summaries_data_table_;
         delete function_definitions_data_table_;
@@ -261,6 +270,8 @@ class TracerState {
 
         function_cache_.clear();
 
+        serialize_event_counts_();
+
         serialize_object_count_();
 
         serialize_promise_lifecycle_summary_();
@@ -284,10 +295,17 @@ class TracerState {
         ++object_count_[type];
     }
 
+    void enter_eval(const SEXP expr, const SEXP rho) {
+        ++eval_entry_counter_;
+    }
+
   private:
+    DataTableStream* event_counts_data_table_;
     DataTableStream* object_counts_data_table_;
     DataTableStream* promises_data_table_;
     DataTableStream* promise_lifecycles_data_table_;
+
+    unsigned long int eval_entry_counter_;
 
     void serialize_configuration_() const {
         std::ofstream fout(get_output_dirpath() + "/CONFIGURATION",
@@ -308,6 +326,11 @@ class TracerState {
         serialize_row("binary", std::to_string(is_binary()));
         serialize_row("compression_level",
                       std::to_string(get_compression_level()));
+    }
+
+    void serialize_event_counts_() {
+        event_counts_data_table_->write_row(
+            "eval", static_cast<double>(eval_entry_counter_));
     }
 
     void serialize_object_count_() {

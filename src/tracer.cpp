@@ -21,6 +21,7 @@ SEXP create_dyntracer(SEXP output_dirpath,
     dyntracer_t* dyntracer = (dyntracer_t*) calloc(1, sizeof(dyntracer_t));
     dyntracer->probe_dyntrace_entry = dyntrace_entry;
     dyntracer->probe_dyntrace_exit = dyntrace_exit;
+    dyntracer->probe_eval_entry = eval_entry;
     dyntracer->probe_closure_entry = closure_entry;
     dyntracer->probe_closure_exit = closure_exit;
     dyntracer->probe_builtin_entry = builtin_entry;
