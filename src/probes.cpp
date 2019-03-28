@@ -428,6 +428,16 @@ void promise_value_lookup(dyntracer_t* dyntracer, const SEXP promise) {
 
     DenotedValue* promise_state = state.lookup_promise(promise, true);
 
+    /* If a promise is looked up then add it to force order.
+       This ensures that S3 arguments are handled correctly.
+       The argument is never repeated in the force order as
+       the Call::add_to_force_order function does not duplicate
+       entries. */
+    for (Argument* argument: promise_state->get_arguments()) {
+        argument->get_call()->add_to_force_order(
+            argument->get_formal_parameter_position());
+    }
+
     promise_state->lookup_value();
 
     state.exit_probe();
