@@ -4,6 +4,7 @@
 #include "Argument.h"
 #include "Call.h"
 #include "Environment.h"
+#include "Event.h"
 #include "ExecutionContextStack.h"
 #include "Function.h"
 #include "Variable.h"
@@ -37,7 +38,7 @@ class TracerState {
         , timestamp_(0)
         , call_id_counter_(0)
         , object_count_(OBJECT_TYPE_TABLE_COUNT, 0)
-        , eval_entry_counter_(0) {
+        , event_counter_(to_underlying(Event::COUNT), 0) {
         event_counts_data_table_ =
             create_data_table(output_dirpath_ + "/" + "event_counts",
                               {"event", "count"},
@@ -207,7 +208,8 @@ class TracerState {
                                "indirect_lexical_scope_observation_count",
                                "direct_non_lexical_scope_observation_count",
                                "indirect_non_lexical_scope_observation_count",
-                               "execution_time"},
+                               "execution_time",
+                               "expression"},
                               truncate_,
                               binary_,
                               compression_level_);
@@ -295,17 +297,11 @@ class TracerState {
         ++object_count_[type];
     }
 
-    void enter_eval(const SEXP expr, const SEXP rho) {
-        ++eval_entry_counter_;
-    }
-
   private:
     DataTableStream* event_counts_data_table_;
     DataTableStream* object_counts_data_table_;
     DataTableStream* promises_data_table_;
     DataTableStream* promise_lifecycles_data_table_;
-
-    unsigned long int eval_entry_counter_;
 
     void serialize_configuration_() const {
         std::ofstream fout(get_output_dirpath() + "/CONFIGURATION",
@@ -329,8 +325,11 @@ class TracerState {
     }
 
     void serialize_event_counts_() {
-        event_counts_data_table_->write_row(
-            "eval", static_cast<double>(eval_entry_counter_));
+        for (int i = 0; i < to_underlying(Event::COUNT); ++i) {
+            event_counts_data_table_->write_row(
+                to_string(static_cast<Event>(i)),
+                static_cast<double>(event_counter_[i]));
+        }
     }
 
     void serialize_object_count_() {
@@ -488,6 +487,7 @@ class TracerState {
     DenotedValue* lookup_promise(const SEXP promise,
                                  bool create = false,
                                  bool local = false) {
+        static int printed = 0;
         auto iter = promises_.find(promise);
 
         /* all promises encountered are added to the map. Its not possible for
@@ -496,6 +496,17 @@ class TracerState {
            be called in the analysis. Hence, they are not able to update the
            mapping. */
         if (iter == promises_.end()) {
+            // if (symbol_to_string(CAR(dyntrace_get_promise_expression(
+            //        promise))) != "lazyLoadDBfetch") {
+            ++printed;
+            if (printed == 5) {
+                printf("Address is %p\n", (void*) promise);
+                printed = 0;
+            }
+            // std::cerr << static int loopy = 1;
+            // while (loopy)
+            //     ;
+            // }
             if (create) {
                 DenotedValue* promise_state(
                     create_raw_promise_(promise, local));
@@ -580,7 +591,8 @@ class TracerState {
             promise->get_lexical_scope_observation_count(false),
             promise->get_non_lexical_scope_observation_count(true),
             promise->get_non_lexical_scope_observation_count(false),
-            promise->get_execution_time());
+            promise->get_execution_time(),
+            promise->get_serialized_expression());
     }
 
     void serialize_escaped_promise_(DenotedValue* promise) {
@@ -718,13 +730,14 @@ class TracerState {
         return TOP_LEVEL_SCOPE;
     }
 
-    void exit_probe() {
+    void exit_probe(const Event event) {
         resume_execution_timer();
     }
 
-    void enter_probe() {
+    void enter_probe(const Event event) {
         pause_execution_timer();
         increment_timestamp_();
+        ++event_counter_[to_underlying(event)];
     }
 
   public:
@@ -1212,6 +1225,7 @@ class TracerState {
     call_id_t call_id_counter_;
     std::vector<unsigned int> object_count_;
     std::vector<std::pair<lifecycle_t, int>> lifecycle_summary_;
+    std::vector<unsigned long int> event_counter_;
 };
 
 #endif /* PROMISEDYNTRACER_TRACER_STATE_H */

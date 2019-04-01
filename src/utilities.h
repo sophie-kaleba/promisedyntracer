@@ -6,6 +6,7 @@
 #include "stdlibs.h"
 
 #include <openssl/evp.h>
+#include <type_traits>
 
 #define failwith(format, ...) \
     failwith_impl(__FILE__, __LINE__, format, __VA_ARGS__)
@@ -34,7 +35,7 @@ std::string compute_hash(const char* data);
 
 const char* get_name(SEXP sexp);
 
-std::string get_expression(SEXP e);
+std::string serialize_r_expression(SEXP e);
 
 std::string clock_ticks_to_string(clock_t ticks);
 std::string to_string(const char* str);
@@ -100,6 +101,11 @@ inline bool is_parent_environment(SEXP env_a, SEXP env_b) {
             return true;
     }
     return false;
+}
+
+template <typename E>
+constexpr auto to_underlying(E e) noexcept {
+    return static_cast<std::underlying_type_t<E>>(e);
 }
 
 #endif /* PROMISEDYNTRACER__UTILITIES_H */
