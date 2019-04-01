@@ -56,10 +56,11 @@ class TracerState {
         call_summaries_data_table_ =
             create_data_table(output_dirpath_ + "/" + "call_summaries",
                               {"function_id",
+                               "package",
+                               "function_name",
                                "function_type",
                                "formal_parameter_count",
                                "wrapper",
-                               "function_name",
                                "S3_method",
                                "S4_method",
                                "force_order",
@@ -71,12 +72,17 @@ class TracerState {
                               binary_,
                               compression_level_);
 
-        function_definitions_data_table_ = create_data_table(
-            output_dirpath_ + "/" + "function_definitions",
-            {"function_id", "function_name", "byte_compiled", "definition"},
-            truncate_,
-            binary_,
-            compression_level_);
+        function_definitions_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "function_definitions",
+                              {"function_id",
+                               "package",
+                               "function_name",
+                               "formal_parameter_count",
+                               "byte_compiled",
+                               "definition"},
+                              truncate_,
+                              binary_,
+                              compression_level_);
 
         arguments_data_table_ =
             create_data_table(output_dirpath_ + "/" + "arguments",
@@ -954,13 +960,14 @@ class TracerState {
             return iter->second;
         }
 
-        const auto [function_definition, function_id] =
+        const auto [package_name, function_definition, function_id] =
             Function::compute_definition_and_id(op);
 
         auto iter2 = function_cache_.find(function_id);
 
         if (iter2 == function_cache_.end()) {
-            function = new Function(op, function_definition, function_id);
+            function = new Function(
+                op, package_name, function_definition, function_id);
             function_cache_.insert({function_id, function});
         } else {
             function = iter2->second;
@@ -1016,10 +1023,11 @@ class TracerState {
 
             call_summaries_data_table_->write_row(
                 function->get_id(),
+                function->get_namespace(),
+                names,
                 sexptype_to_string(function->get_type()),
                 function->get_formal_parameter_count(),
                 function->is_wrapper(),
-                names,
                 call_summary.is_S3_method(),
                 call_summary.is_S4_method(),
                 pos_seq_to_string(call_summary.get_force_order()),
@@ -1035,7 +1043,9 @@ class TracerState {
                                         const std::string& names) {
         function_definitions_data_table_->write_row(
             function->get_id(),
+            function->get_namespace(),
             names,
+            function->get_formal_parameter_count(),
             function->is_byte_compiled(),
             function->get_definition());
     }

@@ -12,10 +12,12 @@
 class Function {
   public:
     explicit Function(const SEXP op,
+                      const std::string& package_name,
                       const std::string& definition,
                       const function_id_t& id)
         : formal_parameter_count_(0)
         , wrapper_(true)
+        , namespace_(package_name)
         , definition_(definition)
         , id_(id) {
         type_ = type_of_sexp(op);
@@ -32,8 +34,6 @@ class Function {
             primitive_offset_ = dyntrace_get_primitive_offset(op);
             byte_compiled_ = false;
         }
-
-        namespace_ = find_package_name_(op);
     }
 
     bool is_byte_compiled() const {
@@ -161,18 +161,21 @@ class Function {
         call_summaries_.push_back(CallSummary(call));
     }
 
-    static std::pair<std::string, function_id_t>
+    static std::string find_namespace(const SEXP op);
+
+    static std::tuple<std::string, std::string, function_id_t>
     compute_definition_and_id(const SEXP op);
 
   private:
     sexptype_t type_;
     std::size_t formal_parameter_count_;
     bool wrapper_;
+    std::string namespace_;
     std::string definition_;
     function_id_t id_;
     int primitive_offset_;
     bool byte_compiled_;
-    std::string namespace_;
+
     std::vector<std::string> names_;
     std::vector<CallSummary> call_summaries_;
 
@@ -187,72 +190,6 @@ class Function {
     static const int PRIMITIVE_DOT_CALL_OFFSET_ = 430;
     static const int PRIMITIVE_DOT_EXTERNAL_GRAPHICS_OFFSET_ = 431;
     static const int PRIMITIVE_DOT_CALL_GRAPHICS_OFFSET_ = 432;
-
-    std::string find_package_name_(const SEXP op) {
-        if (TYPEOF(op) == SPECIALSXP || TYPEOF(op) == BUILTINSXP) {
-            return "gnurprimitive";
-        }
-
-        SEXP namesym = R_NilValue;
-        const char* packprefix = "package:";
-        size_t pplen = strlen(packprefix);
-
-        void (*probe)(dyntracer_t*, SEXP, SEXP, SEXP);
-        probe = dyntrace_active_dyntracer->probe_environment_variable_lookup;
-        dyntrace_active_dyntracer->probe_environment_variable_lookup = NULL;
-
-        SEXP env = CLOENV(op);
-        const char* name = "empty";
-
-        while (TYPEOF(env) == ENVSXP && env != R_EmptyEnv) {
-            if (env == R_GlobalEnv) {
-                name = "global";
-                break;
-            }
-
-            if (env == R_BaseEnv || env == R_BaseNamespace) {
-                name = "base";
-                break;
-            }
-
-            namesym = R_NamespaceEnvSpec(env);
-
-            if (namesym != R_NilValue) {
-                if (TYPEOF(namesym) == STRSXP && LENGTH(namesym) > 0) {
-                    name = CHAR(STRING_ELT(namesym, 0));
-                    break;
-                } else if (TYPEOF(namesym) == CHARSXP) {
-                    name = CHAR(namesym);
-                    break;
-                }
-            }
-
-            namesym = getAttrib(env, R_NameSymbol);
-
-            if (namesym != R_NilValue && TYPEOF(namesym) == STRSXP &&
-                Rf_length(namesym) > 0 &&
-                !strncmp(packprefix, CHAR(STRING_ELT(namesym, 0)), pplen)) {
-                name = CHAR(STRING_ELT(namesym, 0)) + pplen;
-                break;
-            }
-
-            namesym = findVar(R_dot_packageName, env);
-
-            if (TYPEOF(namesym) == STRSXP && LENGTH(namesym) > 0) {
-                name = CHAR(STRING_ELT(namesym, 0));
-                break;
-            } else if (TYPEOF(namesym) == CHARSXP) {
-                name = CHAR(namesym);
-                break;
-            }
-
-            env = ENCLOS(env);
-        }
-
-        dyntrace_active_dyntracer->probe_environment_variable_lookup = probe;
-
-        return name;
-    }
 };
 
 #endif /* PROMISEDYNTRACER_FUNCTION_H */
