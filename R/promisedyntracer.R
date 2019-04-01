@@ -28,7 +28,7 @@ dyntrace_promises <- function(expr,
                               binary = FALSE,
                               compression_level = 0) {
 
-    write(Sys.time(), file.path(output_dirpath, "BEGIN"))
+    write(as.character(Sys.time()), file.path(output_dirpath, "BEGIN"))
 
     compression_level <- as.integer(compression_level)
 
@@ -42,7 +42,7 @@ dyntrace_promises <- function(expr,
 
     destroy_dyntracer(dyntracer)
 
-    write(Sys.time(), file.path(output_dirpath, "FINISH"))
+    write(as.character(Sys.time()), file.path(output_dirpath, "FINISH"))
 
     result
 }
