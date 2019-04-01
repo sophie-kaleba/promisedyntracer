@@ -73,7 +73,7 @@ const char* get_name(SEXP sexp) {
 
 #include <Rinternals.h>
 
-std::string get_expression(SEXP e) {
+std::string serialize_r_expression(SEXP e) {
     std::string expression;
     int linecount = 0;
     SEXP strvec = serialize_sexp(e, &linecount);

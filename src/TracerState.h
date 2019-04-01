@@ -101,7 +101,8 @@ class TracerState {
                                "S4_dispatch",
                                "forcing_actual_argument_position",
                                "non_local_return",
-                               "execution_time"},
+                               "execution_time",
+                               "expression"},
                               truncate_,
                               binary_,
                               compression_level_);
@@ -487,7 +488,7 @@ class TracerState {
     DenotedValue* lookup_promise(const SEXP promise,
                                  bool create = false,
                                  bool local = false) {
-        static int printed = 0;
+        // static int printed = 0;
         auto iter = promises_.find(promise);
 
         /* all promises encountered are added to the map. Its not possible for
@@ -496,17 +497,19 @@ class TracerState {
            be called in the analysis. Hence, they are not able to update the
            mapping. */
         if (iter == promises_.end()) {
-            // if (symbol_to_string(CAR(dyntrace_get_promise_expression(
-            //        promise))) != "lazyLoadDBfetch") {
+            /* Some debugging code to be removed later
+            if (symbol_to_string(CAR(dyntrace_get_promise_expression(
+                   promise))) != "lazyLoadDBfetch") {
             ++printed;
             if (printed == 5) {
                 printf("Address is %p\n", (void*) promise);
                 printed = 0;
             }
-            // std::cerr << static int loopy = 1;
-            // while (loopy)
-            //     ;
-            // }
+            std::cerr << static int loopy = 1;
+            while (loopy)
+                ;
+            }
+            */
             if (create) {
                 DenotedValue* promise_state(
                     create_raw_promise_(promise, local));
@@ -906,7 +909,8 @@ class TracerState {
             argument->used_for_S4_dispatch(),
             argument->get_forcing_actual_argument_position(),
             argument->does_non_local_return(),
-            value->get_execution_time());
+            value->get_execution_time(),
+            value->get_serialized_expression());
         // value->has_escaped(),
         // value->get_evaluation_depth().call_depth,
         // value->get_evaluation_depth().promise_depth,

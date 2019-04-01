@@ -10,7 +10,6 @@ static void search_promises_in_frame(dyntracer_t* dyntracer, SEXP frame) {
     while (frame != R_NilValue) {
         SEXP value = CAR(frame);
         if (TYPEOF(value) == PROMSXP) {
-            std::cerr << "Here\n";
             gc_allocate(dyntracer, value);
         }
         frame = CDR(frame);
@@ -31,7 +30,6 @@ static void search_promises_in_baseenv(dyntracer_t* dyntracer) {
         for (SEXP s = symtab[j]; s != R_NilValue; s = CDR(s)) {
             SEXP vl = SYMVALUE(CAR(s));
             if (TYPEOF(vl) == PROMSXP) {
-                std::cerr << "Here\n";
                 gc_allocate(dyntracer, vl);
             }
         }
@@ -42,10 +40,8 @@ static void search_promises(dyntracer_t* dyntracer, SEXP env) {
     if (env == R_BaseEnv || env == R_BaseNamespace) {
         search_promises_in_baseenv(dyntracer);
     } else if (HASHTAB(env) != R_NilValue) {
-        std::cerr << "Hashtab\n";
         search_promises_in_hash_table(dyntracer, HASHTAB(env));
     } else {
-        std::cerr << "Frame\n";
         search_promises_in_frame(dyntracer, FRAME(env));
     }
 }

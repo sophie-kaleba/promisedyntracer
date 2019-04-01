@@ -19,6 +19,7 @@ class DenotedValue {
             SEXP rho = dyntrace_get_promise_environment(object);
             set_expression_type(type_of_sexp(expr));
             set_value_type(type_of_sexp(val));
+            set_expression(dyntrace_get_promise_expression(object));
             set_environment(rho);
             if (val != R_UnboundValue) {
                 preforced_ = true;
@@ -295,6 +296,7 @@ class DenotedValue {
 
     void set_self_scope_mutation(bool direct) {
         check_and_set_escape_();
+        cache_expression_();
         if (direct) {
             ++direct_self_scope_mutation_count_;
         } else {
@@ -325,6 +327,7 @@ class DenotedValue {
 
     void set_lexical_scope_mutation(bool direct) {
         check_and_set_escape_();
+        cache_expression_();
         if (direct) {
             ++direct_lexical_scope_mutation_count_;
         } else {
@@ -355,6 +358,7 @@ class DenotedValue {
 
     void set_non_lexical_scope_mutation(bool direct) {
         check_and_set_escape_();
+        cache_expression_();
         if (direct) {
             ++direct_non_lexical_scope_mutation_count_;
         } else {
@@ -385,6 +389,7 @@ class DenotedValue {
 
     void set_self_scope_observation(bool direct) {
         check_and_set_escape_();
+        cache_expression_();
         if (direct) {
             ++direct_self_scope_observation_count_;
         } else {
@@ -415,6 +420,7 @@ class DenotedValue {
 
     void set_lexical_scope_observation(bool direct) {
         check_and_set_escape_();
+        cache_expression_();
         if (direct) {
             ++direct_lexical_scope_observation_count_;
         } else {
@@ -445,6 +451,7 @@ class DenotedValue {
 
     void set_non_lexical_scope_observation(bool direct) {
         check_and_set_escape_();
+        cache_expression_();
         if (direct) {
             ++direct_non_lexical_scope_observation_count_;
         } else {
@@ -483,6 +490,13 @@ class DenotedValue {
         return environment_;
     }
 
+    void set_expression(SEXP expression) {
+        expression_ = expression;
+    }
+
+    SEXP get_expression() {
+        return expression_;
+    }
     sexptype_t get_expression_type() const {
         return expression_type_;
     }
@@ -541,6 +555,10 @@ class DenotedValue {
         return lifecycle_;
     }
 
+    const std::string& get_serialized_expression() const {
+        return serialized_expression_;
+    }
+
   private:
     DenotedValue(denoted_value_id_t id, bool local)
         : id_(id)
@@ -549,6 +567,7 @@ class DenotedValue {
         , value_type_(UNASSIGNEDSXP)
         , preforced_(false)
         , environment_(nullptr)
+        , expression_(nullptr)
         , local_(false)
         , active_(false)
         , argument_stack_({})
@@ -574,6 +593,8 @@ class DenotedValue {
               UNASSIGNED_ACTUAL_ARGUMENT_POSITION)
         , previous_call_return_value_type_(UNASSIGNEDSXP)
         , previous_default_argument_(false)
+        , expression_cached_(false)
+        , serialized_expression_("")
         , before_escape_force_count_(0)
         , force_count_(0)
         , before_escape_value_lookup_count_(0)
@@ -711,12 +732,20 @@ class DenotedValue {
         }
     }
 
+    void cache_expression_() {
+        if (!expression_cached_) {
+            serialized_expression_ = serialize_r_expression(get_expression());
+            expression_cached_ = true;
+        }
+    }
+
     denoted_value_id_t id_;
     sexptype_t type_;
     sexptype_t expression_type_;
     sexptype_t value_type_;
     bool preforced_;
     SEXP environment_;
+    SEXP expression_;
     bool local_;
     bool active_;
     std::vector<Argument*> argument_stack_;
@@ -740,6 +769,8 @@ class DenotedValue {
     int previous_actual_argument_position_;
     sexptype_t previous_call_return_value_type_;
     bool previous_default_argument_;
+    bool expression_cached_;
+    std::string serialized_expression_;
     int before_escape_force_count_;
     int force_count_;
     int before_escape_value_lookup_count_;

@@ -6,7 +6,7 @@ Function::compute_definition_and_id(const SEXP op) {
     function_id_t id;
 
     if (type_of_sexp(op) == CLOSXP) {
-        definition = get_expression(op);
+        definition = serialize_r_expression(op);
         id = compute_hash(definition.c_str());
     } else {
         definition = "function body not extracted for non closures";
