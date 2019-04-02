@@ -161,6 +161,25 @@ class Function {
         call_summaries_.push_back(CallSummary(call));
     }
 
+    std::string get_name_string() const {
+        const std::string& package = get_namespace();
+        const std::vector<std::string>& names = get_names();
+
+        std::string all_names = "(";
+
+        if (names.size() >= 1) {
+            all_names += package + "::" + names[0];
+        }
+
+        for (std::size_t i = 1; i < names.size(); ++i) {
+            all_names += " " + package + "::" + names[i];
+        }
+
+        all_names += ")";
+
+        return all_names;
+    }
+
     static std::string find_namespace(const SEXP op);
 
     static std::tuple<std::string, std::string, function_id_t>

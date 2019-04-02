@@ -113,6 +113,33 @@ class TracerState {
                               binary_,
                               compression_level_);
 
+        side_effects_data_table_ =
+            create_data_table(output_dirpath_ + "/" + "side_effects",
+                              {"value_id",
+                               "call_id",
+                               "function_id",
+                               "package",
+                               "function_name",
+                               "formal_parameter_position",
+                               "actual_argument_position",
+                               "dot_dot_dot",
+                               "direct_self_scope_mutation_count",
+                               "indirect_self_scope_mutation_count",
+                               "direct_lexical_scope_mutation_count",
+                               "indirect_lexical_scope_mutation_count",
+                               "direct_non_lexical_scope_mutation_count",
+                               "indirect_non_lexical_scope_mutation_count",
+                               "direct_self_scope_observation_count",
+                               "indirect_self_scope_observation_count",
+                               "direct_lexical_scope_observation_count",
+                               "indirect_lexical_scope_observation_count",
+                               "direct_non_lexical_scope_observation_count",
+                               "indirect_non_lexical_scope_observation_count",
+                               "expression"},
+                              truncate_,
+                              binary_,
+                              compression_level_);
+
         escaped_arguments_data_table_ = create_data_table(
             output_dirpath_ + "/" + "escaped_arguments",
             {"call_id",
@@ -203,20 +230,7 @@ class TracerState {
                                "expression_assign_count",
                                "environment_lookup_count",
                                "environment_assign_count",
-                               "direct_self_scope_mutation_count",
-                               "indirect_self_scope_mutation_count",
-                               "direct_lexical_scope_mutation_count",
-                               "indirect_lexical_scope_mutation_count",
-                               "direct_non_lexical_scope_mutation_count",
-                               "indirect_non_lexical_scope_mutation_count",
-                               "direct_self_scope_observation_count",
-                               "indirect_self_scope_observation_count",
-                               "direct_lexical_scope_observation_count",
-                               "indirect_lexical_scope_observation_count",
-                               "direct_non_lexical_scope_observation_count",
-                               "indirect_non_lexical_scope_observation_count",
-                               "execution_time",
-                               "expression"},
+                               "execution_time"},
                               truncate_,
                               binary_,
                               compression_level_);
@@ -235,6 +249,7 @@ class TracerState {
         delete call_summaries_data_table_;
         delete function_definitions_data_table_;
         delete arguments_data_table_;
+        delete side_effects_data_table_;
         delete promises_data_table_;
         delete escaped_arguments_data_table_;
         delete promise_lifecycles_data_table_;
@@ -396,7 +411,7 @@ class TracerState {
 
         if (create_variable && !var_exists) {
             return env.define(
-                symbol, create_next_variable_id_(), get_current_timestamp_());
+                symbol, create_next_variable_id_(), UNDEFINED_TIMESTAMP);
         }
 
         return env.lookup(symbol);
@@ -588,20 +603,7 @@ class TracerState {
             promise->get_expression_assign_count(),
             promise->get_environment_lookup_count(),
             promise->get_environment_assign_count(),
-            promise->get_self_scope_mutation_count(true),
-            promise->get_self_scope_mutation_count(false),
-            promise->get_lexical_scope_mutation_count(true),
-            promise->get_lexical_scope_mutation_count(false),
-            promise->get_non_lexical_scope_mutation_count(true),
-            promise->get_non_lexical_scope_mutation_count(false),
-            promise->get_self_scope_observation_count(true),
-            promise->get_self_scope_observation_count(false),
-            promise->get_lexical_scope_observation_count(true),
-            promise->get_lexical_scope_observation_count(false),
-            promise->get_non_lexical_scope_observation_count(true),
-            promise->get_non_lexical_scope_observation_count(false),
-            promise->get_execution_time(),
-            promise->get_serialized_expression());
+            promise->get_execution_time());
     }
 
     void serialize_escaped_promise_(DenotedValue* promise) {
@@ -891,11 +893,12 @@ class TracerState {
 
     void serialize_argument_(Argument* argument) {
         Call* call = argument->get_call();
+        Function* function = call->get_function();
         DenotedValue* value = argument->get_denoted_value();
 
         arguments_data_table_->write_row(
             call->get_id(),
-            call->get_function()->get_id(),
+            function->get_id(),
             value->get_id(),
             argument->get_formal_parameter_position(),
             argument->get_actual_argument_position(),
@@ -917,34 +920,35 @@ class TracerState {
             argument->does_non_local_return(),
             value->get_execution_time(),
             value->get_serialized_expression());
-        // value->has_escaped(),
-        // value->get_evaluation_depth().call_depth,
-        // value->get_evaluation_depth().promise_depth,
-        // value->get_evaluation_depth().nested_promise_depth,
-        // value->get_evaluation_depth().forcing_actual_argument_position,
-        // value->is_preforced(), value->get_force_count(),
-        // value->get_value_lookup_count(),
-        // value->get_value_assign_count(),
-        // value->get_expression_lookup_count(),
-        // value->get_expression_assign_count(),
-        // value->get_environment_lookup_count(),
-        // value->get_environment_assign_count(),
-        // value->get_self_scope_mutation_count(true),
-        // value->get_self_scope_mutation_count(false),
-        // value->get_lexical_scope_mutation_count(true),
-        // value->get_lexical_scope_mutation_count(false),
-        // value->get_non_lexical_scope_mutation_count(true),
-        // value->get_non_lexical_scope_mutation_count(false),
-        // value->get_self_scope_observation_count(true),
-        // value->get_self_scope_observation_count(false),
-        // value->get_lexical_scope_observation_count(true),
-        // value->get_lexical_scope_observation_count(false),
-        // value->get_non_lexical_scope_observation_count(true),
-        // value->get_non_lexical_scope_observation_count(false),
-        // value->get_execution_time());
+
+        if (value->is_promise() && value->get_serialized_expression() != "") {
+            side_effects_data_table_->write_row(
+                value->get_id(),
+                call->get_id(),
+                function->get_id(),
+                function->get_namespace(),
+                function->get_name_string(),
+                argument->get_formal_parameter_position(),
+                argument->get_actual_argument_position(),
+                argument->is_dot_dot_dot(),
+                value->get_self_scope_mutation_count(true),
+                value->get_self_scope_mutation_count(false),
+                value->get_lexical_scope_mutation_count(true),
+                value->get_lexical_scope_mutation_count(false),
+                value->get_non_lexical_scope_mutation_count(true),
+                value->get_non_lexical_scope_mutation_count(false),
+                value->get_self_scope_observation_count(true),
+                value->get_self_scope_observation_count(false),
+                value->get_lexical_scope_observation_count(true),
+                value->get_lexical_scope_observation_count(false),
+                value->get_non_lexical_scope_observation_count(true),
+                value->get_non_lexical_scope_observation_count(false),
+                value->get_serialized_expression());
+        }
     }
 
     DataTableStream* arguments_data_table_;
+    DataTableStream* side_effects_data_table_;
     DataTableStream* escaped_arguments_data_table_;
 
     /***************************************************************************
@@ -997,21 +1001,7 @@ class TracerState {
     std::unordered_map<function_id_t, Function*> function_cache_;
 
     void serialize_function_(Function* function) {
-        const std::string& function_namespace = function->get_namespace();
-        const std::vector<std::string>& function_names = function->get_names();
-
-        std::string all_names = "(";
-
-        if (function_names.size() >= 1) {
-            all_names += function_namespace + "::" + function_names[0];
-        }
-
-        for (std::size_t i = 1; i < function_names.size(); ++i) {
-            all_names += " " + function_namespace + "::" + function_names[i];
-        }
-
-        all_names += ")";
-
+        const std::string all_names = function->get_name_string();
         serialize_function_call_summary_(function, all_names);
         serialize_function_definition_(function, all_names);
     }
@@ -1071,24 +1061,37 @@ class TracerState {
 
                 const SEXP prom_env = promise->get_environment();
 
+                const timestamp_t var_timestamp =
+                    var.get_modification_timestamp();
+
                 if (prom_env == env) {
-                    const timestamp_t var_timestamp =
-                        var.get_modification_timestamp();
                     if (promise->get_creation_timestamp() > var_timestamp) {
                         promise->set_self_scope_mutation(direct);
                         direct = false;
+                        return; // to remove
+                    } else {
                         return;
                     }
                 } else if (is_parent_environment(env, prom_env)) {
-                    /* if this happens, promise is causing side effect
-                       in its lexically scoped environment. */
-                    promise->set_lexical_scope_mutation(direct);
-                    direct = false;
+                    if (promise->get_creation_timestamp() > var_timestamp) {
+                        /* if this happens, promise is causing side effect
+                           in its lexically scoped environment. */
+                        promise->set_lexical_scope_mutation(direct);
+                        direct = false;
+                        return; // to remove
+                    } else {
+                        return;
+                    }
                 } else {
-                    /* if this happens, promise is causing side effect
-                       in non lexically scoped environment */
-                    promise->set_non_lexical_scope_mutation(direct);
-                    direct = false;
+                    if (promise->get_creation_timestamp() > var_timestamp) {
+                        /* if this happens, promise is causing side effect
+                           in non lexically scoped environment */
+                        promise->set_non_lexical_scope_mutation(direct);
+                        direct = false;
+                        return; // to remove
+                    } else {
+                        return;
+                    }
                 }
             }
         }
@@ -1141,18 +1144,32 @@ class TracerState {
                     if (promise->get_creation_timestamp() < var_timestamp) {
                         promise->set_self_scope_observation(direct);
                         direct = false;
+                        return; // to remove
+                    } else {
+                        /* return if the promise observes a variable in its
+                         * environment created before it. */
                         return;
                     }
                 } else if (is_parent_environment(env, prom_env)) {
-                    /* if this happens, promise is causing side effect
+                    /* if this happens, promise is observing side effect
                        in its lexically scoped environment. */
-                    promise->set_lexical_scope_observation(direct);
-                    direct = false;
+                    if (promise->get_creation_timestamp() < var_timestamp) {
+                        promise->set_lexical_scope_observation(direct);
+                        direct = false;
+                        return; // to remove
+                    } else {
+                        return;
+                    }
                 } else {
                     /* if this happens, promise is observing side effect
                        in non lexically scoped environment */
-                    promise->set_non_lexical_scope_observation(direct);
-                    direct = false;
+                    if (promise->get_creation_timestamp() < var_timestamp) {
+                        promise->set_non_lexical_scope_observation(direct);
+                        direct = false;
+                        return; // to remove
+                    } else {
+                        return;
+                    }
                 }
             }
         }
