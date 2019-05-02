@@ -1,11 +1,12 @@
-#ifndef PROMISEDYNTRACER_CALL_H
-#define PROMISEDYNTRACER_CALL_H
+#ifndef TURBOTRACER_CALL_H
+#define TURBOTRACER_CALL_H
 
 #include "Argument.h"
 #include "Rdyntrace.h"
 #include "Rinternals.h"
 #include "table.h"
 #include "utilities.h"
+
 
 class Function;
 
@@ -93,14 +94,50 @@ class Call {
         return arguments_;
     }
 
-    Argument* get_argument(int actual_argument_position) {
+    Argument* get_argument(int actual_argument_position) const {
         return arguments_[actual_argument_position];
+    }
+
+    bool arg_redefine_function(const int actual_argument_position) const{
+      Argument * arg =  get_argument(actual_argument_position);
+      DenotedValue* value = arg->get_denoted_value();
+      /* which one am I supposed to chose? I don't know, let's pick the 2d*/
+      std::string argument_type = sexptype_to_string(value->get_type());
+      std::string expression_type = sexptype_to_string(value->get_expression_type());
+      std::string value_type = sexptype_to_string(value->get_value_type());
+      return expression_type.compare("Function Call");
     }
 
     void add_argument(Argument* argument) {
         arguments_.push_back(argument);
         ++actual_argument_count_;
     }
+
+
+    /* check if a function is being introduced dynamically
+     * Returns 1 if :
+     * - for assign(x, value,...), if value is a call
+     * - for with(data, expr, ...), if expr is a call
+     * - for <<- if the right side is a call
+     */
+    int has_call_as_arg() const {
+      if (get_function_name().compare("<<-") == 0) {
+        //std::cout << "Call" << arg->get_call()->get_function_name();
+        Argument * arg =  get_argument(1);
+        DenotedValue* value = arg->get_denoted_value();
+        std::string expression_type = sexptype_to_string(value->get_type());
+        return 33;}
+      return 1;
+
+      // if (get_function_name().compare("base::<<-") && arg_redefine_function(1))
+      // {return 1;}
+      // else if (get_function_name().compare("base::with") && arg_redefine_function(2))
+      // {return 1;}
+      // else if (get_function_name().compare("base::assign") && arg_redefine_function(2))
+      // {return 1;}
+      // else {return 0;}
+    }
+
 
     const pos_seq_t& get_force_order() const {
         return force_order_;
@@ -154,4 +191,4 @@ class Call {
     pos_seq_t force_order_;
 };
 
-#endif /* PROMISEDYTRACER_CALL_H */
+#endif /* TURBOTRACER_CALL_H */

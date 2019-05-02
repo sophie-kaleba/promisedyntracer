@@ -1,0 +1,114 @@
+function_id,package,function_name,function_type,formal_parameter_count,wrapper,S3_method,S4_method,force_order,missing_arguments,return_value_type,jumped,call_count,call_arg_count
+ldjor0qUKmNE7wGknIbzeA==,base,(base::append),Closure,3,0,0,0,(0),(),List,0,1,1
+djbnG1r7I6q4VLqdmJDQFw==,compiler,(compiler::FUN),Closure,1,0,0,0,(0),(),Unknown (Jumped),1,1,1
+RteH9#a8O3tEefz278qSfw==,base,(base::as.list),Closure,2,0,0,0,(0),(1),List,1,1,1
+bROPcLQ0#c7x3VQCJWQw5Q==,base,(base::assign),Closure,6,1,0,0,(),(),Double,0,1,1
+VnVktYbW3BkVzRNq+MXeQA==,compiler,(compiler::FUN),Closure,1,0,0,0,(0),(),Unknown (Jumped),1,1,1
+as.logical,base,(base::as.logical),Builtin,-1,0,0,0,(1),(),Logical,0,1,1
+quote,base,(base::quote),Special,1,0,0,0,(0),(),Function Call,0,1,1
+baseenv,base,(base::baseenv),Builtin,0,0,0,0,(1),(),Environment,0,2,1
+>=,base,(base::>=),Builtin,2,0,0,0,(1),(),Logical,0,6,1
+[,base,(base::[),Special,-1,0,0,0,(0),(),Character,0,6,1
+zU2zBIO6UWH#zA6LsJRrFw==,base,(base::delayedAssign),Closure,4,1,0,0,(),(),Null,0,3,1
+3mZCf0qGYxelDfwis4g3Mw==,base,(base::new.env),Closure,3,1,0,0,(),(),Environment,0,4,1
+TY1fycIl7NN9h006kMV+zg==,base,(base::exists),Closure,6,1,0,0,(),(3),Logical,0,33,1
+seq_along,base,(base::seq_along),Builtin,1,0,0,0,(1),(),Integer,0,3,1
+==,base,(base::==),Builtin,2,0,0,0,(1),(),Logical,0,11,1
+ycUnp2uwU6TbUQRfPQK5Fw==,compiler,(compiler::getInlineInfo),Closure,3,0,0,0,(0 1),(),Null,0,3,1
+$<-,base,(base::$<-),Special,3,0,0,0,(0),(),List,0,2,1
+!=,base,(base::!=),Builtin,2,0,0,0,(1),(),Logical,0,3,1
+gP5#NBqR5p3oIloogfKHPA==,compiler,(compiler::isBaseVar),Closure,2,0,0,0,(),(),Logical,0,3,1
+is.object,base,(base::is.object),Builtin,1,0,0,0,(1),(),Logical,0,2,1
+6V+LtNpbjP4Kg9nqRvS0#g==,base,(base::tryCatchOne),Closure,4,0,0,0,(),(),Unknown (Jumped),1,1,1
+wKvh1VQ2JfbomrgL4aRQ8g==,compiler,(compiler::compile),Closure,4,0,0,0,(),(),Unknown (Jumped),1,1,1
+dgo6dI+Jqr3z7Mf+5b+Zpg==,base,(base::union),Closure,2,0,0,0,(),(),Unknown (Jumped),1,1,1
+Jcsj41oEBChfS#8qdJEASA==,base,(base::parent.frame),Closure,1,1,0,0,(),(),Environment,0,5,1
+(,base,(base::(),Builtin,1,0,0,0,(1),(),Logical,0,13,1
+names,base,(base::names),Builtin,1,0,0,0,(1),(),Character,0,9,1
+length,base,(base::length),Builtin,1,0,0,0,(1),(),Integer,0,9,1
+GeO0htL7i2iV8KJ2OQWetQ==,base,(base::tryCatch),Closure,3,0,0,0,(),(2),Unknown (Jumped),1,1,1
+kEtQ1DiTfXlR5M90+23nQA==,compiler,(compiler::packFrameName),Closure,1,0,0,0,(0),(),Character,0,1,1
+substitute,base,(base::substitute),Special,-1,0,0,0,(0),(),Symbol,0,5,1
+XV265aj9gL9403dOJk11aA==,compiler,(compiler:::::),Closure,2,0,0,0,(),(),Unknown (Jumped),1,1,1
+if,base,(base::if),Special,-1,0,0,0,(0),(),Environment,0,149,1
+1Xv4Pu7i6xXH68#J+1CmFw==,compiler,(compiler::addVar),Closure,2,0,0,0,(),(),Double,0,1,1
+YNUernIRF42YwW1Gy8qQkw==,base,(base::Filter),Closure,2,0,0,0,(1),(),Character,0,1,1
+Y954+ctaD1JVgVWa45jthg==,base,(base::..getNamespace),Closure,2,0,0,0,(),(),Environment,0,4,1
+kcQNdaNqM6q3KTKMmdUsaA==,base,(base::asNamespace),Closure,2,0,0,0,(0),(),Environment,0,1,1
+RJQakrjiSECJe66xpildBA==,base,(base::tryCatchList),Closure,4,0,0,0,(1),(),Unknown (Jumped),1,1,1
+6osD01wrTy5wpfTwwF5mEA==,base,(base::getNamespace),Closure,1,0,0,0,(),(),Environment,0,1,1
+missing,base,(base::missing),Special,1,0,0,0,(0),(),Logical,0,43,1
+y#qYKfM18nMho804yw0d6w==,base,(base::isNamespace),Closure,1,1,0,0,(),(),Logical,0,12,1
+is.character,base,(base::is.character),Builtin,1,0,0,0,(1),(),Logical,0,2,1
+kyHMVb6DZwuqPTUgzaH6Yg==,base,(base::get),Closure,5,1,0,0,(),(),Closure,0,6,1
+attr,base,(base::attr),Builtin,-1,0,0,0,(1),(),Null,0,1,1
+return,base,(base::return),Special,-1,0,0,0,(0),(),Unknown (Jumped),1,3,1
+for,base,(base::for),Special,3,0,0,0,(0),(),Null,0,4,1
+lazyLoadDBfetch,base,(base::lazyLoadDBfetch),Builtin,4,0,0,0,(1),(),Closure,0,6,1
+tG397beBtatA2Gl7SWEmuA==,base,(base::),Closure,1,0,0,0,(0),(),Environment,0,22,1
+repeat,base,(base::repeat),Special,1,0,0,0,(0),(),Unknown (Jumped),1,1,1
+eD8sCJcotre43xD1AeGOBQ==,global,(global::f),Closure,0,0,0,0,(),(),Character,0,1,1
+function,base,(base::function),Special,-1,0,0,0,(0),(),Closure,0,7,1
+{,base,(base::{),Special,-1,0,0,0,(0),(),Character,0,128,1
+<-,base,(base::<-),Special,-1,0,0,0,(0),(),Closure,0,148,1
+D05bQgaARkODsNrG9LJVdw==,base,(base::typeof),Closure,1,1,0,0,(),(),Character,0,6,1
+F1GbMpGEZo29n#ZciJ4dow==,compiler,(compiler::addCenvVars),Closure,2,0,0,0,(),(),Unknown (Jumped),1,1,1
+gEXRIOT1Fn7j9CSm4cdVuQ==,base,(base::print),Closure,2,0,0,0,(0),(1),Character,1,1,1
+aK5nwQtFXi5L9b#BPqOm9g==,base,(base::match),Closure,4,1,0,0,(),(),Integer,0,16,1
+.Internal,base,(base::.Internal),Special,1,1,0,0,(0),(),Closure,0,209,1
+UQOwBiAE+bxqUE1fwkylXA==,base,(base::existsInFrame),Closure,2,1,0,0,(),(),Logical,0,22,1
+-,base,(base::-),Builtin,-1,0,0,0,(1),(),Double,0,1,1
+TiXb0SpWeu9tQnJoZ8RjEQ==,base,(base::print.default),Closure,9,0,1,0,(0),(8),Character,0,1,1
+&&,base,(base::&&),Special,2,0,0,0,(0),(),Logical,0,28,1
+list,base,(base::list),Builtin,-1,0,0,0,(1),(),List,0,12,1
+GppOiypH8Mnfr6Bv##FjUA==,base,(base:::::),Closure,2,0,0,0,(),(),Closure,0,1,1
+[[,base,(base::[[),Special,-1,0,0,0,(0),(),Environment,0,33,1
+as.character,base,(base::as.character),Builtin,-1,0,0,0,(1),(),Character,0,4,1
+9ENGWXuns+JpcV9sZl1AiA==,compiler,(compiler::findLocalsList1),Closure,3,0,0,0,(),(),Unknown (Jumped),1,1,1
+RcXcIxLA4T45shRPJ3CU2w==,base,(base::character),Closure,1,1,0,0,(),(),Character,0,1,1
+is.null,base,(base::is.null),Builtin,1,0,0,0,(1),(),Logical,0,17,1
+T06+CRt1#4yminGxB1#egQ==,base,(base::environment),Closure,1,1,0,0,(),(),Environment,0,1,1
+9gfe3L80ztdAN06OyfgBxQ==,base,(base::topenv),Closure,2,1,0,0,(),(),Environment,0,1,1
+UseMethod,base,(base::UseMethod),Special,-1,0,0,0,(0),(),Unknown (Jumped),1,3,1
++,base,(base::+),Builtin,-1,0,0,0,(1),(),Double,0,37,1
+.addCondHands,base,(base::.addCondHands),Builtin,5,0,0,0,(1),(),Null,0,1,1
+BquH#yzaimtn7GlST+1jEA==,compiler,(compiler::makeCenv),Closure,1,0,0,0,(0),(),List,0,1,1
+GTda0B+nTwasCbcZTt0+5g==,base,(base::structure),Closure,2,0,0,0,(0),(),List,0,2,1
+huJNseH0TC7OZd4TQ1sU5A==,compiler,(compiler::frameTypes),Closure,1,0,0,0,(0),(),Character,0,1,1
+OLSc06exsYHcf1qok8hIVA==,base,(base::getOption),Closure,2,0,0,0,(),(),Null,0,1,1
+emptyenv,base,(base::emptyenv),Builtin,0,0,0,0,(1),(),Environment,0,7,1
+KprIF60nt5iBEv5RwCNLzg==,base,(base::as.list.default),Closure,2,0,1,0,(0),(1),List,0,1,1
+oAS8URNAudYOO8GG#X8HRQ==,compiler,(compiler::findLocalsList),Closure,2,0,0,0,(1),(),Unknown (Jumped),1,1,1
++rQXObHj53jQ0uhcM6i1qw==,base,(base::identical),Closure,8,1,0,0,(),(),Logical,0,42,1
+EDQFzPNkKTGgJLS5HYLNaA==,base,(base::parent.env),Closure,1,1,0,0,(),(),Environment,0,37,1
+attributes<-,base,(base::attributes<-),Builtin,2,0,0,0,(1),(),List,0,2,1
+RHk04Q6LYJ3kiN3sqF2Lfg==,compiler,(compiler::findLocals1),Closure,4,0,0,0,(0),(),Function Call,0,1,1
+apUGcjC431zHtECRsQUZwg==,compiler,(compiler::FUN),Closure,1,0,0,0,(0),(),Logical,0,3,1
+rep,base,(base::rep),Special,-1,0,0,0,(0),(),Character,0,1,1
+as.environment,base,(base::as.environment),Builtin,1,0,0,0,(1),(),Environment,0,37,1
+||,base,(base::||),Special,2,0,0,0,(0),(),Logical,0,12,1
+match,base,(base::match),Builtin,4,0,0,0,(1),(),Integer,0,2,1
+q5qIgPLwdn6BqOjy28bFAQ==,compiler,(compiler::findCenvVar),Closure,2,0,0,0,(1 0),(),List,0,3,1
+is.na,base,(base::is.na),Builtin,1,0,0,0,(1),(),Logical,0,2,1
+xIVo#d4kYtouSJ5WVbV09Q==,base,(base::unique),Closure,3,0,0,0,(),(2),Unknown (Jumped),1,1,1
+switch,base,(base::switch),Special,-1,0,0,0,(0),(),Function Call,0,1,1
+names<-,base,(base::names<-),Builtin,2,0,0,0,(1),(),List,0,2,1
+!,base,(base::!),Builtin,1,0,0,0,(1),(),Logical,0,65,1
+while,base,(base::while),Special,2,0,0,0,(0),(),Null,0,6,1
+nPDBRlCOrnPzHzq2OTBOlg==,compiler,(compiler::getCompilerOption),Closure,2,0,0,0,(0),(),Double,0,4,1
+c,base,(base::c),Builtin,-1,0,0,0,(1),(),Character,0,8,1
+OCOgzwi1uK86r+tEmopbbg==,base,(base::unlist),Closure,3,0,0,0,(0 1),(),Logical,0,1,1
+vqbAZ7YBUo2iBw+qCi4+Rw==,base,(base::doTryCatch),Closure,4,0,0,0,(),(),Unknown (Jumped),1,1,1
+q0n+#PaBrDIXfT3j+RIDAg==,base,(base::%in%),Closure,2,0,0,0,(),(),Logical,0,16,1
+is.function,base,(base::is.function),Builtin,1,0,0,0,(1),(),Logical,0,3,1
+bT6VKzCnSfLA5hWwii3e5A==,base,(base::which),Closure,3,0,0,0,(),(),Integer,0,1,1
+>,base,(base::>),Builtin,2,0,0,0,(1),(),Logical,0,20,1
+attributes,base,(base::attributes),Builtin,1,0,0,0,(1),(),List,0,2,1
+5QdOVG8kQFV6cQXxKtfZpA==,compiler,(compiler::make.toplevelContext),Closure,2,0,0,0,(1),(),List,0,1,1
+Dt50EM+ftE1ZxhFr+wtklQ==,base,(base::as.vector),Closure,2,0,0,0,(),(),Character,0,2,1
+$,base,(base::$),Special,2,0,0,0,(0),(),List,0,27,1
+break,base,(base::break),Special,0,0,0,0,(0),(),Unknown (Jumped),1,3,1
+Qq7TXAtQDhwiCgyxIAt4qg==,compiler,(compiler::findLocals),Closure,2,0,0,0,(),(),Unknown (Jumped),1,1,1
+5cSA4UPamnL6#2NtXvRmyA==,base,(base::lapply),Closure,3,0,0,0,(0),(2),List,0,3,1
+t9MHvtoKYmnkzvn1OiebJA==,base,(base::match.fun),Closure,2,0,0,0,(0),(),Closure,1,3,1
+mfNRpgdHV5oPlmKthsYUXA==,base,(base::is.vector),Closure,2,1,0,0,(),(),Logical,0,3,1

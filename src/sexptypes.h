@@ -1,5 +1,5 @@
-#ifndef PROMISEDYNTRACER_SEXPTYPES_H
-#define PROMISEDYNTRACER_SEXPTYPES_H
+#ifndef TURBOTRACER_SEXPTYPES_H
+#define TURBOTRACER_SEXPTYPES_H
 
 #include "stdlibs.h"
 
@@ -15,4 +15,4 @@ sexptype_t type_of_sexp(SEXP value);
 std::string sexptype_to_string(sexptype_t);
 std::string value_type_to_string(SEXP value);
 
-#endif /* PROMISEDYNTRACER_SEXPTYPES_H */
+#endif /* TURBOTRACER_SEXPTYPES_H */

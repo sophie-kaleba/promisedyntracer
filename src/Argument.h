@@ -1,5 +1,5 @@
-#ifndef PROMISEDYNTRACER_ARGUMENT_H
-#define PROMISEDYNTRACER_ARGUMENT_H
+#ifndef TURBOTRACER_ARGUMENT_H
+#define TURBOTRACER_ARGUMENT_H
 
 #include "DenotedValue.h"
 #include "definitions.h"
@@ -162,4 +162,4 @@ class Argument {
     int forcing_actual_argument_position_;
 };
 
-#endif /* PROMISEDYNTRACER_ARGUMENT_H */
+#endif /* TURBOTRACER_ARGUMENT_H */

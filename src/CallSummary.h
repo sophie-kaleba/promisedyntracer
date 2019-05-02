@@ -1,5 +1,5 @@
-#ifndef PROMISEDYNTRACER_CALL_SUMMARY_H
-#define PROMISEDYNTRACER_CALL_SUMMARY_H
+#ifndef TURBOTRACER_CALL_SUMMARY_H
+#define TURBOTRACER_CALL_SUMMARY_H
 
 #include "Call.h"
 
@@ -13,6 +13,7 @@ class CallSummary {
         S3_method_ = call->is_S3_method();
         S4_method_ = call->is_S4_method();
         call_count_ = 1;
+        call_arg_count_ = call->has_call_as_arg();
     }
 
     const pos_seq_t& get_force_order() const {
@@ -43,6 +44,11 @@ class CallSummary {
         return call_count_;
     }
 
+    int get_call_arg_count() const {
+        return call_arg_count_;
+
+    }
+
     bool try_to_merge(const Call* const call) {
         if (is_mergeable_(call)) {
             call_count_++;
@@ -59,6 +65,7 @@ class CallSummary {
     bool S3_method_;
     bool S4_method_;
     int call_count_;
+    int call_arg_count_;
 
     bool is_mergeable_(const Call* const call) const {
         return (get_force_order() == call->get_force_order() &&
@@ -71,4 +78,4 @@ class CallSummary {
     }
 };
 
-#endif /* PROMISEDYNTRACER_CALL_SUMMARY_H */
+#endif /* TURBOTRACER_CALL_SUMMARY_H */

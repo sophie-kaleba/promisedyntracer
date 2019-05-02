@@ -1,5 +1,5 @@
-#ifndef PROMISEDYNTRACER_EVENT_H
-#define PROMISEDYNTRACER_EVENT_H
+#ifndef TURBOTRACER_EVENT_H
+#define TURBOTRACER_EVENT_H
 
 #include <string>
 
@@ -101,6 +101,6 @@ inline std::string to_string(const Event event) {
     }
 
     return "UnknownEvent";
-}
+};
 
-#endif /* PROMISEDYNTRACER_EVENT_H */
+#endif /* TURBOTRACER_EVENT_H */

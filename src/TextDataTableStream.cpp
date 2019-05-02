@@ -1,6 +1,6 @@
 #include "TextDataTableStream.h"
 
-const std::string TextDataTableStream::column_separator_ = "\x1f";
+const std::string TextDataTableStream::column_separator_ = "\x2c";
 
 const std::string TextDataTableStream::row_separator_ = "\n";
 

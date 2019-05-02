@@ -1,5 +1,5 @@
-#ifndef PROMISEDYNTRACER_FUNCTION_H
-#define PROMISEDYNTRACER_FUNCTION_H
+#ifndef TURBOTRACER_FUNCTION_H
+#define TURBOTRACER_FUNCTION_H
 
 #include "Call.h"
 #include "CallSummary.h"
@@ -211,4 +211,4 @@ class Function {
     static const int PRIMITIVE_DOT_CALL_GRAPHICS_OFFSET_ = 432;
 };
 
-#endif /* PROMISEDYNTRACER_FUNCTION_H */
+#endif /* TURBOTRACER_FUNCTION_H */

@@ -1,0 +1,573 @@
+function_id,package,function_name,formal_parameter_count,byte_compiled,definition
+ldjor0qUKmNE7wGknIbzeA==,base,(base::append),3,0,function (x, values, after = length(x)) 
+{
+    lengx <- length(x)
+    if (!after) 
+        c(values, x)
+    else if (after >= lengx) 
+        c(x, values)
+    else c(x[1:after], values, x[(after + 1):lengx])
+}
+<<-,base,(base::<<-),-1,0,function body not extracted for non closures
+djbnG1r7I6q4VLqdmJDQFw==,compiler,(compiler::FUN),1,0,function(x) newtodo <<- append(newtodo, x)
+RteH9#a8O3tEefz278qSfw==,base,(base::as.list),2,0,function (x, ...) 
+UseMethod("as.list")
+bROPcLQ0#c7x3VQCJWQw5Q==,base,(base::assign),6,0,function (x, value, pos = -1, envir = as.environment(pos), inherits = FALSE, immediate = TRUE) 
+.Internal(assign(x, value, envir, inherits))
+VnVktYbW3BkVzRNq+MXeQA==,compiler,(compiler::FUN),1,0,function(e)
+            lapply(findLocals1(e, shadowed, cntxt, vars),
+                function(x) newtodo <<- append(newtodo, x))
+as.logical,base,(base::as.logical),-1,0,function body not extracted for non closures
+quote,base,(base::quote),1,0,function body not extracted for non closures
+baseenv,base,(base::baseenv),0,0,function body not extracted for non closures
+>=,base,(base::>=),2,0,function body not extracted for non closures
+[,base,(base::[),-1,0,function body not extracted for non closures
+zU2zBIO6UWH#zA6LsJRrFw==,base,(base::delayedAssign),4,0,function (x, value, eval.env = parent.frame(1), assign.env = parent.frame(1)) 
+.Internal(delayedAssign(x, substitute(value), eval.env, assign.env))
+3mZCf0qGYxelDfwis4g3Mw==,base,(base::new.env),3,0,function (hash = TRUE, parent = parent.frame(), size = 29) 
+.Internal(new.env(hash, parent, size))
+TY1fycIl7NN9h006kMV+zg==,base,(base::exists),6,0,function (x, where = -1, envir = if (missing(frame)) as.environment(where) else sys.frame(frame), frame, mode = "any", inherits = TRUE) 
+.Internal(exists(x, envir, mode, inherits))
+seq_along,base,(base::seq_along),1,0,function body not extracted for non closures
+==,base,(base::==),2,0,function body not extracted for non closures
+ycUnp2uwU6TbUQRfPQK5Fw==,compiler,(compiler::getInlineInfo),3,0,function(name, cntxt, guardOK = FALSE) {
+    optimize <- cntxt$optimize
+    if (optimize > 0 && ! (name %in% noInlineSymbols)) {
+        info <- findCenvVar(name, cntxt$env)
+        if (is.null(info))
+            NULL
+        else {
+            ftype <- info$ftype
+            frame <- info$frame
+            if (ftype == "namespace") {
+                if (! isNamespace(frame)) {
+                    ## should be the import frame of the current topenv
+                    top <- topenv(cntxt$env$env)
+                    if (! isNamespace(top) ||
+                        ! identical(frame, parent.env(top)))
+                        cntxt$stop(gettext("bad namespace import frame"))
+                    frame <- top
+                }
+                info$package <- nsName(findHomeNS(name, frame, cntxt))
+                info$guard <- FALSE
+                info
+            }
+            else if (ftype == "global" &&
+                     (optimize >= 3 ||
+                      (optimize >= 2 && name %in% languageFuns))) {
+                info$package <- packFrameName(frame)
+                info$guard <- FALSE
+                info
+            }
+            else if (guardOK && ftype == "global" &&
+                     packFrameName(frame) == "base") {
+                info$package <- packFrameName(frame)
+                info$guard <- TRUE
+                info
+            }                
+            else NULL
+        }
+    }
+    else NULL
+}
+$<-,base,(base::$<-),3,0,function body not extracted for non closures
+!=,base,(base::!=),2,0,function body not extracted for non closures
+gP5#NBqR5p3oIloogfKHPA==,compiler,(compiler::isBaseVar),2,0,function(var, cntxt) {
+    info <- getInlineInfo(var, cntxt)
+    (! is.null(info) &&
+     (identical(info$frame, .BaseNamespaceEnv) ||
+      identical(info$frame, baseenv())))
+}
+is.object,base,(base::is.object),1,0,function body not extracted for non closures
+6V+LtNpbjP4Kg9nqRvS0#g==,base,(base::tryCatchOne),4,1,function (expr, name, parentenv, handler) 
+{
+    doTryCatch <- function(expr, name, parentenv, handler) {
+        .Internal(.addCondHands(name, list(handler), parentenv, environment(), FALSE))
+        expr
+    }
+    value <- doTryCatch(return(expr), name, parentenv, handler)
+    if (is.null(value[[1]])) {
+        msg <- .Internal(geterrmessage())
+        call <- value[[2]]
+        cond <- simpleError(msg, call)
+    }
+    else if (is.character(value[[1]])) {
+        msg <- value[[1]]
+        call <- value[[2]]
+        cond <- simpleError(msg, call)
+    }
+    else cond <- value[[1]]
+    value[[3]](cond)
+}
+wKvh1VQ2JfbomrgL4aRQ8g==,compiler,(compiler::compile),4,0,function(e, env = .GlobalEnv, options = NULL, srcref = NULL) {
+    cenv <- makeCenv(env)
+    cntxt <- make.toplevelContext(cenv, options)
+    cntxt$env <- addCenvVars(cenv, findLocals(e, cntxt))
+    if (mayCallBrowser(e, cntxt))
+        ## NOTE: compilation will be attempted repeatedly
+        e
+    else if (is.null(srcref))
+        genCode(e, cntxt)
+    else
+        genCode(e, cntxt, loc = list(expr = e, srcref = srcref))
+}
+dgo6dI+Jqr3z7Mf+5b+Zpg==,base,(base::union),2,0,function (x, y) 
+unique(c(as.vector(x), as.vector(y)))
+Jcsj41oEBChfS#8qdJEASA==,base,(base::parent.frame),1,0,function (n = 1) 
+.Internal(parent.frame(n))
+(,base,(base::(),1,0,function body not extracted for non closures
+names,base,(base::names),1,0,function body not extracted for non closures
+length,base,(base::length),1,0,function body not extracted for non closures
+GeO0htL7i2iV8KJ2OQWetQ==,base,(base::tryCatch),3,1,function (expr, ..., finally) 
+{
+    tryCatchList <- function(expr, names, parentenv, handlers) {
+        nh <- length(names)
+        if (nh > 1) 
+            tryCatchOne(tryCatchList(expr, names[-nh], parentenv, handlers[-nh]), names[nh], parentenv, handlers[[nh]])
+        else if (nh == 1) 
+            tryCatchOne(expr, names, parentenv, handlers[[1]])
+        else expr
+    }
+    tryCatchOne <- function(expr, name, parentenv, handler) {
+        doTryCatch <- function(expr, name, parentenv, handler) {
+            .Internal(.addCondHands(name, list(handler), parentenv, environment(), FALSE))
+            expr
+        }
+        value <- doTryCatch(return(expr), name, parentenv, handler)
+        if (is.null(value[[1]])) {
+            msg <- .Internal(geterrmessage())
+            call <- value[[2]]
+            cond <- simpleError(msg, call)
+        }
+        else if (is.character(value[[1]])) {
+            msg <- value[[1]]
+            call <- value[[2]]
+            cond <- simpleError(msg, call)
+        }
+        else cond <- value[[1]]
+        value[[3]](cond)
+    }
+    if (!missing(finally)) 
+        on.exit(finally)
+    handlers <- list(...)
+    classes <- names(handlers)
+    parentenv <- parent.frame()
+    if (length(classes) != length(handlers)) 
+        stop("bad handler specification")
+    tryCatchList(expr, classes, parentenv, handlers)
+}
+kEtQ1DiTfXlR5M90+23nQA==,compiler,(compiler::packFrameName),1,0,function(frame) {
+    fname <- attr(frame, "name")
+    if (is.character(fname))
+        sub("package:", "", fname)
+    else if (identical(frame , baseenv()))
+        "base"
+    else ""
+}
+substitute,base,(base::substitute),-1,0,function body not extracted for non closures
+XV265aj9gL9403dOJk11aA==,compiler,(compiler:::::),2,0,function(e, ...)
+    tryCatch(compile(e, ...), error = function(err) {
+        notifyCompilerError(paste(err$message, "at", deparse(err$call)))
+        e
+    })
+if,base,(base::if),-1,0,function body not extracted for non closures
+1Xv4Pu7i6xXH68#J+1CmFw==,compiler,(compiler::addVar),2,0,function(v, vars) assign(v, 1, envir = vars)
+YNUernIRF42YwW1Gy8qQkw==,base,(base::Filter),2,0,function (f, x) 
+{
+    ind <- as.logical(unlist(lapply(x, f)))
+    x[which(ind)]
+}
+Y954+ctaD1JVgVWa45jthg==,base,(base::..getNamespace),2,0,function (name, where) 
+{
+    ns <- .Internal(getRegisteredNamespace(name))
+    if (!is.null(ns)) 
+        ns
+    else tryCatch(loadNamespace(name), error = function(e) {
+        warning(gettextf("namespace %s is not available and has been replaced\nby .GlobalEnv when processing object %s", sQuote(name)[1], sQuote(where)), domain = NA, call. = FALSE, immediate. = TRUE)
+        .GlobalEnv
+    })
+}
+kcQNdaNqM6q3KTKMmdUsaA==,base,(base::asNamespace),2,0,function (ns, base.OK = TRUE) 
+{
+    if (is.character(ns) || is.name(ns)) 
+        ns <- getNamespace(ns)
+    if (!isNamespace(ns)) 
+        stop("not a namespace")
+    else if (!base.OK && isBaseNamespace(ns)) 
+        stop("operation not allowed on base namespace")
+    else ns
+}
+RJQakrjiSECJe66xpildBA==,base,(base::tryCatchList),4,1,function (expr, names, parentenv, handlers) 
+{
+    nh <- length(names)
+    if (nh > 1) 
+        tryCatchOne(tryCatchList(expr, names[-nh], parentenv, handlers[-nh]), names[nh], parentenv, handlers[[nh]])
+    else if (nh == 1) 
+        tryCatchOne(expr, names, parentenv, handlers[[1]])
+    else expr
+}
+6osD01wrTy5wpfTwwF5mEA==,base,(base::getNamespace),1,0,function (name) 
+{
+    ns <- .Internal(getRegisteredNamespace(name))
+    if (!is.null(ns)) 
+        ns
+    else tryCatch(loadNamespace(name), error = function(e) stop(e))
+}
+missing,base,(base::missing),1,0,function body not extracted for non closures
+y#qYKfM18nMho804yw0d6w==,base,(base::isNamespace),1,0,function (ns) 
+.Internal(isNamespaceEnv(ns))
+is.character,base,(base::is.character),1,0,function body not extracted for non closures
+kyHMVb6DZwuqPTUgzaH6Yg==,base,(base::get),5,0,function (x, pos = -1, envir = as.environment(pos), mode = "any", inherits = TRUE) 
+.Internal(get(x, envir, mode, inherits))
+attr,base,(base::attr),-1,0,function body not extracted for non closures
+return,base,(base::return),-1,0,function body not extracted for non closures
+for,base,(base::for),3,0,function body not extracted for non closures
+lazyLoadDBfetch,base,(base::lazyLoadDBfetch),4,0,function body not extracted for non closures
+tG397beBtatA2Gl7SWEmuA==,base,(base::),1,0,function (n) 
+{
+    if (existsInFrame(n, envenv)) 
+        envenv[[n]]
+    else {
+        e <- mkenv()
+        envenv[[n]] <- e
+        key <- env[[n]]
+        data <- lazyLoadDBfetch(key, datafile, compressed, envhook)
+        parent.env(e) <- if (!is.null(data$enclos)) 
+            data$enclos
+        else emptyenv()
+        list2env(data$bindings, e)
+        if (!is.null(data$attributes)) 
+            attributes(e) <- data$attributes
+        if (!is.null(data$isS4) && data$isS4) 
+            .Internal(setS4Object(e, TRUE, TRUE))
+        if (!is.null(data$locked) && data$locked) 
+            .Internal(lockEnvironment(e, FALSE))
+        e
+    }
+}
+repeat,base,(base::repeat),1,0,function body not extracted for non closures
+eD8sCJcotre43xD1AeGOBQ==,global,(global::f),0,0,function () 
+print("Hello")
+function,base,(base::function),-1,0,function body not extracted for non closures
+{,base,(base::{),-1,0,function body not extracted for non closures
+<-,base,(base::<-),-1,0,function body not extracted for non closures
+D05bQgaARkODsNrG9LJVdw==,base,(base::typeof),1,0,function (x) 
+.Internal(typeof(x))
+F1GbMpGEZo29n#ZciJ4dow==,compiler,(compiler::addCenvVars),2,0,function(cenv, vars) {
+    cenv$extra[[1]] <- union(cenv$extra[[1]], vars)
+    cenv
+}
+gEXRIOT1Fn7j9CSm4cdVuQ==,base,(base::print),2,0,function (x, ...) 
+UseMethod("print")
+aK5nwQtFXi5L9b#BPqOm9g==,base,(base::match),4,0,function (x, table, nomatch = NA, incomparables = NULL) 
+.Internal(match(x, table, nomatch, incomparables))
+.Internal,base,(base::.Internal),1,0,function body not extracted for non closures
+UQOwBiAE+bxqUE1fwkylXA==,base,(base::existsInFrame),2,0,function (x, env) 
+.Internal(exists(x, env, "any", FALSE))
+-,base,(base::-),-1,0,function body not extracted for non closures
+TiXb0SpWeu9tQnJoZ8RjEQ==,base,(base::print.default),9,0,function (x, digits = NULL, quote = TRUE, na.print = NULL, print.gap = NULL, right = FALSE, max = NULL, useSource = TRUE, ...) 
+{
+    noOpt <- missing(digits) && missing(quote) && missing(na.print) && missing(print.gap) && missing(right) && missing(max) && missing(useSource) && missing(...)
+    .Internal(print.default(x, digits, quote, na.print, print.gap, right, max, useSource, noOpt))
+}
+&&,base,(base::&&),2,0,function body not extracted for non closures
+list,base,(base::list),-1,0,function body not extracted for non closures
+GppOiypH8Mnfr6Bv##FjUA==,base,(base:::::),2,0,function (pkg, name) 
+{
+    pkg <- as.character(substitute(pkg))
+    name <- as.character(substitute(name))
+    get(name, envir = asNamespace(pkg), inherits = FALSE)
+}
+[[,base,(base::[[),-1,0,function body not extracted for non closures
+as.character,base,(base::as.character),-1,0,function body not extracted for non closures
+9ENGWXuns+JpcV9sZl1AiA==,compiler,(compiler::findLocalsList1),3,0,function(elist, shadowed, cntxt) {
+    todo <- elist
+    vars <- new.env()
+    while(length(todo) > 0) {
+        newtodo <- list()
+        lapply(todo, function(e)
+            lapply(findLocals1(e, shadowed, cntxt, vars),
+                function(x) newtodo <<- append(newtodo, x))
+        )
+       todo <- newtodo
+    }
+    ls(vars, all.names=T)
+}
+RcXcIxLA4T45shRPJ3CU2w==,base,(base::character),1,0,function (length = 0) 
+.Internal(vector("character", length))
+is.null,base,(base::is.null),1,0,function body not extracted for non closures
+T06+CRt1#4yminGxB1#egQ==,base,(base::environment),1,0,function (fun = NULL) 
+.Internal(environment(fun))
+9gfe3L80ztdAN06OyfgBxQ==,base,(base::topenv),2,0,function (envir = parent.frame(), matchThisEnv = getOption("topLevelEnvironment")) 
+{
+    .Internal(topenv(envir, matchThisEnv))
+}
+UseMethod,base,(base::UseMethod),-1,0,function body not extracted for non closures
++,base,(base::+),-1,0,function body not extracted for non closures
+.addCondHands,base,(base::.addCondHands),5,0,function body not extracted for non closures
+BquH#yzaimtn7GlST+1jEA==,compiler,(compiler::makeCenv),1,0,function(env) {
+    structure(list(extra = list(character(0)),
+                   env = env,
+                   ftypes = frameTypes(env)),
+              class = "compiler_environment")
+}
+GTda0B+nTwasCbcZTt0+5g==,base,(base::structure),2,1,function (.Data, ...) 
+{
+    if (is.null(.Data)) 
+        warning("Calling 'structure(NULL, *)' is deprecated, as NULL cannot have attributes.\n  Consider 'structure(list(), *)' instead.")
+    attrib <- list(...)
+    if (length(attrib)) {
+        specials <- c(".Dim", ".Dimnames", ".Names", ".Tsp", ".Label")
+        replace <- c("dim", "dimnames", "names", "tsp", "levels")
+        m <- match(names(attrib), specials)
+        ok <- !is.na(m)
+        names(attrib)[ok] <- replace[m[ok]]
+        if ("factor" %in% attrib[["class", exact = TRUE]] && typeof(.Data) == "double") 
+            storage.mode(.Data) <- "integer"
+        attributes(.Data) <- c(attributes(.Data), attrib)
+    }
+    .Data
+}
+huJNseH0TC7OZd4TQ1sU5A==,compiler,(compiler::frameTypes),1,0,function(env) {
+    top <- topenv(env)
+    empty <- emptyenv()
+    nl <- 0
+    while (! identical(env, top)) {
+        if (isNamespace(env))
+            stop("namespace found within local environments")
+        env <- parent.env(env)
+        nl <- nl + 1
+        if (identical(env, empty))
+            stop("not a proper evaluation environment")
+    }
+    nn <- 0
+    if (isNamespace(env)) {
+        while (! identical(env, .GlobalEnv)) {
+            if (!isNamespace(env)) {
+                name <- attr(env, "name")
+                if (!is.character(name) || !startsWith(name, "imports:"))
+                    stop("non-namespace found within namespace environments")
+            }
+            env <- parent.env(env)
+            nn <- nn + 1
+            if (identical(env, empty))
+                stop("not a proper evaluation environment")
+        }
+    }
+    ng <- 0
+    while (! identical(env, empty)) {
+        if (isNamespace(env))
+            stop("namespace found within global environments")
+        env <- parent.env(env)
+        ng <- ng + 1
+    }
+    rep(c("local", "namespace", "global"), c(nl, nn, ng))
+}
+OLSc06exsYHcf1qok8hIVA==,base,(base::getOption),2,0,function (x, default = NULL) 
+{
+    if (missing(default) || x %in% names(.Options)) 
+        .Internal(getOption(x))
+    else default
+}
+emptyenv,base,(base::emptyenv),0,0,function body not extracted for non closures
+KprIF60nt5iBEv5RwCNLzg==,base,(base::as.list.default),2,0,function (x, ...) 
+if (typeof(x) == "list") x else .Internal(as.vector(x, "list"))
+oAS8URNAudYOO8GG#X8HRQ==,compiler,(compiler::findLocalsList),2,0,function(elist, cntxt) {
+    initialShadowedFuns <- c("expression", "local", "quote")
+    shadowed <- Filter(function(n) ! isBaseVar(n, cntxt), initialShadowedFuns)
+    specialSyntaxFuns <- c("~", "<-", "=", "for", "function")
+    sf <- initialShadowedFuns
+    nsf <- length(sf)
+    repeat {
+        vals <- findLocalsList1(elist, sf, cntxt)
+        redefined <- sf %in% vals
+        last.nsf <- nsf
+        sf <- unique(c(shadowed, sf[redefined]))
+        nsf <- length(sf)
+        ## **** need to fix the termination condition used in codetools!!!
+        if (last.nsf == nsf) {
+            rdsf <- vals %in% specialSyntaxFuns
+            if (any(rdsf))
+                ## cannot get location info (source reference) here
+                notifyAssignSyntacticFun(vals[rdsf], cntxt)
+            return(vals)
+        }
+    }
+}
++rQXObHj53jQ0uhcM6i1qw==,base,(base::identical),8,0,function (x, y, num.eq = TRUE, single.NA = TRUE, attrib.as.set = TRUE, ignore.bytecode = TRUE, ignore.environment = FALSE, ignore.srcref = TRUE) 
+.Internal(identical(x, y, num.eq, single.NA, attrib.as.set, ignore.bytecode, ignore.environment, ignore.srcref))
+EDQFzPNkKTGgJLS5HYLNaA==,base,(base::parent.env),1,0,function (env) 
+.Internal(parent.env(env))
+attributes<-,base,(base::attributes<-),2,0,function body not extracted for non closures
+RHk04Q6LYJ3kiN3sqF2Lfg==,compiler,(compiler::findLocals1),4,0,function(e, shadowed = character(0), cntxt, vars) {
+    if (typeof(e) == "language") {
+        if (typeof(e[[1]]) %in% c("symbol", "character")) {
+            v <- as.character(e[[1]])
+            switch(v,
+                   "=" =,
+                   "<-" = { addVar(getAssignedVar(e, cntxt), vars); e[-1] },
+
+                   "for" = { addVar(as.character(e[2]), vars); e[-2] },
+
+                   "delayedAssign" =,
+                   "assign" = if (length(e) == 3 &&
+                                  is.character(e[[2]]) &&
+                                  length(e[[2]]) == 1) {
+
+                                  addVar(e[[2]], vars); list(e[[3]])
+                              }
+                              else e[1],
+                   "function" = character(0),
+                   "~" = character(0),
+                   "local" = if (! v %in% shadowed && length(e) == 2)
+                                 NULL
+                             else e[-1],
+                   "expression" =,
+                   "quote" = if (! v %in% shadowed)
+                                 NULL
+                             else e[-1],
+                   e[-1])
+        }
+        else e
+    }
+    else NULL
+}
+apUGcjC431zHtECRsQUZwg==,compiler,(compiler::FUN),1,0,function(n) ! isBaseVar(n, cntxt)
+rep,base,(base::rep),-1,0,function body not extracted for non closures
+as.environment,base,(base::as.environment),1,0,function body not extracted for non closures
+||,base,(base::||),2,0,function body not extracted for non closures
+match,base,(base::match),4,0,function body not extracted for non closures
+q5qIgPLwdn6BqOjy28bFAQ==,compiler,(compiler::findCenvVar),2,0,function(var, cenv) {
+    if (typeof(var) == "symbol")
+        var <- as.character(var)
+    extra <- cenv$extra
+    env <- cenv$env
+    frame <- NULL
+    for (i in seq_along(cenv$extra)) {
+        if (var %in% extra[[i]] || exists(var, env, inherits = FALSE)) {
+            frame <- env
+            break
+        }
+        else
+            env <- parent.env(env)
+    }
+    if (is.null(frame)) {
+        empty <- emptyenv()
+        while (! identical(env, empty)) {
+            i <- i + 1
+            if (exists(var, env, inherits = FALSE)) {
+                frame <- env
+                break
+            }
+            else
+                env <- parent.env(env)
+        }
+    }
+    if (! is.null(frame)) {
+        if (exists(var, frame, inherits = FALSE) && var != "...") {
+            value <- new.env(parent = emptyenv())
+            delayedAssign("value", get(var, frame, inherits = FALSE),
+                          assign.env = value)
+        }
+        else
+            value <- NULL
+        list(frame = frame, ftype = cenv$ftypes[i], value = value, index = i)
+    }
+    else
+        NULL
+}
+is.na,base,(base::is.na),1,0,function body not extracted for non closures
+xIVo#d4kYtouSJ5WVbV09Q==,base,(base::unique),3,0,function (x, incomparables = FALSE, ...) 
+UseMethod("unique")
+switch,base,(base::switch),-1,0,function body not extracted for non closures
+names<-,base,(base::names<-),2,0,function body not extracted for non closures
+!,base,(base::!),1,0,function body not extracted for non closures
+while,base,(base::while),2,0,function body not extracted for non closures
+nPDBRlCOrnPzHzq2OTBOlg==,compiler,(compiler::getCompilerOption),2,0,function(name, options = NULL) {
+    if (name %in% names(options))
+        options[[name]]
+    else
+        get(name, compilerOptions)
+}
+c,base,(base::c),-1,0,function body not extracted for non closures
+OCOgzwi1uK86r+tEmopbbg==,base,(base::unlist),3,0,function (x, recursive = TRUE, use.names = TRUE) 
+{
+    if (.Internal(islistfactor(x, recursive))) {
+        lv <- unique(.Internal(unlist(lapply(x, levels), recursive, FALSE)))
+        nm <- if (use.names) 
+            names(.Internal(unlist(x, recursive, use.names)))
+        res <- .Internal(unlist(lapply(x, as.character), recursive, FALSE))
+        res <- match(res, lv)
+        structure(res, levels = lv, names = nm, class = "factor")
+    }
+    else .Internal(unlist(x, recursive, use.names))
+}
+vqbAZ7YBUo2iBw+qCi4+Rw==,base,(base::doTryCatch),4,1,function (expr, name, parentenv, handler) 
+{
+    .Internal(.addCondHands(name, list(handler), parentenv, environment(), FALSE))
+    expr
+}
+q0n+#PaBrDIXfT3j+RIDAg==,base,(base::%in%),2,0,function (x, table) 
+match(x, table, nomatch = 0) > 0
+is.function,base,(base::is.function),1,0,function body not extracted for non closures
+bT6VKzCnSfLA5hWwii3e5A==,base,(base::which),3,0,function (x, arr.ind = FALSE, useNames = TRUE) 
+{
+    wh <- .Internal(which(x))
+    if (arr.ind && !is.null(d <- dim(x))) 
+        arrayInd(wh, d, dimnames(x), useNames = useNames)
+    else wh
+}
+>,base,(base::>),2,0,function body not extracted for non closures
+attributes,base,(base::attributes),1,0,function body not extracted for non closures
+5QdOVG8kQFV6cQXxKtfZpA==,compiler,(compiler::make.toplevelContext),2,0,function(cenv, options = NULL)
+    structure(list(toplevel = TRUE,
+                   tailcall = TRUE,
+                   needRETURNJMP = FALSE,
+                   env = cenv,
+                   optimize = getCompilerOption("optimize", options),
+                   suppressAll = getCompilerOption("suppressAll", options),
+                   suppressNoSuperAssignVar =
+                       getCompilerOption("suppressNoSuperAssignVar", options),
+                   suppressUndefined = getCompilerOption("suppressUndefined",
+                                                         options),
+                   call = NULL,
+                   stop = function(msg, cntxt, loc = NULL)
+                       stop(simpleError(addLocString(msg, loc), cntxt$call)),
+                   warn = function(x, cntxt, loc = NULL)
+                       cat(paste("Note:", addLocString(x, loc), "\n"))
+              ),
+              class = "compiler_context")
+Dt50EM+ftE1ZxhFr+wtklQ==,base,(base::as.vector),2,0,function (x, mode = "any") 
+.Internal(as.vector(x, mode))
+$,base,(base::$),2,0,function body not extracted for non closures
+break,base,(base::break),0,0,function body not extracted for non closures
+Qq7TXAtQDhwiCgyxIAt4qg==,compiler,(compiler::findLocals),2,0,function(e, cntxt)
+    findLocalsList(list(e), cntxt)
+5cSA4UPamnL6#2NtXvRmyA==,base,(base::lapply),3,0,function (X, FUN, ...) 
+{
+    FUN <- match.fun(FUN)
+    if (!is.vector(X) || is.object(X)) 
+        X <- as.list(X)
+    .Internal(lapply(X, FUN))
+}
+t9MHvtoKYmnkzvn1OiebJA==,base,(base::match.fun),2,0,function (FUN, descend = TRUE) 
+{
+    if (is.function(FUN)) 
+        return(FUN)
+    if (!(is.character(FUN) && length(FUN) == 1 || is.symbol(FUN))) {
+        FUN <- eval.parent(substitute(substitute(FUN)))
+        if (!is.symbol(FUN)) 
+            stop(gettextf("'%s' is not a function, character or symbol", deparse(FUN)), domain = NA)
+    }
+    envir <- parent.frame(2)
+    if (descend) 
+        FUN <- get(as.character(FUN), mode = "function", envir = envir)
+    else {
+        FUN <- get(as.character(FUN), mode = "any", envir = envir)
+        if (!is.function(FUN)) 
+            stop(gettextf("found non-function '%s'", FUN), domain = NA)
+    }
+    return(FUN)
+}
+mfNRpgdHV5oPlmKthsYUXA==,base,(base::is.vector),2,0,function (x, mode = "any") 
+.Internal(is.vector(x, mode))

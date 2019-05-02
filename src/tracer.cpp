@@ -4,11 +4,11 @@
 
 extern "C" {
 
-SEXP create_dyntracer(SEXP output_dirpath,
-                      SEXP verbose,
-                      SEXP truncate,
-                      SEXP binary,
-                      SEXP compression_level) {
+  SEXP create_dyntracer(SEXP output_dirpath,
+                        SEXP verbose,
+                        SEXP truncate,
+                        SEXP binary,
+                        SEXP compression_level) {
     void* state = new TracerState(sexp_to_string(output_dirpath),
                                   sexp_to_bool(verbose),
                                   sexp_to_bool(truncate),
@@ -16,8 +16,8 @@ SEXP create_dyntracer(SEXP output_dirpath,
                                   sexp_to_int(compression_level));
 
     /* calloc initializes the memory to zero. This ensures that probes not
-       attached will be NULL. Replacing calloc with malloc will cause
-       segfaults. */
+     attached will be NULL. Replacing calloc with malloc will cause
+     segfaults. */
     dyntracer_t* dyntracer = (dyntracer_t*) calloc(1, sizeof(dyntracer_t));
     dyntracer->probe_dyntrace_entry = dyntrace_entry;
     dyntracer->probe_dyntrace_exit = dyntrace_exit;
@@ -28,12 +28,7 @@ SEXP create_dyntracer(SEXP output_dirpath,
     dyntracer->probe_builtin_exit = builtin_exit;
     dyntracer->probe_special_entry = special_entry;
     dyntracer->probe_special_exit = special_exit;
-    dyntracer->probe_S3_dispatch_entry = S3_dispatch_entry;
-    dyntracer->probe_S4_dispatch_argument = S4_dispatch_argument;
-    dyntracer->probe_gc_unmark = gc_unmark;
-    dyntracer->probe_promise_force_entry = promise_force_entry;
-    dyntracer->probe_promise_force_exit = promise_force_exit;
-    dyntracer->probe_gc_allocate = gc_allocate;
+    dyntracer->state = state;
     dyntracer->probe_promise_value_lookup = promise_value_lookup;
     dyntracer->probe_promise_expression_lookup = promise_expression_lookup;
     dyntracer->probe_promise_environment_lookup = promise_environment_lookup;
@@ -44,26 +39,21 @@ SEXP create_dyntracer(SEXP output_dirpath,
     dyntracer->probe_context_entry = context_entry;
     dyntracer->probe_context_jump = context_jump;
     dyntracer->probe_context_exit = context_exit;
-    dyntracer->probe_environment_variable_define = environment_variable_define;
-    dyntracer->probe_environment_variable_assign = environment_variable_assign;
-    dyntracer->probe_environment_variable_remove = environment_variable_remove;
-    dyntracer->probe_environment_variable_lookup = environment_variable_lookup;
-    dyntracer->state = state;
     return dyntracer_to_sexp(dyntracer, "dyntracer.promise");
-}
+  }
 
-static void destroy_promise_dyntracer(dyntracer_t* dyntracer) {
+  static void destroy_promise_dyntracer(dyntracer_t* dyntracer) {
     /* free dyntracer iff it has not already been freed.
-       this check ensures that multiple calls to destroy_dyntracer on the same
-       object do not crash the process. */
+     this check ensures that multiple calls to destroy_dyntracer on the same
+     object do not crash the process. */
     if (dyntracer) {
-        delete (static_cast<TracerState*>(dyntracer->state));
-        free(dyntracer);
+      delete (static_cast<TracerState*>(dyntracer->state));
+      free(dyntracer);
     }
-}
+  }
 
-SEXP destroy_dyntracer(SEXP dyntracer_sexp) {
+  SEXP destroy_dyntracer(SEXP dyntracer_sexp) {
     return dyntracer_destroy_sexp(dyntracer_sexp, destroy_promise_dyntracer);
-}
+  }
 
 } // extern "C"

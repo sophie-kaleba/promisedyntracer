@@ -1,5 +1,5 @@
-#ifndef PROMISEDYNTRACER_TABLE_H
-#define PROMISEDYNTRACER_TABLE_H
+#ifndef TURBOTRACER_TABLE_H
+#define TURBOTRACER_TABLE_H
 
 #include "DataTableStream.h"
 
@@ -17,16 +17,16 @@ DataTableStream* create_data_table(const std::string& table_filepath,
 extern "C" {
 #endif
 
-SEXP write_data_table(SEXP data_frame,
-                      SEXP table_filepath,
-                      SEXP truncate,
-                      SEXP binary,
-                      SEXP compression_level);
+  SEXP write_data_table(SEXP data_frame,
+                        SEXP table_filepath,
+                        SEXP truncate,
+                        SEXP binary,
+                        SEXP compression_level);
 
-SEXP read_data_table(SEXP table_filepath, SEXP binary, SEXP compression_level);
+  SEXP read_data_table(SEXP table_filepath, SEXP binary, SEXP compression_level);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* PROMISEDYNTRACER_TABLE_H */
+#endif /* TURBOTRACER_TABLE_H */
