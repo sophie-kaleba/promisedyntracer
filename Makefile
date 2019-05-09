@@ -16,7 +16,7 @@ install: clean
 	$(R_DYNTRACE) CMD INSTALL --with-keep.source .
 
 clean:
-	rm -rf promisedyntracer*.tar.gz
+	rm -rf turbotracer*.tar.gz
 	rm -rf *.Rcheck
 	rm -rf src/*.so
 	rm -rf src/*.o
@@ -25,7 +25,7 @@ document:
 	$(R_DYNTRACE) -e "devtools::document()"
 
 check: build
-	$(R_DYNTRACE) CMD check --output=$(R_CMD_CHECK_OUTPUT_DIRPATH) promisedyntracer_*.tar.gz
+	$(R_DYNTRACE) CMD check --output=$(R_CMD_CHECK_OUTPUT_DIRPATH) turbotracer_*.tar.gz
 
 test:
 	$(R_DYNTRACE) -e "devtools::test()"

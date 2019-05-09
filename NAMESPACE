@@ -1,2 +1,2 @@
-useDynLib(promisedyntracer, .registration = TRUE, .fixes = "C_")
+useDynLib(turbotracer, .registration = TRUE, .fixes = "C_")
 exportPattern("^[[:alpha:]]+")
