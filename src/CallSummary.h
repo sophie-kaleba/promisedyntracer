@@ -13,7 +13,7 @@ class CallSummary {
         S3_method_ = call->is_S3_method();
         S4_method_ = call->is_S4_method();
         call_count_ = 1;
-        call_arg_count_ = call->has_call_as_arg();
+        call_arg_count_ = call->get_call_as_arg();
     }
 
     const pos_seq_t& get_force_order() const {
@@ -52,6 +52,7 @@ class CallSummary {
     bool try_to_merge(const Call* const call) {
         if (is_mergeable_(call)) {
             call_count_++;
+            call_arg_count_ = call_arg_count_ + call->get_call_as_arg();
             return true;
         }
         return false;

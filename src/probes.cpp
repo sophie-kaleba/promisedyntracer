@@ -46,7 +46,6 @@ static inline void set_dispatch(Call* call,
   }
 }
 
-
 void eval_entry(dyntracer_t* dyntracer, const SEXP expr, const SEXP rho) {
   TracerState& state = tracer_state(dyntracer);
 
@@ -299,105 +298,4 @@ void context_entry(dyntracer_t* dyntracer, const RCNTXT* cptr) {
   state.push_stack(cptr);
 
   state.exit_probe(Event::ContextEntry);
-}
-
-
-void promise_value_lookup(dyntracer_t* dyntracer, const SEXP promise) {
-  TracerState& state = tracer_state(dyntracer);
-
-  state.enter_probe(Event::PromiseValueLookup);
-
-  DenotedValue* promise_state = state.lookup_promise(promise, true);
-
-  /* If a promise is looked up then add it to force order.
-   This ensures that S3 arguments are handled correctly.
-   The argument is never repeated in the force order as
-   the Call::add_to_force_order function does not duplicate
-   entries. */
-  for (Argument* argument: promise_state->get_arguments()) {
-    argument->get_call()->add_to_force_order(
-        argument->get_formal_parameter_position());
-  }
-
-  promise_state->lookup_value();
-
-  state.exit_probe(Event::PromiseValueLookup);
-}
-
-void promise_expression_lookup(dyntracer_t* dyntracer, const SEXP promise) {
-  TracerState& state = tracer_state(dyntracer);
-
-  state.enter_probe(Event::PromiseExpressionLookup);
-
-  DenotedValue* promise_state = state.lookup_promise(promise, true);
-
-  promise_state->lookup_expression();
-
-  state.exit_probe(Event::PromiseExpressionLookup);
-}
-
-void promise_environment_lookup(dyntracer_t* dyntracer, const SEXP promise) {
-  TracerState& state = tracer_state(dyntracer);
-
-  state.enter_probe(Event::PromiseEnvironmentLookup);
-
-  DenotedValue* promise_state = state.lookup_promise(promise, true);
-
-  promise_state->lookup_environment();
-
-  state.exit_probe(Event::PromiseEnvironmentLookup);
-}
-
-void promise_expression_assign(dyntracer_t* dyntracer,
-                               const SEXP promise,
-                               const SEXP expression) {
-  TracerState& state = tracer_state(dyntracer);
-
-  state.enter_probe(Event::PromiseExpressionAssign);
-
-  DenotedValue* promise_state = state.lookup_promise(promise, true);
-
-  promise_state->assign_expression();
-
-  state.exit_probe(Event::PromiseExpressionAssign);
-}
-
-void promise_value_assign(dyntracer_t* dyntracer,
-                          const SEXP promise,
-                          const SEXP value) {
-  TracerState& state = tracer_state(dyntracer);
-
-  state.enter_probe(Event::PromiseValueAssign);
-
-  DenotedValue* promise_state = state.lookup_promise(promise, true);
-
-  promise_state->assign_value();
-
-  state.exit_probe(Event::PromiseValueAssign);
-}
-
-void promise_environment_assign(dyntracer_t* dyntracer,
-                                const SEXP promise,
-                                const SEXP environment) {
-  TracerState& state = tracer_state(dyntracer);
-
-  state.enter_probe(Event::PromiseEnvironmentAssign);
-
-  DenotedValue* promise_state = state.lookup_promise(promise, true);
-
-  promise_state->assign_environment();
-
-  state.exit_probe(Event::PromiseEnvironmentAssign);
-}
-
-void promise_substitute(dyntracer_t* dyntracer, const SEXP promise) {
-  TracerState& state = tracer_state(dyntracer);
-
-  state.enter_probe(Event::PromiseSubstitute);
-
-  DenotedValue* promise_state = state.lookup_promise(promise, true);
-
-  promise_state->metaprogram();
-
-  state.exit_probe(Event::PromiseSubstitute);
 }

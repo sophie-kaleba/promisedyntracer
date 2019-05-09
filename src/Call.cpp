@@ -15,6 +15,7 @@ Call::Call(const call_id_t id,
     , jumped_(false)
     , S3_method_(false)
     , S4_method_(false)
+    , call_as_arg_(0)
     , callee_counter_(0) {
     wrapper_ = function_->is_dot_internal() || function_->is_dot_primitive() ||
                function_->is_dot_c() || function_->is_dot_fortran() ||

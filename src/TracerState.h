@@ -68,7 +68,7 @@ public:
        "return_value_type",
        "jumped",
        "call_count",
-        "call_arg_count"},
+       "call_arg_count"},
        truncate_,
        binary_,
        compression_level_);
@@ -90,7 +90,6 @@ public:
       create_data_table(output_dirpath_ + "/" + "arguments",
       {"call_id",
        "function_id",
-       "function_name",
        "value_id",
        "formal_parameter_position",
        "actual_argument_position",
@@ -366,6 +365,7 @@ private:
       }
     }
   }
+
 
   ExecutionContextStack stack_;
 
@@ -769,6 +769,16 @@ public:
     if (TYPEOF(op) == CLOSXP) {
       process_closure_arguments_(function_call, op);
     } else {
+      if (function_name.compare("<<-") == 0) {
+        std::cout << "receiver: " << value_type_to_string(CAR(args)) << " ";
+        if (value_type_to_string(CAR(args)).compare("Symbol") == 0) {std::cout << CHAR(PRINTNAME(CAR(args))) << "\n";}
+        else {std::cout << "\n";}
+
+        std::cout << "right side is "<< value_type_to_string(CAR(CDR(args))) <<"\n\n";
+       if (value_type_to_string(CAR(CDR(args))).compare("Function Call") == 0) {function_call->set_call_as_arg(1);
+         std::cout << "coucou\n";}
+        }
+      else {function_call->set_call_as_arg(0);}
       int eval = dyntrace_get_c_function_argument_evaluation(op);
       function_call->set_force_order(eval);
     }
@@ -902,7 +912,6 @@ private:
     arguments_data_table_->write_row(
         call->get_id(),
         function->get_id(),
-        function->get_name_string(),
         value->get_id(),
         argument->get_formal_parameter_position(),
         argument->get_actual_argument_position(),
@@ -1004,7 +1013,7 @@ private:
   std::unordered_map<SEXP, Function*> functions_;
   std::unordered_map<function_id_t, Function*> function_cache_;
 
-  void  serialize_function_(Function* function) {
+  void serialize_function_(Function* function) {
     const std::string all_names = function->get_name_string();
     serialize_function_call_summary_(function, all_names);
     serialize_function_definition_(function, all_names);

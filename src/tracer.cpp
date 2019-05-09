@@ -29,13 +29,6 @@ extern "C" {
     dyntracer->probe_special_entry = special_entry;
     dyntracer->probe_special_exit = special_exit;
     dyntracer->state = state;
-    dyntracer->probe_promise_value_lookup = promise_value_lookup;
-    dyntracer->probe_promise_expression_lookup = promise_expression_lookup;
-    dyntracer->probe_promise_environment_lookup = promise_environment_lookup;
-    dyntracer->probe_promise_value_assign = promise_value_assign;
-    dyntracer->probe_promise_expression_assign = promise_expression_assign;
-    dyntracer->probe_promise_environment_assign = promise_environment_assign;
-    dyntracer->probe_promise_substitute = promise_substitute;
     dyntracer->probe_context_entry = context_entry;
     dyntracer->probe_context_jump = context_jump;
     dyntracer->probe_context_exit = context_exit;

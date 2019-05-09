@@ -7,7 +7,6 @@
 #include "table.h"
 #include "utilities.h"
 
-
 class Function;
 
 typedef std::vector<int> force_order_t;
@@ -38,6 +37,14 @@ class Call {
 
     int get_actual_argument_count() const {
         return actual_argument_count_;
+    }
+
+    void set_call_as_arg(int nr) {
+      call_as_arg_ = nr;
+    }
+
+    int get_call_as_arg() const {
+      return call_as_arg_;
     }
 
     SEXP get_environment() const {
@@ -97,16 +104,16 @@ class Call {
     Argument* get_argument(int actual_argument_position) const {
         return arguments_[actual_argument_position];
     }
-
-    bool arg_redefine_function(const int actual_argument_position) const{
-      Argument * arg =  get_argument(actual_argument_position);
-      DenotedValue* value = arg->get_denoted_value();
-      /* which one am I supposed to chose? I don't know, let's pick the 2d*/
-      std::string argument_type = sexptype_to_string(value->get_type());
-      std::string expression_type = sexptype_to_string(value->get_expression_type());
-      std::string value_type = sexptype_to_string(value->get_value_type());
-      return expression_type.compare("Function Call");
-    }
+//
+//     bool arg_redefine_function(const int actual_argument_position) const{
+//       Argument * arg =  this->get_argument(actual_argument_position);
+//       DenotedValue* value = arg->get_denoted_value();
+//       /* which one am I supposed to chose? I don't know, let's pick the 2d*/
+//       std::string argument_type = sexptype_to_string(value->get_type());
+//       std::string expression_type = sexptype_to_string(value->get_expression_type());
+//       std::string value_type = sexptype_to_string(value->get_value_type());
+//       return expression_type.compare("Function Call");
+//     }
 
     void add_argument(Argument* argument) {
         arguments_.push_back(argument);
@@ -121,21 +128,17 @@ class Call {
      * - for <<- if the right side is a call
      */
     int has_call_as_arg() const {
-      if (get_function_name().compare("<<-") == 0) {
-        //std::cout << "Call" << arg->get_call()->get_function_name();
-        Argument * arg =  get_argument(1);
-        DenotedValue* value = arg->get_denoted_value();
-        std::string expression_type = sexptype_to_string(value->get_type());
-        return 33;}
-      return 1;
-
-      // if (get_function_name().compare("base::<<-") && arg_redefine_function(1))
+      if (function_name_.compare("base:<<-")) {
+       return 33;
+      }
+      // if (function_name_.compare("base:<<-") && this->arg_redefine_function(1))
       // {return 1;}
-      // else if (get_function_name().compare("base::with") && arg_redefine_function(2))
+      // else if (function_name_.compare("base::with") && this->arg_redefine_function(2))
       // {return 1;}
-      // else if (get_function_name().compare("base::assign") && arg_redefine_function(2))
+      // else if (function_name_.compare("base::assign") && this->arg_redefine_function(2))
       // {return 1;}
-      // else {return 0;}
+      // else
+      return 0;
     }
 
 
@@ -186,6 +189,7 @@ class Call {
     bool S3_method_;
     bool S4_method_;
     int callee_counter_;
+    int call_as_arg_;
     bool wrapper_;
     std::vector<Argument*> arguments_;
     pos_seq_t force_order_;
