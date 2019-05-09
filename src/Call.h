@@ -17,10 +17,44 @@ class Call {
     explicit Call(const call_id_t id,
                   const std::string& function_name,
                   const SEXP environment,
-                  Function* function);
+                  Function* function,
+                  const SEXP args);
 
     call_id_t get_id() const {
         return id_;
+    }
+    
+    void process_calls_affecting_lookup(){
+      // <<- is a special, we have to access its arguments in a specific way
+      size_t found = function_name_.find("assign"); 
+      if (found != std::string::npos) {
+        std::cout << "First occurrence is " << found << "\n"; 
+        std::cout << "name " << function_name_ << "\n";
+      }
+      if (function_name_.compare("<<-") == 0) {
+        if (value_type_to_string(CAR(CDR(args_))).compare("Function Call") == 0) {
+          set_call_as_arg(1);}
+        else {set_call_as_arg(0);}
+      }
+      // assign is a closure
+      else if ((function_name_.compare("assign") == 0) or (function_name_.compare("with") == 0) or (function_name_.compare("with.default") == 0)) {
+        Argument * arg1 =  get_argument(0);
+        DenotedValue* value1 = arg1->get_denoted_value();
+        std::string expression_type1 = sexptype_to_string(value1->get_expression_type());
+        std::cout << "first " << expression_type1 << "\n";
+        Argument * arg =  get_argument(1);
+        DenotedValue* value = arg->get_denoted_value();
+        std::string expression_type = sexptype_to_string(value->get_expression_type());
+        std::cout << "first " << expression_type << "\n\n";
+        
+        if (expression_type.compare("Function Call") == 0) {
+          set_call_as_arg(1);}
+        else {set_call_as_arg(0);}
+      }
+    }
+    
+    SEXP get_args() {
+      return args_;
     }
 
     const std::string& get_function_name() const {
@@ -104,43 +138,11 @@ class Call {
     Argument* get_argument(int actual_argument_position) const {
         return arguments_[actual_argument_position];
     }
-//
-//     bool arg_redefine_function(const int actual_argument_position) const{
-//       Argument * arg =  this->get_argument(actual_argument_position);
-//       DenotedValue* value = arg->get_denoted_value();
-//       /* which one am I supposed to chose? I don't know, let's pick the 2d*/
-//       std::string argument_type = sexptype_to_string(value->get_type());
-//       std::string expression_type = sexptype_to_string(value->get_expression_type());
-//       std::string value_type = sexptype_to_string(value->get_value_type());
-//       return expression_type.compare("Function Call");
-//     }
 
     void add_argument(Argument* argument) {
         arguments_.push_back(argument);
         ++actual_argument_count_;
     }
-
-
-    /* check if a function is being introduced dynamically
-     * Returns 1 if :
-     * - for assign(x, value,...), if value is a call
-     * - for with(data, expr, ...), if expr is a call
-     * - for <<- if the right side is a call
-     */
-    int has_call_as_arg() const {
-      if (function_name_.compare("base:<<-")) {
-       return 33;
-      }
-      // if (function_name_.compare("base:<<-") && this->arg_redefine_function(1))
-      // {return 1;}
-      // else if (function_name_.compare("base::with") && this->arg_redefine_function(2))
-      // {return 1;}
-      // else if (function_name_.compare("base::assign") && this->arg_redefine_function(2))
-      // {return 1;}
-      // else
-      return 0;
-    }
-
 
     const pos_seq_t& get_force_order() const {
         return force_order_;
@@ -183,6 +185,7 @@ class Call {
     const std::string function_name_;
     int actual_argument_count_;
     const SEXP environment_;
+    const SEXP args_;
     Function* function_;
     sexptype_t return_value_type_;
     bool jumped_;

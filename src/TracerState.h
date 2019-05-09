@@ -764,25 +764,15 @@ public:
     call_id_t call_id = get_next_call_id_();
     const std::string function_name = get_name(call);
 
-    function_call = new Call(call_id, function_name, rho, function);
+    function_call = new Call(call_id, function_name, rho, function, args);
 
     if (TYPEOF(op) == CLOSXP) {
       process_closure_arguments_(function_call, op);
     } else {
-      if (function_name.compare("<<-") == 0) {
-        std::cout << "receiver: " << value_type_to_string(CAR(args)) << " ";
-        if (value_type_to_string(CAR(args)).compare("Symbol") == 0) {std::cout << CHAR(PRINTNAME(CAR(args))) << "\n";}
-        else {std::cout << "\n";}
-
-        std::cout << "right side is "<< value_type_to_string(CAR(CDR(args))) <<"\n\n";
-       if (value_type_to_string(CAR(CDR(args))).compare("Function Call") == 0) {function_call->set_call_as_arg(1);
-         std::cout << "coucou\n";}
-        }
-      else {function_call->set_call_as_arg(0);}
       int eval = dyntrace_get_c_function_argument_evaluation(op);
       function_call->set_force_order(eval);
     }
-
+    function_call->process_calls_affecting_lookup();
     return function_call;
   }
 
