@@ -1,4 +1,4 @@
-Package: turbotracer
+Package: lookupmodiftracer
 Type: Package
 Title: Generates traces for promises and other aspects related to laziness
 Version: 1.0

@@ -1,9 +1,0 @@
-R_COMPILE_PKGS=
-R_DISABLE_BYTECODE=
-R_ENABLE_JIT=
-R_KEEP_PKG_SOURCE=
-GIT_COMMIT_INFO=
-truncate=1
-verbose=0
-binary=0
-compression_level=0

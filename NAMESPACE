@@ -1,2 +1,2 @@
-useDynLib(turbotracer, .registration = TRUE, .fixes = "C_")
+useDynLib(lookupmodiftracer, .registration = TRUE, .fixes = "C_")
 exportPattern("^[[:alpha:]]+")

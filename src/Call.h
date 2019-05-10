@@ -26,31 +26,21 @@ class Call {
     
     void process_calls_affecting_lookup(){
       // <<- is a special, we have to access its arguments in a specific way
-      size_t found = function_name_.find("assign"); 
-      if (found != std::string::npos) {
-        std::cout << "First occurrence is " << found << "\n"; 
-        std::cout << "name " << function_name_ << "\n";
-      }
       if (function_name_.compare("<<-") == 0) {
-        if (value_type_to_string(CAR(CDR(args_))).compare("Function Call") == 0) {
-          set_call_as_arg(1);}
-        else {set_call_as_arg(0);}
+        if (value_type_to_string(CAR(CDR(args_))).compare("Function Call") == 0) {set_call_as_arg(1);}
+
       }
-      // assign is a closure
-      else if ((function_name_.compare("assign") == 0) or (function_name_.compare("with") == 0) or (function_name_.compare("with.default") == 0)) {
-        Argument * arg1 =  get_argument(0);
-        DenotedValue* value1 = arg1->get_denoted_value();
-        std::string expression_type1 = sexptype_to_string(value1->get_expression_type());
-        std::cout << "first " << expression_type1 << "\n";
+      // assign and with are closures
+     else if ((function_name_.compare("assign") == 0) or (function_name_.compare("with") == 0)) {
         Argument * arg =  get_argument(1);
         DenotedValue* value = arg->get_denoted_value();
         std::string expression_type = sexptype_to_string(value->get_expression_type());
-        std::cout << "first " << expression_type << "\n\n";
         
-        if (expression_type.compare("Function Call") == 0) {
-          set_call_as_arg(1);}
-        else {set_call_as_arg(0);}
+        if (expression_type.compare("Function Call") == 0) {set_call_as_arg(1);}
       }
+     else {
+       set_call_as_arg(0);
+     }
     }
     
     SEXP get_args() {

@@ -765,7 +765,7 @@ public:
     const std::string function_name = get_name(call);
 
     function_call = new Call(call_id, function_name, rho, function, args);
-
+    
     if (TYPEOF(op) == CLOSXP) {
       process_closure_arguments_(function_call, op);
     } else {

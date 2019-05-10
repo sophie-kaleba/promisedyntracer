@@ -15,7 +15,7 @@ extern "C" {
     {"read_data_table", (DL_FUNC) &read_data_table, 3},
     {NULL, NULL, 0}};
 
-  void attribute_visible R_init_turbotracer(DllInfo* dll) {
+  void attribute_visible R_init_lookupmodiftracer(DllInfo* dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
     R_forceSymbols(dll, TRUE);

@@ -2,10 +2,10 @@ R_DYNTRACE_HOME := ../R-dyntrace
 R_DYNTRACE := $(R_DYNTRACE_HOME)/bin/R
 R_CMD_CHECK_OUTPUT_DIRPATH := /tmp
 
-export R_ENABLE_JIT=1
-export R_COMPILE_PKGS=1
-export R_DISABLE_BYTECODE=0
-export R_KEEP_PKG_SOURCE=0
+export R_ENABLE_JIT=0
+export R_COMPILE_PKGS=0
+export R_DISABLE_BYTECODE=1
+export R_KEEP_PKG_SOURCE=1
 
 all: install
 
@@ -16,7 +16,7 @@ install: clean
 	$(R_DYNTRACE) CMD INSTALL --with-keep.source .
 
 clean:
-	rm -rf turbotracer*.tar.gz
+	rm -rf lookupmodiftracer*.tar.gz
 	rm -rf *.Rcheck
 	rm -rf src/*.so
 	rm -rf src/*.o
@@ -25,7 +25,7 @@ document:
 	$(R_DYNTRACE) -e "devtools::document()"
 
 check: build
-	$(R_DYNTRACE) CMD check --output=$(R_CMD_CHECK_OUTPUT_DIRPATH) turbotracer_*.tar.gz
+	$(R_DYNTRACE) CMD check --output=$(R_CMD_CHECK_OUTPUT_DIRPATH) lookupmodiftracer_*.tar.gz
 
 test:
 	$(R_DYNTRACE) -e "devtools::test()"
