@@ -1,0 +1,15 @@
+library(refactoredtracer)
+
+dyntrace_promises({ 
+library(gstat)
+f<-function() print("Hello")
+f()
+f<<-function() print("Hello")
+f<<-function() print("Hello")
+f<<-function() print("Hello")
+f<<-function() print("Hello")
+f<<-function() print("Hello")
+f<<-function() print("Hello")
+f<<-function() print("Hello")
+f<<-function() print("Hello")
+}, "/home/diens/Documents/tools/R_exp/refactoredtracer/output")

@@ -24,180 +24,61 @@ class Call {
         return id_;
     }
     
-    void process_calls_affecting_lookup(){
-      //std::string fn_id = compute_hash((get_function() -> get_namespace() + get_function() -> get_definition()).c_str());
-      //Function* fn = get_function();
-      //fn->is_byte_compiled();
-      // <<- is a special, we have to access its arguments in a specific way
-      if (function_name_.compare("<<-") == 0) {
-        if (value_type_to_string(CAR(CDR(args_))).compare("Function Call") == 0) {set_call_as_arg(1);}
-        else {
-          set_call_as_arg(0);
-        }
-
-      }
-      // assign and with are closures
-     else if ((function_name_.compare("assign") == 0)) {
-        Argument * arg =  get_argument(1);  
-        DenotedValue* value = arg->get_denoted_value();
-        std::string expression_type = sexptype_to_string(value->get_expression_type());
-        
-        if (expression_type.compare("Function Call") == 0) {set_call_as_arg(1);}
-        else {
-          set_call_as_arg(0);
-        }
-      }
-     else if ((function_name_.compare("with") == 0)) {
-       Argument * arg =  get_argument(1);  
-       DenotedValue* value = arg->get_denoted_value();
-       std::string expression_type = sexptype_to_string(value->get_expression_type());
-       
-       if (expression_type.compare("Function Call") == 0) {set_call_as_arg(1);}
-       else {
-         set_call_as_arg(0);
-       }
-     }
-     else if ((function_name_.compare("mamahu") == 0)) {
-       Argument * arg =  get_argument(1);  
-       DenotedValue* value = arg->get_denoted_value();
-       std::string expression_type = sexptype_to_string(value->get_expression_type());
-       
-       if (expression_type.compare("Function Call") == 0) {set_call_as_arg(1);}
-       else {
-         set_call_as_arg(0);
-       }
-     }
-     else {
-       set_call_as_arg(0);
-     }
-    }
+    void process_calls_affecting_lookup();
     
-    SEXP get_args() {
-      return args_;
-    }
+    SEXP get_args();
 
-    const std::string& get_function_name() const {
-        return function_name_;
-    }
+    const std::string& get_function_name() const;
 
-    Function* get_function() {
-        return function_;
-    }
+    Function* get_function();
 
-    void set_actual_argument_count(int actual_argument_count) {
-        actual_argument_count_ = actual_argument_count;
-    }
+    void set_actual_argument_count(int actual_argument_count);
 
-    int get_actual_argument_count() const {
-        return actual_argument_count_;
-    }
+    int get_actual_argument_count() const;
 
-    void set_call_as_arg(int nr) {
-      call_as_arg_ = nr;
-    }
+    void set_call_as_arg(int nr);
 
-    int get_call_as_arg() const {
-      return call_as_arg_;
-    }
+    int get_call_as_arg() const;
 
-    SEXP get_environment() const {
-        return environment_;
-    }
+    SEXP get_environment() const;
 
-    void set_return_value_type(sexptype_t return_value_type) {
-        return_value_type_ = return_value_type;
-    }
+    void set_return_value_type(sexptype_t return_value_type);
 
-    sexptype_t get_return_value_type() const {
-        return return_value_type_;
-    }
+    sexptype_t get_return_value_type() const;
 
-    void set_jumped() {
-        jumped_ = true;
-    }
+    void set_jumped();
 
-    bool is_jumped() const {
-        return jumped_;
-    }
+    bool is_jumped() const;
 
-    void set_S3_method() {
-        S3_method_ = true;
-    }
+    void set_S3_method();
 
-    bool is_S3_method() const {
-        return S3_method_;
-    }
+    bool is_S3_method() const;
 
-    void set_S4_method() {
-        S4_method_ = true;
-    }
+    void set_S4_method();
 
-    bool is_S4_method() const {
-        return S4_method_;
-    }
+    bool is_S4_method() const;
+    
+    bool is_loaded_midway() const;
+    
+    void set_load_midway(bool state); 
 
-    void analyze_callee(Call* callee) {
-        ++callee_counter_;
-        /* if a caller has more than one callee it is not a wrapper. */
-        if (callee_counter_ > 1) {
-            wrapper_ = false;
-        } else {
-            wrapper_ = callee->is_wrapper();
-        }
-    }
+    void analyze_callee(Call* callee);
 
-    bool is_wrapper() const {
-        return wrapper_;
-    }
+    bool is_wrapper() const;
 
-    std::vector<Argument*>& get_arguments() {
-        return arguments_;
-    }
+    std::vector<Argument*>& get_arguments();
 
-    Argument* get_argument(int actual_argument_position) const {
-        return arguments_[actual_argument_position];
-    }
+    Argument* get_argument(int actual_argument_position) const;
 
-    void add_argument(Argument* argument) {
-        arguments_.push_back(argument);
-        ++actual_argument_count_;
-    }
+    void add_argument(Argument* argument);
 
-    const pos_seq_t& get_force_order() const {
-        return force_order_;
-    }
+    const pos_seq_t& get_force_order() const;
 
-    void set_force_order(int force_order) {
-        force_order_ = {force_order};
-    }
+    void set_force_order(int force_order);
 
-    void add_to_force_order(int formal_parameter_position) {
-        if (std::find(force_order_.begin(),
-                      force_order_.end(),
-                      formal_parameter_position) == force_order_.end()) {
-            force_order_.push_back(formal_parameter_position);
-        }
-    }
+    void add_to_force_order(int formal_parameter_position);
 
-    pos_seq_t get_missing_argument_positions() const {
-        pos_seq_t missing_argument_positions;
-        int position;
-
-        for (auto argument: arguments_) {
-            if (argument->get_denoted_value()->is_missing()) {
-                position = argument->get_formal_parameter_position();
-
-                /* this condition handles multiple missing values
-                   in dot dot arguments. */
-                if (missing_argument_positions.size() == 0 ||
-                    missing_argument_positions.back() != position) {
-                    missing_argument_positions.push_back(position);
-                }
-            }
-        }
-
-        return missing_argument_positions;
-    }
+    pos_seq_t get_missing_argument_positions() const;
 
   private:
     const call_id_t id_;
@@ -210,6 +91,7 @@ class Call {
     bool jumped_;
     bool S3_method_;
     bool S4_method_;
+    bool load_midway_;
     int callee_counter_;
     int call_as_arg_;
     bool wrapper_;

@@ -1,4 +1,4 @@
-#ifndef TURBOTRACER_ENVIRONMENT_H
+  #ifndef TURBOTRACER_ENVIRONMENT_H
 #define TURBOTRACER_ENVIRONMENT_H
 
 #include <unordered_map>

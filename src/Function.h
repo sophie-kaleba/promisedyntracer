@@ -9,6 +9,7 @@
 
 #include <fstream>
 
+
 class Function {
   public:
     explicit Function(const SEXP op,
